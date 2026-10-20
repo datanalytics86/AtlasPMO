@@ -18,13 +18,20 @@ Fechas aceptadas: `%Y-%m-%d %H:%M` (formato que usa PyP6Xer), `%Y-%m-%d %H:%M:%S
 
 Leídos: `proj_id`, `proj_short_name`, `proj_name`, `clndr_id`, `last_recalc_date`, `plan_end_date`, `scd_end_date`.
 
-`last_recalc_date` es la fecha de corte citada por el megaprompt. `plan_end_date` y `scd_end_date` son supuestos de nombre, sin confirmar. Los campos `sched_*` y `critical_*` de la sección 5 no se leen en esta fase.
+`last_recalc_date` es la fecha de corte citada por el megaprompt. `plan_end_date` y `scd_end_date` son supuestos de nombre, sin confirmar. Los campos `sched_*` y `critical_*` de la sección 5 no se leen. Las opciones del motor (retained logic, calendario del lag, tipo de holgura) son argumentos, no columnas.
 
 ## CALENDAR
 
 Leídos: `clndr_id`, `clndr_name`, `proj_id`, `day_hr_cnt`, `base_clndr_id`, `clndr_data`.
 
-`day_hr_cnt` y `clndr_data` los pide el megaprompt. El texto de `clndr_data` se guarda crudo. Esta fase no lo interpreta. `base_clndr_id` es un supuesto de nombre.
+`day_hr_cnt` y `clndr_data` los pide el megaprompt. `base_clndr_id` es un supuesto de nombre. Si `clndr_data` viene vacío y hay base ya leído, se hereda. Si no hay texto, el calendario no se usa: no se inventa un lunes a viernes.
+
+El parser de la fase 2 entiende solo la forma publicada, sin confirmar en un export de Nicolás:
+
+- Oracle MOSC muestra `(0||CalendarData()(`, `(0||DaysOfWeek()(` y turnos `s|HH:MM|f|HH:MM`.
+- PyP6Xer numera el día 1 como domingo y el 2 como lunes.
+- Planning Planet y `xldate_to_datetime` de PyP6Xer cuentan la excepción desde 1899-12-30. Un paréntesis vacío después del serial es un día sin trabajo.
+- `s|00:00|f|00:00` se lee como jornada de 24 h. Es un supuesto: la muestra pública de MOSC lo trae en los siete días. Queda anotado.
 
 ## PROJWBS
 
@@ -34,7 +41,7 @@ Leídos: `wbs_id`, `proj_id`, `parent_wbs_id`, `wbs_short_name`, `wbs_name`. Sup
 
 Citados por PyP6Xer y leídos aquí: `task_id`, `proj_id`, `wbs_id`, `clndr_id`, `phys_complete_pct`, `complete_pct_type`, `task_type`, `status_code`, `task_code`, `task_name`, `total_float_hr_cnt`, `free_float_hr_cnt`, `remain_drtn_hr_cnt`, `target_drtn_hr_cnt`, `act_start_date`, `act_end_date`, `late_start_date`, `late_end_date`, `early_start_date`, `early_end_date`, `target_start_date`, `target_end_date`, `cstr_type`, `cstr_type2`, `int_path`, `int_path_order`.
 
-PyP6Xer también nombra, y esta fase no carga: `duration_type`, `rsrc_id`, `cstr_date`, `expect_end_date`, `restart_date`, `reend_date`, `driving_path_flag`.
+También se leen `cstr_date` (PyP6Xer) y `expect_end_date` (PyP6Xer). `cstr_date2` lo nombra el megaprompt; el nombre no está confirmado. `expect_end_date` no mueve el CPM. PyP6Xer también nombra, y esta fase no carga: `duration_type`, `rsrc_id`, `restart_date`, `reend_date`, `driving_path_flag`.
 
 `float_path` y `float_path_order` los nombra el megaprompt en la sección 6 (modo A). PyP6Xer no los lee en `TASK`; lee `int_path` e `int_path_order`. El modo A prefiere `TASK.float_path` si la columna está. Si no, usa `TASK.int_path` y deja la aproximación en el resultado. La ruta `"1"` se toma como la primera ruta guardada. Es un supuesto.
 

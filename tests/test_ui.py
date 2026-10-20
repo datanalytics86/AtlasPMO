@@ -14,4 +14,7 @@ def test_empty_selector_is_in_spanish():
     assert app.info == []
     assert "Calidad (DCMA y GAO)" in app.multiselect[0].options
     assert "Ruta crítica (modo A)" in app.multiselect[0].options
+    assert "Ruta crítica (modo B)" in app.multiselect[0].options
+    assert "Lógica redundante" in app.multiselect[0].options
+    assert "Limpieza de XER" in app.multiselect[0].options
     assert app.exception == []

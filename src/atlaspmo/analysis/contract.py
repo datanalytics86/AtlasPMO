@@ -9,6 +9,7 @@ from typing import Protocol
 import pandas as pd
 from pydantic import BaseModel
 
+from atlaspmo.io.xer import XerFile
 from atlaspmo.model.schedule import Schedule
 
 
@@ -73,6 +74,7 @@ class AnalysisContext:
     """Inputs for a module run. The schedule is optional so the registry tests stay valid."""
 
     schedule: Schedule | None = None
+    document: XerFile | None = None
     input_sha256: str | None = None
     input_name: str | None = None
 

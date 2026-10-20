@@ -211,6 +211,9 @@ def _activities(table: XerTable | None, absent: set[str], notes: list[str]) -> l
                 int_path=_text(table, values, "int_path", absent),
                 int_path_order=_text(table, values, "int_path_order", absent),
                 phys_complete_pct=_number(table, values, "phys_complete_pct", absent, notes),
+                cstr_date=_date(table, values, "cstr_date", absent, notes),
+                cstr_date2=_date(table, values, "cstr_date2", absent, notes),
+                expect_end_date=_date(table, values, "expect_end_date", absent, notes),
             )
         )
     return rows

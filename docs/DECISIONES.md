@@ -75,6 +75,14 @@ Los nombres leídos están en `docs/XER_SPEC.md`, con la marca de que no hay un 
 - `scripts/gen_synthetic.py` sigue escribiendo solo el fixture mínimo `SYNTH`. Los casos con esperado a mano los escribe `scripts/build_cases.py`.
 - En esta fase entraron wheels de Windows para `lxml` 6.1.3, `xlsxwriter` 3.2.9 y `reportlab` 5.0.1. numba, DuckDB, Plotly y el extra `[mpp]` siguen fuera.
 
+## ADR-006 — Motor de la fase 2
+
+- El texto de calendario que se interpreta está citado en `XER_SPEC.md`. Un calendario sin `clndr_data` y sin base no recibe un horario inventado.
+- Retained logic, progress override y actual dates son argumentos. También lo son el calendario del lag (predecesora por defecto, sucesora, transcurrido o el del proyecto) y la holgura (la menor entre inicio y fin, por defecto).
+- Una restricción "en o después" atrasa. Una "en o antes", o un "exactamente" más temprano que la lógica, no adelanta las fechas tempranas: la holgura sale negativa. ALAP sin sucesoras se mueve a sus fechas tardías. ALAP con sucesoras se anota y no se mueve.
+- LOE y WBS summary se arman después del pase y no marcan la ruta crítica. `TT_Rsrc` usa el calendario de la actividad.
+- La redundancia no usa reducción transitiva ni el criterio "hoy no es driver".
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

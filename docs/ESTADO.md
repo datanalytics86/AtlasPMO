@@ -60,6 +60,30 @@ Encima de `da62a85`. Sin push.
 - DCMA 12, modo B, motor CPM, Monte Carlo, MSPDI, DuckDB y el PBIP quedan para las fases siguientes.
 - El tiempo interno de `read_xer` sobre 30 000 filas no se imprime. El test completo, que también escribe el archivo, es el que mide pytest. La aserción es `elapsed < 15` solo sobre la lectura.
 
+## Fase 2 — en `fase-2`
+
+Encima de la fase 1. Sin push.
+
+### Entregado
+
+- Parser de `clndr_data` limitado a la forma publicada y reloj laboral.
+- CPM con FS/SS/FF/SF, lags positivos y negativos, tres tratamientos de avance, hitos, restricciones citadas, LOE y WBS después del pase.
+- Modo B, prueba DCMA 12, redundancia con confirmación, limpieza que solo borra `TASKPRED`, Gantt de Plotly y `scripts/run_conformance.py`.
+
+### Evidencia (2026-10-20)
+
+- `py -3.12 -m uv run python -m pytest -q` — 59 passed in 1.95s.
+- `py -3.12 -m uv run python -m ruff check .` — All checks passed.
+- `py -3.12 -m uv run python -m mypy src` — Success: no issues found in 42 source files.
+- La conformidad 100 % del caso a mano está en `test_conformance_is_exact_when_stored_dates_match` (`ratio == 1`). No se midió contra P6.
+- `plotly` 7.1.0 quedó instalado desde wheel. El Gantt se prueba por la cantidad de barras, no dentro del navegador: la UI sigue sin cargar un archivo.
+
+### Abierto
+
+- `p6_verified` no está. El script lo omite.
+- `ATLASPMO_GOLDEN_DIR` no se abre ni se listan sus nombres. El 99,5 % y el delta cero dentro de P6 quedan para la iteración con Nicolás.
+- No se midió el criterio de redundancia bajo 3 minutos de la sección 11.
+
 ## Siguiente
 
-Fase 2 en `fase-2`: parser de `clndr_data` limitado al fixture, índice de tiempo laboral y CPM.
+Fase 3: riesgo y EVM, con la invariante de varianza cero.

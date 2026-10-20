@@ -71,6 +71,9 @@ class Activity:
     int_path: str | None
     int_path_order: str | None
     phys_complete_pct: float | None
+    cstr_date: datetime | None = None
+    cstr_date2: datetime | None = None
+    expect_end_date: datetime | None = None
 
 
 @dataclass(frozen=True)

@@ -1,1 +1,1 @@
-"""P6 calendars. Parser arrives with the CPM phase."""
+"""Calendar text and working-time arithmetic."""

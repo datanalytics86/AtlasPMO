@@ -84,6 +84,18 @@ Elecciones de producto, no campos del XER.
 
 `hours_per_day` del archivo es nulo. Un argumento del módulo puede pisarlo. Si falta el YAML, se usa el perfil de código y queda una nota.
 
+## Prueba de ruta (DCMA 12)
+
+La fase 2 la calcula en el modo B. Elige la actividad crítica de menor `task_code` con duración remanente, le suma 8 horas y vuelve a programar. Cumple si el término del proyecto se mueve exactamente 8 horas laborales del calendario de esa actividad. Si no hay crítica con duración, o el motor no tiene término, queda `no_evaluable`.
+
+## Modo B, redundancia y limpieza
+
+El modo B publica las fechas recalculadas. No usa la holgura guardada.
+
+Un vínculo es candidato si, en el grafo de eventos, otro camino entre sus extremos pesa al menos lo mismo. Se confirma solo si al quitarlo no cambian ES, EF, LS, LF, holgura total ni holgura libre en más de un minuto. Si el lote sí mueve fechas, se aísla el vínculo por bipartición. Quedan protegidos los vínculos entre proyectos, los que tocan un hito y los pares SS+FF.
+
+La limpieza borra únicamente las filas `TASKPRED` confirmadas. El resto del archivo no se reescribe.
+
 ## Modo A de la ruta
 
 No recalcula CPM. Bandas de holgura total guardada, en días: ≤ 0, 0–10, 10–20, 20–44, > 44. Crítica si los días son ≤ `critical_float_days` (0). Una actividad sin holgura convertible no entra. Los vínculos driving no se marcan: no hay un campo citado de holgura libre del vínculo.

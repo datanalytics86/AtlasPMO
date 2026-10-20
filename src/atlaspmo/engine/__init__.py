@@ -1,1 +1,1 @@
-"""CPM engine. Implementation arrives after calendars have evidenced tests."""
+"""CPM engine. Scheduling options are arguments, not unread XER fields."""
