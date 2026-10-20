@@ -1,0 +1,35 @@
+table fact_timephased
+	lineageTag: c1bf26f0-b521-5c53-9b22-dc8dbcd0dabd
+
+	column run_id
+		dataType: string
+		lineageTag: 7db6ef55-626f-5b4d-ba6b-0faf17a10aac
+		sourceColumn: run_id
+		summarizeBy: none
+
+	column task_code
+		dataType: string
+		lineageTag: 42519c5f-cf46-5865-8b79-1dd6c43fa886
+		sourceColumn: task_code
+		summarizeBy: none
+
+	column bucket
+		dataType: string
+		lineageTag: 00502b28-514f-5a23-84be-a6332753b302
+		sourceColumn: bucket
+		summarizeBy: none
+
+	column hours
+		dataType: double
+		lineageTag: 543f1bab-2926-55c1-8520-b6c8014476f4
+		sourceColumn: hours
+		summarizeBy: none
+
+	partition fact_timephased = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "fact_timephased.parquet"))
+				in
+				    Datos

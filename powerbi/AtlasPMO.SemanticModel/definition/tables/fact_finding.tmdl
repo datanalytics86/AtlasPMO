@@ -1,0 +1,56 @@
+table fact_finding
+	lineageTag: d0b5d678-02a8-5a8d-a09d-175b9ff916e0
+
+	column run_id
+		dataType: string
+		lineageTag: f46d5d50-9ee3-536e-b886-787fb1cc87ca
+		sourceColumn: run_id
+		summarizeBy: none
+
+	column rule_id
+		dataType: string
+		lineageTag: 688315f9-1b83-56a1-86c4-00c5061b32a0
+		sourceColumn: rule_id
+		summarizeBy: none
+
+	column task_code
+		dataType: string
+		lineageTag: f2fc675a-7416-5b94-a8fd-aea9135065b2
+		sourceColumn: task_code
+		summarizeBy: none
+
+	column object_id
+		dataType: string
+		lineageTag: 7ab30b8d-b974-59fd-8517-162ec0975849
+		sourceColumn: object_id
+		summarizeBy: none
+
+	column passed
+		dataType: string
+		lineageTag: 88783353-040a-5175-9330-b8b324866c02
+		sourceColumn: passed
+		summarizeBy: none
+
+	column value
+		dataType: string
+		lineageTag: 43d3ca8b-0e83-5df0-8d3f-084bc49d92a8
+		sourceColumn: value
+		summarizeBy: none
+
+	column message_es
+		dataType: string
+		lineageTag: 4872dc9e-e04d-5b70-8456-5a7fe29de845
+		sourceColumn: message_es
+		summarizeBy: none
+
+	measure Hallazgos = COUNTROWS(fact_finding)
+		formatString: #,0
+
+	partition fact_finding = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "fact_finding.parquet"))
+				in
+				    Datos

@@ -1,0 +1,29 @@
+table dim_rule
+	lineageTag: e308b918-6757-5074-aa6c-6932c67fcaeb
+
+	column rule_id
+		dataType: string
+		lineageTag: b75f5ba1-6205-5177-bf45-b62db273bd4f
+		sourceColumn: rule_id
+		summarizeBy: none
+
+	column rule_name_es
+		dataType: string
+		lineageTag: 22d24d16-ebff-5509-9717-b148e891fac6
+		sourceColumn: rule_name_es
+		summarizeBy: none
+
+	column source
+		dataType: string
+		lineageTag: 1539fc27-b992-5dcd-81ed-ae45ea3ffad5
+		sourceColumn: source
+		summarizeBy: none
+
+	partition dim_rule = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "dim_rule.parquet"))
+				in
+				    Datos

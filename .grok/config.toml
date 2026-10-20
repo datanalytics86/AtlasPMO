@@ -1,0 +1,10 @@
+# Project config only keeps keys Grok Build loads from a repository.
+# permission_mode and [subagents] belong in the user config, not here.
+# See docs/DECISIONES.md ADR-001 and ADR-003.
+
+[permission]
+deny = [
+  "Read(**/data/real/**)",
+  "Edit(**/data/real/**)",
+  "Grep(**/data/real/**)",
+]

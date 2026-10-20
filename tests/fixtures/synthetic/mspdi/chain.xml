@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>Cadena</Name>
+  <Title>Cadena</Title>
+  <StartDate>2026-01-05T08:00:00</StartDate>
+  <StatusDate>2026-01-05T08:00:00</StatusDate>
+  <FinishDate>2026-01-07T16:00:00</FinishDate>
+  <Tasks>
+    <Task>
+      <UID>0</UID>
+      <ID>0</ID>
+      <Name>Cadena</Name>
+      <Summary>1</Summary>
+    </Task>
+    <Task>
+      <UID>1</UID>
+      <ID>1</ID>
+      <Name>Actividad A</Name>
+      <WBS>A</WBS>
+      <Start>2026-01-05T08:00:00</Start>
+      <Finish>2026-01-05T16:00:00</Finish>
+      <Duration>PT8H0M0S</Duration>
+      <RemainingDuration>PT8H0M0S</RemainingDuration>
+      <PercentComplete>0</PercentComplete>
+      <Milestone>0</Milestone>
+      <Summary>0</Summary>
+    </Task>
+    <Task>
+      <UID>2</UID>
+      <ID>2</ID>
+      <Name>Actividad B</Name>
+      <WBS>B</WBS>
+      <Start>2026-01-06T08:00:00</Start>
+      <Finish>2026-01-07T16:00:00</Finish>
+      <Duration>PT16H0M0S</Duration>
+      <RemainingDuration>PT16H0M0S</RemainingDuration>
+      <PercentComplete>0</PercentComplete>
+      <Milestone>0</Milestone>
+      <Summary>0</Summary>
+      <PredecessorLink>
+        <PredecessorUID>1</PredecessorUID>
+        <Type>1</Type>
+        <LinkLag>0</LinkLag>
+      </PredecessorLink>
+    </Task>
+  </Tasks>
+</Project>

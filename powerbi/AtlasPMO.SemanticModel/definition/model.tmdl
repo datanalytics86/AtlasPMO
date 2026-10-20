@@ -1,0 +1,12 @@
+model Model
+	culture: es-CL
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: es-CL
+
+ref table dim_project
+ref table dim_run
+ref table dim_activity
+ref table dim_rule
+ref table fact_finding
+ref table fact_timephased
+ref table fact_risk

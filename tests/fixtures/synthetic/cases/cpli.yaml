@@ -1,0 +1,3 @@
+file: cpli.xer
+expect:
+  cpli: {value: 1.4, status: cumple}

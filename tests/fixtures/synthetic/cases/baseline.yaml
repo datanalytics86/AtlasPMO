@@ -1,0 +1,6 @@
+file: baseline.xer
+proj_id: "1"
+baseline_proj_id: "2"
+expect:
+  missed_tasks: {value: 1.0, status: no_cumple}
+  bei: {value: 0.5, status: no_cumple}

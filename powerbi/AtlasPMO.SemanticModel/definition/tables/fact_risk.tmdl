@@ -1,0 +1,29 @@
+table fact_risk
+	lineageTag: adc3109e-77b3-5531-a534-795513896a61
+
+	column run_id
+		dataType: string
+		lineageTag: 75302cf9-1cdd-5ce8-a136-3d8eb0f29efe
+		sourceColumn: run_id
+		summarizeBy: none
+
+	column task_code
+		dataType: string
+		lineageTag: 9f4e5504-31ba-5468-933d-101b531256aa
+		sourceColumn: task_code
+		summarizeBy: none
+
+	column criticality
+		dataType: double
+		lineageTag: f08ce20b-f2cf-56c6-834f-adf223532759
+		sourceColumn: criticality
+		summarizeBy: none
+
+	partition fact_risk = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "fact_risk.parquet"))
+				in
+				    Datos

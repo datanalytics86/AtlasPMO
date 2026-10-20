@@ -1,0 +1,3 @@
+file: constraints.xer
+expect:
+  hard_constraints: {value: 0.5, status: no_cumple}

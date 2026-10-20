@@ -1,0 +1,29 @@
+table dim_activity
+	lineageTag: f2bb9422-b02a-5121-b6c9-2ce226b1230e
+
+	column run_id
+		dataType: string
+		lineageTag: 82f870a8-ad3a-5c25-a1cc-a88508082781
+		sourceColumn: run_id
+		summarizeBy: none
+
+	column task_code
+		dataType: string
+		lineageTag: 72c94979-7133-544e-adaa-aec06c1660cd
+		sourceColumn: task_code
+		summarizeBy: none
+
+	column task_name
+		dataType: string
+		lineageTag: 6feb69aa-21a0-5ade-a9b8-e01e5bb01cce
+		sourceColumn: task_name
+		summarizeBy: none
+
+	partition dim_activity = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "dim_activity.parquet"))
+				in
+				    Datos

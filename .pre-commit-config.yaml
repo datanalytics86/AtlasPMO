@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: reject-schedules
+        name: Reject schedule files outside tests/fixtures
+        entry: python scripts/hooks/reject_schedules.py
+        language: system
+        pass_filenames: true

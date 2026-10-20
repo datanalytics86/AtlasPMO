@@ -1,0 +1,5 @@
+file: floatdur.xer
+expect:
+  high_float: {value: 0.25, status: no_cumple}
+  negative_float: {value: 0.25, status: no_cumple}
+  high_duration: {value: 0.25, status: no_cumple}

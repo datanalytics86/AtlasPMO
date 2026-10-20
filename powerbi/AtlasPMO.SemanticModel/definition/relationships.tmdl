@@ -1,0 +1,15 @@
+relationship finding_run
+	fromColumn: fact_finding.run_id
+	toColumn: dim_run.run_id
+
+relationship finding_rule
+	fromColumn: fact_finding.rule_id
+	toColumn: dim_rule.rule_id
+
+relationship risk_run
+	fromColumn: fact_risk.run_id
+	toColumn: dim_run.run_id
+
+relationship time_run
+	fromColumn: fact_timephased.run_id
+	toColumn: dim_run.run_id
