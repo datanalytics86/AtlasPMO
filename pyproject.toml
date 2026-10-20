@@ -1,0 +1,57 @@
+[project]
+name = "atlaspmo"
+version = "0.1.0"
+description = "Plataforma personal de análisis de cronogramas Primavera P6 y MS Project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "pandas>=2.2",
+  "pydantic>=2.10",
+  "pyyaml>=6.0",
+  "streamlit>=1.40",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.13",
+  "pre-commit>=4.0",
+  "pytest>=8.3",
+  "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+packages = ["atlaspmo"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+module = [
+  "atlaspmo.model",
+  "atlaspmo.model.*",
+  "atlaspmo.calendars",
+  "atlaspmo.calendars.*",
+  "atlaspmo.engine",
+  "atlaspmo.engine.*",
+]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["streamlit", "streamlit.*", "pandas", "pandas.*", "yaml", "yaml.*"]
+ignore_missing_imports = true

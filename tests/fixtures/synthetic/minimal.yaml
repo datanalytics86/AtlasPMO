@@ -1,0 +1,8 @@
+structural_only: true
+p6_fields_verified: false
+encoding: cp1252
+newlines: crlf
+header: ERMHDR
+table: SYNTH
+fields: [col_a, col_b]
+note: "col_a y col_b no son campos de P6."
