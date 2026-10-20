@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<APIBusinessObjects>
+  <Project>
+    <ObjectId>1</ObjectId>
+    <Id>P1</Id>
+    <Name>Demo</Name>
+    <DataDate>2026-01-15T00:00:00</DataDate>
+    <Activity>
+      <ObjectId>10</ObjectId>
+      <Id>A1</Id>
+      <Name>Inicio</Name>
+      <Type>Task Dependent</Type>
+      <Status>Not Started</Status>
+      <PlannedDuration>8</PlannedDuration>
+    </Activity>
+    <Relationship>
+      <ObjectId>100</ObjectId>
+      <PredecessorActivityObjectId>10</PredecessorActivityObjectId>
+      <SuccessorActivityObjectId>11</SuccessorActivityObjectId>
+      <Type>PR_FS</Type>
+      <Lag>0</Lag>
+    </Relationship>
+  </Project>
+</APIBusinessObjects>

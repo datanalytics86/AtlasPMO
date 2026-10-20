@@ -1,0 +1,6 @@
+file: relmix.xer
+expect:
+  logic: {value: 0.75, status: no_cumple}
+  leads: {value: 0.25, status: no_cumple}
+  lags: {value: 0.25, status: no_cumple}
+  relationship_types: {value: 0.75, status: no_cumple}

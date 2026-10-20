@@ -1,0 +1,15 @@
+file: chain.xer
+expect:
+  logic: {value: 0.5, status: no_cumple}
+  leads: {value: 0.0, status: cumple}
+  lags: {value: 0.0, status: cumple}
+  relationship_types: {value: 1.0, status: cumple}
+  hard_constraints: {value: 0.0, status: cumple}
+  high_float: {value: 0.0, status: cumple}
+  negative_float: {value: 0.0, status: cumple}
+  high_duration: {value: 0.0, status: cumple}
+  invalid_dates: {value: null, status: no_evaluable}
+  resources: {value: 1.0, status: info}
+  missed_tasks: {value: null, status: no_evaluable}
+  bei: {value: null, status: no_evaluable}
+  cpli: {value: null, status: no_evaluable}

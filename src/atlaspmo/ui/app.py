@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import streamlit as st
 
+from atlaspmo.bootstrap import bootstrap
 from atlaspmo.registry import registered_modules
+
+bootstrap()
 
 st.set_page_config(page_title="AtlasPMO", layout="wide")
 st.title("AtlasPMO")

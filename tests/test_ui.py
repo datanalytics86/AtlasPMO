@@ -11,5 +11,7 @@ def test_empty_selector_is_in_spanish():
     app = AppTest.from_file(ROOT / "src" / "atlaspmo" / "ui" / "app.py")
     app.run()
     assert app.title[0].value == "AtlasPMO"
-    assert app.info[0].value == "El selector queda vacío hasta que haya módulos registrados."
+    assert app.info == []
+    assert "Calidad (DCMA y GAO)" in app.multiselect[0].options
+    assert "Ruta crítica (modo A)" in app.multiselect[0].options
     assert app.exception == []

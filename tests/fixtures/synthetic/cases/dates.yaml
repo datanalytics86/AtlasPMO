@@ -1,0 +1,4 @@
+file: dates.xer
+expect:
+  logic: {value: 0.3333333333333333, status: no_cumple}
+  invalid_dates: {value: 2, status: no_cumple}

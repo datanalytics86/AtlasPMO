@@ -1,11 +1,89 @@
 # Reglas de calidad
 
-Catálogo vivo de chequeos. Cada regla, cuando se implemente, lleva
-definición, población, umbral por defecto y fuente.
+Catálogo de lo que calcula M1 en la fase 1. DCMA 12 no está: pide el motor CPM de la fase 2.
 
-La Fase 0 no implementa métricas. La lista DCMA 14 puntos, el mapa GAO y
-los chequeos adicionales están en la sección 6 de `MEGAPROMPT.md`.
-Este archivo no añade umbrales.
+Estado de una métrica: `cumple`, `no_cumple`, `no_evaluable`, `info` o `manual`. Si falta un requisito, la métrica es `no_evaluable` y el motivo queda en un hallazgo.
 
-Si a una métrica le falta baseline, fecha objetivo u otro requisito,
-queda como no evaluable y se guarda el motivo. Eso se cumple al construir M1.
+## Población incompleta
+
+Actividades con `status_code` distinto de `TK_Complete`. El perfil puede excluir `TT_LOE` y `TT_WBS`. Los hitos `TT_Mile` y `TT_FinMile` salen solo de la duración alta. Si falta `TASK.status_code`, la lógica no se evalúa.
+
+Horas a días: `horas / hours_per_day` del perfil, si el perfil lo fija. Si no, `horas / day_hr_cnt` del calendario de la actividad. Si falta `day_hr_cnt` y el perfil no fija `hours_per_day`, la métrica es `no_evaluable`. No se usa 8 en silencio.
+
+Fecha de corte: el único `last_recalc_date` entre los proyectos seleccionados. Si hay más de una fecha distinta, no hay fecha de corte.
+
+## DCMA implementado
+
+Umbrales de `profiles/dcma_estricto.yaml`, salvo que el perfil diga otra cosa.
+
+| Id | Definición | Población | Umbral | Fuente |
+|---|---|---|---|---|
+| logic | Parte sin predecesora o sin sucesora | Incompletas | máximo 5 % | DCMA 1 |
+| leads | Vínculos con `lag_hr_cnt` < 0 | Vínculos con predecesora y sucesora | máximo 0 | DCMA 2 |
+| lags | Vínculos con `lag_hr_cnt` > 0 | La misma | máximo 5 % | DCMA 3 |
+| relationship_types | Parte con `pred_type` = `PR_FS` | La misma | mínimo 90 % | DCMA 4 |
+| hard_constraints | Incompletas con `cstr_type` o `cstr_type2` en el conjunto duro | Incompletas | máximo 5 % | DCMA 5 |
+| high_float | Holgura total en días > `high_float_days` (44) | Incompletas | máximo 5 % | DCMA 6 |
+| negative_float | Holgura total en días < 0 | Incompletas | máximo 0 | DCMA 7 |
+| high_duration | Duración en días > `high_duration_days` (44). Campo `remain` o `original` | Incompletas, sin hitos | máximo 5 % | DCMA 8 |
+| invalid_dates | Conteo, no razón. Prevista (`early_start` o `early_end`) anterior a la fecha de corte en una no completa, o real (`act_start` o `act_end`) posterior | Actividades del proyecto | máximo 0 | DCMA 9 |
+| resources | Incompletas no hito, duración > 0, sin `TASKRSRC.rsrc_id` y sin costo si existe `target_cost` | Esa población | `resources_max` nulo: estado `info` y fuera del índice | DCMA 10 |
+| missed_tasks | Con fin baseline ≤ fecha de corte, no `TK_Complete` o `act_end_date` posterior al fin baseline | Esas actividades | máximo 5 % | DCMA 11 |
+| cpli | (días remanentes de la ruta `"1"` + holgura total en días de la actividad de mayor orden en esa ruta) / días remanentes | Ruta guardada | mínimo 0,95 | DCMA 13 |
+| bei | Completadas / actividades con fin baseline ≤ fecha de corte | La misma que missed | mínimo 0,95 | DCMA 14 |
+
+Lag vacío o columna de lag ausente: leads y lags quedan `no_evaluable`. No se trata el vacío como cero.
+
+Fin baseline: `target_end_date` del proyecto `baseline_proj_id`, emparejado por `task_code`. Ver `XER_SPEC.md`. Sin ese proyecto, missed y BEI son `no_evaluable`. Los hallazgos de BEI salen solo si el estado es `no_cumple`, y solo para las que no están completas.
+
+CPLI: columna `TASK.float_path` si existe; si no, `TASK.int_path`, con la nota de aproximación. Días de ruta 0, o duración, holgura o horas/día faltantes: `no_evaluable`.
+
+## Índice
+
+`100 * peso de las métricas DCMA evaluables que cumplen / peso de esas métricas`. Entran las que están en `cumple` o `no_cumple`. Quedan fuera `no_evaluable` e `info`. El índice mismo tiene estado `info`. Pesos por defecto 1 en: logic, leads, lags, relationship_types, hard_constraints, high_float, negative_float, high_duration, invalid_dates, missed_tasks, cpli, bei. Resources y DCMA 12 no pesan.
+
+## GAO-16-89G
+
+| Id | Práctica | Cómo |
+|---|---|---|
+| gao_01 | Capturar actividades | Cumple si hay actividades |
+| gao_02 | Secuenciar | Se hereda de logic. Si logic no es evaluable, manual |
+| gao_03 | Asignar recursos | Se hereda de resources. `info` pasa a manual |
+| gao_04 | Establecer duraciones | Se hereda de high duration |
+| gao_05 | Trazabilidad | Cumple si inicios abiertos ≤ 1 y fines abiertos ≤ 1 |
+| gao_06 | Ruta crítica válida | Manual |
+| gao_07 | Holgura razonable | Las dos holguras. Una que no cumple hace fallar el par |
+| gao_08 | Análisis de riesgo | Manual |
+| gao_09 | Actualizar con avance | Cumple si hay alguna fecha real. Si no, manual |
+| gao_10 | Mantener el baseline | Se hereda de BEI. Si BEI es `no_evaluable`, manual |
+
+Cada manual agrega un hallazgo info: "Requiere revisión manual."
+
+## Chequeos adicionales
+
+| Id | Regla | Estado |
+|---|---|---|
+| open_starts / open_finishes | Conteos de incompletas sin predecesora o sin sucesora | info |
+| sf_links | Hay algún `PR_SF` | cumple o no_cumple, umbral 0 |
+| convergence | Predecesoras entrantes ≥ `convergence_predecessors` (4) | info |
+| out_of_sequence | La sucesora tiene `act_start_date` y la predecesora no está `TK_Complete` | cumple o no_cumple |
+| actual_after_data_date | Real posterior a la fecha de corte | cumple o no_cumple |
+| lag_vs_successor | `lag_hr_cnt` mayor que la duración remanente de la sucesora | info |
+| odd_calendar | `clndr_id` distinto del dominante | info |
+| loe_logic | `TT_LOE` precede a `TT_Task` | cumple o no_cumple |
+| missing_codes | Falta un tipo listado en `required_code_type_ids` | Si la lista está vacía, `no_evaluable` |
+| logic_density | Vínculos / actividades | info, sin umbral |
+
+## Perfiles
+
+Elecciones de producto, no campos del XER.
+
+- `dcma_estricto`: umbrales de la tabla DCMA. Lags máximo 5 %. Holgura alta 44 días. FS mínimo 90 %. `resources_max` nulo.
+- `corporativo`: lags máximo 10 %, holgura alta 60 días y máximo 10 %, FS mínimo 85 %, convergencia 5.
+- `contratista`: conjunto duro solo `CS_MANDSTART` y `CS_MANDFIN`. Lags máximo 15 %, FS mínimo 80 %, duración alta 60 días, lógica máxima 10 %, CPLI y BEI mínimo 0,90, missed máximo 10 %, convergencia 6.
+
+`hours_per_day` del archivo es nulo. Un argumento del módulo puede pisarlo. Si falta el YAML, se usa el perfil de código y queda una nota.
+
+## Modo A de la ruta
+
+No recalcula CPM. Bandas de holgura total guardada, en días: ≤ 0, 0–10, 10–20, 20–44, > 44. Crítica si los días son ≤ `critical_float_days` (0). Una actividad sin holgura convertible no entra. Los vínculos driving no se marcan: no hay un campo citado de holgura libre del vínculo.

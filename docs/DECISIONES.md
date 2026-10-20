@@ -64,6 +64,17 @@ Los tests de esta fase se ejecutaron con `uv run python -m pytest`.
 Si en otra máquina el .exe del venv no está bloqueado, `uv run pytest` vuelve a servir.
 El texto de `AGENTS.md` no se cambió: sigue citando `uv run pytest`, que es el comando del megaprompt.
 
+## ADR-005 — Campos y baseline de la fase 1
+
+Los nombres leídos están en `docs/XER_SPEC.md`, con la marca de que no hay un export de Nicolás.
+
+- Si `TASK` trae `float_path`, el modo A y el CPLI usan esa columna. Si no, usan `int_path` / `int_path_order`, que es lo que lee PyP6Xer, y el resultado lo dice.
+- `TASKPRED.float_path` no se usa como holgura libre. El modo A no marca vínculos driving.
+- El fin baseline es `target_end_date` del proyecto `baseline_proj_id`, emparejado por `task_code`. No hay un campo de baseline por actividad citado.
+- El conjunto de restricciones duras es una decisión de producto. Está en cada perfil.
+- `scripts/gen_synthetic.py` sigue escribiendo solo el fixture mínimo `SYNTH`. Los casos con esperado a mano los escribe `scripts/build_cases.py`.
+- En esta fase entraron wheels de Windows para `lxml` 6.1.3, `xlsxwriter` 3.2.9 y `reportlab` 5.0.1. numba, DuckDB, Plotly y el extra `[mpp]` siguen fuera.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

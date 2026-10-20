@@ -5,10 +5,13 @@ description = "Plataforma personal de análisis de cronogramas Primavera P6 y MS
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "lxml>=6.1.3",
   "pandas>=2.2",
   "pydantic>=2.10",
   "pyyaml>=6.0",
+  "reportlab>=5.0.1",
   "streamlit>=1.40",
+  "xlsxwriter>=3.2.9",
 ]
 
 [dependency-groups]
@@ -53,5 +56,18 @@ module = [
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["streamlit", "streamlit.*", "pandas", "pandas.*", "yaml", "yaml.*"]
+module = [
+  "streamlit",
+  "streamlit.*",
+  "pandas",
+  "pandas.*",
+  "yaml",
+  "yaml.*",
+  "lxml",
+  "lxml.*",
+  "xlsxwriter",
+  "xlsxwriter.*",
+  "reportlab",
+  "reportlab.*",
+]
 ignore_missing_imports = true

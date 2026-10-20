@@ -1,0 +1,39 @@
+id: dcma_estricto
+nombre: DCMA estricto
+hours_per_day: null
+duration_field: remain
+exclude_loe: true
+exclude_wbs_summary: true
+exclude_milestones_from_duration: true
+hard_constraints: [CS_MSO, CS_MEO, CS_MANDSTART, CS_MANDFIN]
+high_float_days: 44
+high_duration_days: 44
+critical_float_days: 0
+convergence_predecessors: 4
+logic_max: 0.05
+leads_max: 0.0
+lags_max: 0.05
+fs_min: 0.90
+hard_max: 0.05
+high_float_max: 0.05
+negative_float_max: 0.0
+high_duration_max: 0.05
+invalid_dates_max: 0
+resources_max: null
+missed_max: 0.05
+cpli_min: 0.95
+bei_min: 0.95
+required_code_type_ids: []
+weights:
+  logic: 1
+  leads: 1
+  lags: 1
+  relationship_types: 1
+  hard_constraints: 1
+  high_float: 1
+  negative_float: 1
+  high_duration: 1
+  invalid_dates: 1
+  missed_tasks: 1
+  cpli: 1
+  bei: 1

@@ -9,6 +9,8 @@ from typing import Protocol
 import pandas as pd
 from pydantic import BaseModel
 
+from atlaspmo.model.schedule import Schedule
+
 
 class Requirement(StrEnum):
     """Inputs a module may declare before it can run."""
@@ -68,11 +70,11 @@ def empty_findings() -> pd.DataFrame:
 
 @dataclass(frozen=True)
 class AnalysisContext:
-    """Inputs for a module run.
+    """Inputs for a module run. The schedule is optional so the registry tests stay valid."""
 
-    Schedule fields are added only after a reader exists and the XER names
-    are recorded with evidence in docs/XER_SPEC.md.
-    """
+    schedule: Schedule | None = None
+    input_sha256: str | None = None
+    input_name: str | None = None
 
 
 @dataclass(frozen=True)
