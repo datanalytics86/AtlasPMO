@@ -59,10 +59,15 @@ class CleanModule:
             },
             findings=empty_findings(),
             tables={},
-            approximations=[
-                *before.approximations,
-                f"bytes={len(cleaned.to_bytes())}",
-            ],
+            approximations=list(
+                dict.fromkeys(
+                    [
+                        *ctx.schedule.parse_notes,
+                        *before.approximations,
+                        f"bytes={len(cleaned.to_bytes())}",
+                    ]
+                )
+            ),
             metadata=RunMetadata(app_version=__version__, input_sha256=ctx.input_sha256),
         )
 

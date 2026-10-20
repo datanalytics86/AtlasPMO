@@ -39,6 +39,9 @@ def compare_schedules(left: Schedule, right: Schedule) -> CompareReport:
         "La ruta crítica de la comparación usa la holgura total guardada. No recalcula el CPM.",
         "Un lag vacío no se compara como cero.",
     ]
+    for note in (*left.parse_notes, *right.parse_notes):
+        if note not in notes:
+            notes.append(note)
     left_acts = _by_code(left, notes, "izquierda")
     right_acts = _by_code(right, notes, "derecha")
     changes: list[Change] = []

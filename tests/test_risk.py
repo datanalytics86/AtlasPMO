@@ -1,6 +1,7 @@
 """Hand checks for distributions, zero-variance Monte Carlo and the tornado."""
 
 import random
+from dataclasses import replace
 
 from atlaspmo.analysis.contract import AnalysisContext
 from atlaspmo.analysis.risk.config import CorrelationPair, DurationRange, RiskConfig, RiskEvent
@@ -52,10 +53,13 @@ def test_perfect_correlation_matches_ranks():
 
 
 def test_zero_variance_reproduces_the_cpm(tmp_path):
-    schedule = _load(
-        tmp_path,
-        [_task("A", "A", "8"), _task("B", "B", "16")],
-        [_link("1", "A", "B")],
+    schedule = replace(
+        _load(
+            tmp_path,
+            [_task("A", "A", "8"), _task("B", "B", "16")],
+            [_link("1", "A", "B")],
+        ),
+        parse_notes=("nota de carga visible",),
     )
     base = schedule_cpm(schedule)
     config = RiskConfig(
@@ -78,6 +82,8 @@ def test_zero_variance_reproduces_the_cpm(tmp_path):
     assert outcome.ssi_status == "no_evaluable"
     assert outcome.sensitivity_status == "no_evaluable"
     assert _NUMBA in outcome.approximations
+    assert any("ceil(p * n) - 1" in note for note in outcome.approximations)
+    assert "nota de carga visible" in outcome.approximations
     tornado = {item.task_code: item.delta_hours for item in outcome.tornado}
     assert tornado["A"] == 8
     assert tornado["B"] == 8

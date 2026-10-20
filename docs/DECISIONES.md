@@ -102,6 +102,19 @@ Los nombres leídos están en `docs/XER_SPEC.md`, con la marca de que no hay un 
 - El extra `[mpp]` queda en el lock como `mpxj` 16.10.0 (wheel puro). `uv sync` sin el extra no lo instala. Sin Java, `read_mpp` no abre el archivo.
 - El PBIP sigue el formato de Microsoft Learn revisado el 2026-10-20: `definition.pbism` 4.2, TMDL en `definition/`, y el `.pbip` apunta al reporte. No se abrió en Power BI Desktop.
 
+## ADR-009 — Cierre de la fase 5
+
+La revisión de aproximaciones no reescribió el motor. Lo que calculaba sin nota ahora queda en `ModuleResult.approximations`:
+
+- El modo A omite actividades sin holgura total o sin horas por día, y lo dice.
+- `hours_per_day` del llamado reemplaza el del perfil, y calidad y modo A lo dicen.
+- Las `parse_notes` del lector llegan a modo A, modo B, lógica, limpieza, riesgo, EVM y comparación. Antes solo llegaban a calidad.
+- El modo B nombra la sonda del CP Test: 8 horas en la primera actividad crítica por `task_code`.
+- P50, P80 y P90 nombran el índice `ceil(p * n) - 1`.
+- EVM nombra que `scurve` es un solo punto en la fecha de corte.
+
+No hubo ajuste de rendimiento. No se midieron la redundancia bajo 3 minutos, el Monte Carlo de 30 000 por 1 000 bajo 5 minutos, ni el 99,5 % contra P6. Cambiar el motor sin esa medición sería un supuesto.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

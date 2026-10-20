@@ -16,6 +16,7 @@ from atlaspmo.model.schedule import Schedule
 
 _NUMBA = "Monte Carlo en Python puro. numba no se cargó en esta fase."
 _RANGES = "Los rangos de duración son configuración del usuario, no columnas del XER."
+_PERCENTILE = "P50, P80 y P90 usan el índice ceil(p * n) - 1 sobre las fechas ordenadas."
 _EVENTS = "Los eventos de riesgo suman horas al remanente. No son un campo del XER."
 
 
@@ -65,7 +66,7 @@ class RiskOutcome:
 
 def run_risk(schedule: Schedule, config: RiskConfig) -> RiskOutcome:
     """Sample durations, reschedule, and compare with the deterministic CPM."""
-    notes = [_NUMBA, _RANGES]
+    notes = [_NUMBA, _RANGES, _PERCENTILE, *schedule.parse_notes]
     if config.iterations < 1:
         notes.append("Las iteraciones deben ser al menos 1.")
         return _empty(notes)

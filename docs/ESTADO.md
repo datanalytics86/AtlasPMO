@@ -131,6 +131,43 @@ Encima de la fase 3. Sin push.
 - Nicolás abre el PBIP y refresca el modelo.
 - La lectura `.mpp` espera Java y el extra `[mpp]`.
 
-## Siguiente
+## Fase 5 — en `fase-5`
 
-Fase 5: manual, instalación en un paso y cierre del estado.
+Encima de la fase 4. Sin push. Sin merge. Sin pull request.
+
+### Entregado
+
+- `docs/MANUAL_USUARIO.md` y el paso de instalación del `README.md`, con los comandos que arrancan en este equipo.
+- Las aproximaciones que la revisión encontró fuera del resultado ahora quedan en `ModuleResult.approximations`. Ver ADR-009.
+- No se tocó el rendimiento. No se cargó numba.
+
+### Evidencia (2026-10-20)
+
+- `py -3.12 -m uv run python -m pytest -q --tb=short` — 84 passed in 2.40s.
+- `py -3.12 -m uv run python -m ruff check .` — All checks passed.
+- `py -3.12 -m uv run python -m mypy src` — Success: no issues found in 56 source files.
+- La interfaz no cambió. Sigue sin cargar un archivo. `test_ui` entra en las 84 pruebas y no abre un navegador.
+
+### Sección 11, sin medidas nuevas
+
+| Criterio | Qué hay |
+|---|---|
+| Lectura de 30 000 actividades | El test exige menos de 15 s solo sobre `read_xer`. El tiempo interno no se imprimió. La fase 1 no lo volvió a medir. |
+| DCMA + chequeos bajo 10 s | No medido. |
+| Redundancia bajo 3 min | No medido. |
+| Monte Carlo 30 000 × 1 000 bajo 5 min | No medido. numba no se cargó. |
+| Conformidad CPM ≥ 99,5 % en reales | No corrido. `ATLASPMO_GOLDEN_DIR` no se abre. |
+| Conformidad 100 % en `p6_verified` | No hay `p6_verified`. El caso a mano da ratio 1. No es una medida de P6. |
+| XER limpio importa en P6 y, al reprogramar, delta cero | No ejecutado. El checklist está en el manual. |
+| Round-trip XER | Cubierto por los tests de la fase 1 en fixtures sintéticos. |
+| Instalación sin administrador | `py -3.12 -m uv sync --group dev`. No pide permisos de administrador. |
+| Pruebas en verde | 84 passed. No hay una batería de rendimiento aparte. |
+
+### Qué queda para Nicolás
+
+- Importar los sintéticos en P6 y devolver los `p6_verified`.
+- Contrastar M1, el CPM y el EVM con un cronograma real, fuera del repositorio.
+- Seguir el checklist de reimportación del manual. Esta corrida no lo hizo.
+- Abrir `powerbi/AtlasPMO.pbip` en Power BI Desktop y refrescar. Aquí no se abrió.
+- Si quiere `.mpp`, hace falta Java en el PATH y `uv sync --extra mpp`. El entorno por defecto no trae `mpxj`.
+- No hay push de `fase-1` a `fase-5`.

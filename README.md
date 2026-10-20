@@ -12,11 +12,18 @@ Hace falta Python 3.12 y [uv](https://docs.astral.sh/uv/). En este equipo, sin a
 py -3.12 -m pip install --user uv
 ```
 
-Luego, en la raíz del repositorio:
+En la raíz del repositorio, un paso deja el entorno de desarrollo listo:
 
 ```
-uv sync --group dev
-uv run pytest
+py -3.12 -m uv sync --group dev
+```
+
+Comprobar:
+
+```
+py -3.12 -m uv run python -m pytest
+py -3.12 -m uv run python -m ruff check .
+py -3.12 -m uv run python -m mypy src
 ```
 
 ## Uso
@@ -24,9 +31,15 @@ uv run pytest
 `atlaspmo.bat` abre la interfaz en localhost. Equivale a:
 
 ```
-uv run streamlit run src/atlaspmo/ui/app.py
+uv run python -m streamlit run src/atlaspmo/ui/app.py
 ```
 
+En este equipo `uv run pytest` y `uv run streamlit` fallan con `os error 5`.
+El detalle está en [docs/DECISIONES.md](docs/DECISIONES.md) (ADR-004).
+`AGENTS.md` sigue citando `uv run pytest`.
+
+La pantalla lista los módulos en español y no carga un archivo.
+El manual está en [docs/MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md).
 La app no usa red ni telemetría (`browser.gatherUsageStats = false`).
 
 ## Qué no se commitea
@@ -34,6 +47,4 @@ La app no usa red ni telemetría (`browser.gatherUsageStats = false`).
 Los cronogramas reales no entran al repositorio. Van en `ATLASPMO_GOLDEN_DIR`,
 fuera de cualquier carpeta que abra Grok Build. `data/real/` está en
 `.gitignore`. Un hook rechaza `*.xer`, `*.mpp` y XML de cronograma fuera de
-`tests/fixtures/`.
-
-La Fase 0 no lee esos archivos. La conformidad la ejecuta Nicolás en su equipo.
+`tests/fixtures/`. Esta aplicación no abre esa carpeta.

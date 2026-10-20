@@ -58,6 +58,8 @@ class LogicModule:
             metrics={"confirmed": Metric(float(confirmed), None, "info")},
             findings=empty_findings(),
             tables={"links": frame},
-            approximations=list(result.approximations),
+            approximations=list(
+                dict.fromkeys([*schedule.parse_notes, *result.approximations])
+            ),
             metadata=RunMetadata(app_version=__version__, input_sha256=ctx.input_sha256),
         )

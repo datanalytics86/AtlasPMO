@@ -27,6 +27,7 @@ def test_hand_evm_and_earned_schedule():
     assert _LIMIT in outcome.approximations
     assert any(_CODES in note for note in outcome.approximations)
     assert any("PV lineal" in note for note in outcome.approximations)
+    assert any("un solo punto" in note for note in outcome.approximations)
     assert len(outcome.scurve) == 1
     assert outcome.scurve[0]["pv"] == 50
     assert outcome.resources[0] == {"rsrc_id": "H1", "target_qty": 16}

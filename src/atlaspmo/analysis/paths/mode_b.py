@@ -76,7 +76,19 @@ class PathsModeB:
             },
             findings=empty_findings(),
             tables={"cpm": pd.DataFrame(rows)},
-            approximations=[*result.approximations, *detail],
+            approximations=list(
+                dict.fromkeys(
+                    [
+                        *schedule.parse_notes,
+                        *result.approximations,
+                        (
+                            "CP Test atrasa 8 horas la primera actividad crítica "
+                            "ordenada por task_code."
+                        ),
+                        *detail,
+                    ]
+                )
+            ),
             metadata=RunMetadata(
                 app_version=__version__,
                 input_sha256=ctx.input_sha256,

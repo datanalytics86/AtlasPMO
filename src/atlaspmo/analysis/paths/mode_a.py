@@ -66,6 +66,8 @@ class PathsModeA:
         chosen = config if isinstance(config, PathsConfig) else PathsConfig()
         profile, note = load_profile(chosen.profile, chosen.hours_per_day)
         approximations = [note] if note else []
+        if chosen.hours_per_day is not None:
+            approximations.append("hours_per_day del llamado reemplaza el del perfil.")
         approximations.append(
             "Los vínculos driving no se marcan en modo A: "
             "no hay un campo citado de holgura libre del vínculo."
@@ -74,6 +76,7 @@ class PathsModeA:
             approximations.append("No hay cronograma cargado.")
             return _empty(approximations, ctx)
         schedule = ctx.schedule.select(chosen.proj_id)
+        approximations.extend(schedule.parse_notes)
         rows, counts, critical = _classify(schedule, profile, approximations)
         metrics = {
             "critical_count": Metric(float(critical), profile.critical_float_days, "info"),
@@ -87,7 +90,7 @@ class PathsModeA:
             metrics=metrics,
             findings=empty_findings(),
             tables={"bands": rows},
-            approximations=approximations,
+            approximations=list(dict.fromkeys(approximations)),
             metadata=RunMetadata(
                 app_version=__version__,
                 input_sha256=ctx.input_sha256,
@@ -108,6 +111,7 @@ def _classify(
     counts = {name: 0 for name, _rule in _BANDS}
     records: list[dict[str, object]] = []
     critical = 0
+    skipped = False
     path_column = None
     if "TASK.float_path" not in schedule.absent_columns and "TASK" not in schedule.absent_tables:
         path_column = "float_path"
@@ -122,6 +126,7 @@ def _classify(
     for activity in schedule.activities:
         days = _float_days(activity, schedule, profile.hours_per_day)
         if days is None:
+            skipped = True
             continue
         band = next(name for name, rule in _BANDS if rule(days))
         counts[band] += 1
@@ -137,6 +142,10 @@ def _classify(
                 "critical": is_critical,
                 "path": _stored_path(activity, path_column),
             }
+        )
+    if skipped:
+        approximations.append(
+            "Hay actividades sin holgura total o sin horas por día. No entran a las bandas."
         )
     frame = pd.DataFrame(records)
     return frame, counts, critical

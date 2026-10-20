@@ -82,11 +82,11 @@ Elecciones de producto, no campos del XER.
 - `corporativo`: lags máximo 10 %, holgura alta 60 días y máximo 10 %, FS mínimo 85 %, convergencia 5.
 - `contratista`: conjunto duro solo `CS_MANDSTART` y `CS_MANDFIN`. Lags máximo 15 %, FS mínimo 80 %, duración alta 60 días, lógica máxima 10 %, CPLI y BEI mínimo 0,90, missed máximo 10 %, convergencia 6.
 
-`hours_per_day` del archivo es nulo. Un argumento del módulo puede pisarlo. Si falta el YAML, se usa el perfil de código y queda una nota.
+`hours_per_day` del archivo es nulo. Si el llamado trae `hours_per_day`, reemplaza el del perfil y el resultado lo anota. Si falta el YAML, se usa el perfil de código y queda una nota.
 
 ## Prueba de ruta (DCMA 12)
 
-La fase 2 la calcula en el modo B. Elige la actividad crítica de menor `task_code` con duración remanente, le suma 8 horas y vuelve a programar. Cumple si el término del proyecto se mueve exactamente 8 horas laborales del calendario de esa actividad. Si no hay crítica con duración, o el motor no tiene término, queda `no_evaluable`.
+La fase 2 la calcula en el modo B. Elige la actividad crítica de menor `task_code` con duración remanente, le suma 8 horas y vuelve a programar. Cumple si el término del proyecto se mueve exactamente 8 horas laborales del calendario de esa actividad. Si no hay crítica con duración, o el motor no tiene término, queda `no_evaluable`. El resultado siempre anota esa sonda de 8 horas.
 
 ## Modo B, redundancia y limpieza
 
@@ -98,7 +98,7 @@ La limpieza borra únicamente las filas `TASKPRED` confirmadas. El resto del arc
 
 ## Modo A de la ruta
 
-No recalcula CPM. Bandas de holgura total guardada, en días: ≤ 0, 0–10, 10–20, 20–44, > 44. Crítica si los días son ≤ `critical_float_days` (0). Una actividad sin holgura convertible no entra. Los vínculos driving no se marcan: no hay un campo citado de holgura libre del vínculo.
+No recalcula CPM. Bandas de holgura total guardada, en días: ≤ 0, 0–10, 10–20, 20–44, > 44. Crítica si los días son ≤ `critical_float_days` (0). Una actividad sin holgura total o sin horas por día no entra a las bandas, y el resultado lo anota. Los vínculos driving no se marcan: no hay un campo citado de holgura libre del vínculo.
 
 ## Riesgo (M5)
 
@@ -108,7 +108,7 @@ Los rangos mínimo / más probable / máximo, la distribución, la correlación 
 - Triangular, uniforme y BetaPERT. BetaPERT: α = 1 + 4 × (probable − mínimo) / (máximo − mínimo), β = 1 + 4 × (máximo − probable) / (máximo − mínimo).
 - Iman-Conover solo si se pide correlación y hay al menos dos rangos con ancho. Si la matriz no admite Cholesky, se omite y queda anotado. A la diagonal se le suma 1e-8. Correlación 1 o −1 copia el orden de rangos.
 - Un evento suma horas de impacto al remanente cuando sale su probabilidad. Probabilidad 0 no suma. Probabilidad 1 suma en cada iteración.
-- P50, P80 y P90 son el percentil empírico del término: el menor valor cuya fracción acumulada alcanza el percentil. Si todos los términos son iguales, los tres coinciden.
+- P50, P80 y P90 usan el índice `ceil(p * n) - 1` sobre las fechas ordenadas. Si todos los términos son iguales, los tres coinciden.
 - Criticidad: fracción de iteraciones en que la actividad queda crítica.
 - SSI = criticidad × σ de la duración / σ del término, en horas laborales. Si σ del término es 0, SSI, crucialidad (Pearson) y Spearman quedan `no_evaluable`.
 - El tornado suma las horas pedidas a la duración remanente de una actividad y mide cuánto se mueve el término, en el calendario de esa actividad.
@@ -123,7 +123,7 @@ Códigos `CP_Phys`, `CP_Drtn` y `CP_Units`: vistos en XER públicos, sin confirm
 - `CP_Units`: `no_evaluable`. No hay un campo de cantidad real cargado.
 - BAC = suma de `target_cost`. AC = suma de `act_reg_cost`. Si todos los reales vienen vacíos, AC y CPI quedan `no_evaluable`.
 - EV = porcentaje × BAC, acotado a BAC.
-- PV lineal entre `target_start_date` y `target_end_date` hasta la fecha de corte, en tiempo laboral del calendario de la actividad. Sin calendario usable, el PV usa tiempo de reloj y lo anota. No hay curva de recurso.
+- PV lineal entre `target_start_date` y `target_end_date` hasta la fecha de corte, en tiempo laboral del calendario de la actividad. Sin calendario usable, el PV usa tiempo de reloj y lo anota. No hay curva de recurso. La tabla `scurve` tiene un solo punto, en la fecha de corte.
 - SPI = EV / PV solo si PV > 0. CPI = EV / AC solo si AC > 0.
 - Earned Schedule, con PV lineal: PD es el tiempo laboral entre el inicio baseline más temprano y el fin baseline más tardío de las actividades con BAC. ES = (mín(EV, BAC) / BAC) × PD. AT es el tiempo laboral desde ese inicio hasta la fecha de corte. SPI(t) = ES / AT. IEAC(t) = PD / SPI(t).
 - El histograma de recursos suma `target_qty` por `rsrc_id`. El tope contra `RSRCRATE` queda `no_evaluable`: no hay un campo citado de límite.

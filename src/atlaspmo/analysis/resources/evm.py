@@ -25,6 +25,7 @@ _ES = "Earned Schedule asume PV lineal: ES = (EV/BAC) × PD, SPI(t) = ES/AT, IEA
 _PHYS = "CP_Phys mayor que 1 se lee como porcentaje de 0 a 100."
 _UNITS = "CP_Units queda no evaluable: no hay un campo de cantidad real cargado."
 _CLOCK = "Sin calendario laboral: el PV usa tiempo de reloj."
+_CURVE = "La tabla scurve tiene un solo punto, en la fecha de corte."
 
 
 @dataclass(frozen=True)
@@ -47,7 +48,7 @@ class EvmOutcome:
 
 def earned_value(schedule: Schedule) -> EvmOutcome:
     """PV, EV and AC at the single data date, plus linear earned schedule."""
-    notes = [_CODES, _LINEAR, _LIMIT, _ES]
+    notes = [_CODES, _LINEAR, _LIMIT, _ES, _CURVE, *schedule.parse_notes]
     clocks, clock_notes = build_clocks(schedule)
     notes.extend(clock_notes)
     data_date, date_note = _data_date(schedule)

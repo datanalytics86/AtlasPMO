@@ -28,6 +28,8 @@ class QualityModule:
         chosen = config if isinstance(config, QualityConfig) else QualityConfig()
         profile, note = load_profile(chosen.profile, chosen.hours_per_day)
         approximations = [note] if note else []
+        if chosen.hours_per_day is not None:
+            approximations.append("hours_per_day del llamado reemplaza el del perfil.")
         if ctx.schedule is None:
             from atlaspmo.analysis.contract import empty_findings
 
@@ -51,7 +53,7 @@ class QualityModule:
             metrics=metrics,
             findings=findings,
             tables={},
-            approximations=approximations,
+            approximations=list(dict.fromkeys(approximations)),
             metadata=RunMetadata(
                 app_version=__version__,
                 input_sha256=ctx.input_sha256,
