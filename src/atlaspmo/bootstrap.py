@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from atlaspmo.analysis.compare.module import CompareModule
 from atlaspmo.analysis.logic.clean import CleanModule
 from atlaspmo.analysis.logic.module import LogicModule
 from atlaspmo.analysis.paths.mode_a import PathsModeA
@@ -28,3 +29,5 @@ def bootstrap() -> None:
         register_module(RiskModule())
     if "evm" not in known:
         register_module(EvmModule())
+    if "compare" not in known:
+        register_module(CompareModule())

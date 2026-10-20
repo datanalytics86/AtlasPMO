@@ -90,6 +90,27 @@ Traducción explícita, no leída de un XER:
 
 `PlannedDuration`, `RemainingDuration`, `TotalFloat` y `Lag` se leen como horas en punto flotante, sin conversión de unidad. Es un supuesto.
 
+## MSPDI
+
+Leído con el esquema público de Microsoft Project XML (`http://schemas.microsoft.com/project`), sin un export de Nicolás.
+
+- `StatusDate` es la fecha de corte. Si falta, queda vacía.
+- `UID` 0 es la tarea resumen del proyecto y se omite.
+- No hay `task_code`. Se usa `WBS` y, si falta, el `UID`.
+- `Duration` y `RemainingDuration` son duraciones ISO de reloj. `P1D` vale 24 horas, no un día laboral.
+- `PredecessorLink/Type`: 0 FF, 1 FS, 2 SF, 3 SS (Microsoft Learn, elemento Type).
+- `LinkLag` está en décimas de minuto. Se divide por 600 para pasarlo a horas.
+- `PercentComplete` 0, intermedio y 100 se traducen a `TK_NotStart`, `TK_Active` y `TK_Complete`.
+- `Milestone` se guarda como `TT_Mile`. El esquema no separa hito de inicio y de fin.
+- `Summary` se guarda como `TT_WBS`.
+- Sin `BaselineStart`, `Start` se copia también a la fecha baseline y queda anotado.
+- `TotalSlack`, `ConstraintType` y los calendarios no se traducen en esta fase.
+- `proj_id` queda en `1`.
+
+## .mpp
+
+El extra `[mpp]` declara `mpxj`. En esta máquina no hay Java en el PATH, así que el lector no abre el archivo y explica por qué. El paquete no queda instalado en el entorno por defecto.
+
 ## Tablas que el megaprompt nombra y esta fase no modela
 
 `RSRC`, `RSRCRATE`, `ACTVTYPE`, `ACTVCODE`, `UDFTYPE`, `UDFVALUE` y la tabla de curvas de recurso. El nombre de esa última tabla no tiene evidencia. El lector genérico conserva sus líneas para el round-trip. El tope de recurso no se evalúa: no hay un campo citado de límite en `RSRCRATE`.

@@ -1,0 +1,23 @@
+table dim_project
+	lineageTag: 53932627-f0e0-5784-81f9-cb43ae8c408b
+
+	column project_id
+		dataType: string
+		lineageTag: ca5e010b-5bcd-5ca8-808a-1bc7a5ec6c62
+		sourceColumn: project_id
+		summarizeBy: none
+
+	column proj_short_name
+		dataType: string
+		lineageTag: 599ea66f-9612-5422-a0c8-b835fbba9ffa
+		sourceColumn: proj_short_name
+		summarizeBy: none
+
+	partition dim_project = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "dim_project.parquet"))
+				in
+				    Datos

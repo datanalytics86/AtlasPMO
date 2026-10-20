@@ -74,6 +74,7 @@ class AnalysisContext:
     """Inputs for a module run. The schedule is optional so the registry tests stay valid."""
 
     schedule: Schedule | None = None
+    other: Schedule | None = None
     document: XerFile | None = None
     input_sha256: str | None = None
     input_name: str | None = None

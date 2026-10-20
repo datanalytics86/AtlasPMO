@@ -93,6 +93,15 @@ Los nombres leídos están en `docs/XER_SPEC.md`, con la marca de que no hay un 
 - `CP_Phys` mayor que 1 se interpreta como porcentaje 0–100. Es un supuesto y queda anotado.
 - La semilla va en `RunMetadata.seed` y en la clave `seeds` del manifiesto.
 
+## ADR-008 — Integración de la fase 4
+
+- MSPDI se lee con los elementos citados en `XER_SPEC.md`. No se inventan códigos `CS_*` desde `ConstraintType`.
+- DuckDB 1.5.6 entró desde el wheel `cp312-win_amd64`. El Parquet lo escribe DuckDB. No se agregó pyarrow.
+- La biblioteca guarda corridas, métricas y hallazgos. Las actividades solo entran si `store_schedule` es verdadero.
+- `fact_timephased` se escribe vacío. No hay curva de recurso que repartir.
+- El extra `[mpp]` queda en el lock como `mpxj` 16.10.0 (wheel puro). `uv sync` sin el extra no lo instala. Sin Java, `read_mpp` no abre el archivo.
+- El PBIP sigue el formato de Microsoft Learn revisado el 2026-10-20: `definition.pbism` 4.2, TMDL en `definition/`, y el `.pbip` apunta al reporte. No se abrió en Power BI Desktop.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

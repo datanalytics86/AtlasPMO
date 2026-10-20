@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "AtlasPMO"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "1e3b360b-184a-5ed9-9cac-a99402c3d814"
+  }
+}

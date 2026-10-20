@@ -107,6 +107,30 @@ Encima de la fase 2. Sin push.
 
 - El EVM contra un caso real y el tiempo de Monte Carlo de la sección 11 quedan para la iteración con Nicolás.
 
+## Fase 4 — en `fase-4`
+
+Encima de la fase 3. Sin push.
+
+### Entregado
+
+- Lector MSPDI con fixture `tests/fixtures/synthetic/mspdi/chain.xml`.
+- Comparación de updates por `task_code`, lote con ranking en Excel, biblioteca DuckDB y Parquet en esquema estrella.
+- PBIP mínimo en `powerbi/`, con parámetro `ParquetFolder`.
+- Extra `[mpp]` declarado. No se ejecuta: no hay Java.
+
+### Evidencia (2026-10-20)
+
+- `py -3.12 -m uv run python -m pytest -q --tb=short` — 81 passed in 2.43s.
+- `py -3.12 -m uv run python -m ruff check .` — All checks passed.
+- `py -3.12 -m uv run python -m mypy src` — Success: no issues found in 56 source files.
+- `duckdb` 1.5.6 quedó instalado desde el wheel `cp312-win_amd64`. `mpxj` no queda en el entorno por defecto.
+- El PBIP no se abrió en Power BI Desktop.
+
+### Abierto
+
+- Nicolás abre el PBIP y refresca el modelo.
+- La lectura `.mpp` espera Java y el extra `[mpp]`.
+
 ## Siguiente
 
-Fase 4: MSPDI, comparación de updates, lote, biblioteca y PBIP.
+Fase 5: manual, instalación en un paso y cierre del estado.

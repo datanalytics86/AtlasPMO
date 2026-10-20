@@ -1,0 +1,38 @@
+table dim_run
+	lineageTag: b51257c8-484e-5407-9cbd-c2fa20da7710
+
+	column run_id
+		dataType: string
+		lineageTag: b9d1d060-dda8-5acf-88c8-faad45908f56
+		sourceColumn: run_id
+		summarizeBy: none
+
+	column seed
+		dataType: double
+		lineageTag: 42b09a73-37af-587f-9c65-95e55c2b7ee1
+		sourceColumn: seed
+		summarizeBy: none
+
+	column quality_index
+		dataType: double
+		lineageTag: 41934f8c-1345-59e1-aaf2-55680d5a4f48
+		sourceColumn: quality_index
+		summarizeBy: none
+
+	column input_name
+		dataType: string
+		lineageTag: c28f07bb-a4c4-5ef6-90f8-1488387c2458
+		sourceColumn: input_name
+		summarizeBy: none
+
+	measure IndicePromedio = AVERAGE(dim_run[quality_index])
+		formatString: #,0
+
+	partition dim_run = m
+		mode: import
+		source =
+				let
+				    Carpeta = ParquetFolder,
+				    Datos = Parquet.Document(File.Contents(Carpeta & "\\" & "dim_run.parquet"))
+				in
+				    Datos

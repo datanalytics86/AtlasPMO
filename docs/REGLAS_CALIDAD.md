@@ -127,3 +127,13 @@ Códigos `CP_Phys`, `CP_Drtn` y `CP_Units`: vistos en XER públicos, sin confirm
 - SPI = EV / PV solo si PV > 0. CPI = EV / AC solo si AC > 0.
 - Earned Schedule, con PV lineal: PD es el tiempo laboral entre el inicio baseline más temprano y el fin baseline más tardío de las actividades con BAC. ES = (mín(EV, BAC) / BAC) × PD. AT es el tiempo laboral desde ese inicio hasta la fecha de corte. SPI(t) = ES / AT. IEAC(t) = PD / SPI(t).
 - El histograma de recursos suma `target_qty` por `rsrc_id`. El tope contra `RSRCRATE` queda `no_evaluable`: no hay un campo citado de límite.
+
+## Comparación de updates (M7)
+
+Empareja por `task_code`. Otro identificador queda `no_evaluable`.
+
+- Actividades solo en el update: agregadas. Actividades que desaparecen: eliminadas. Un código repetido usa la primera copia y lo anota.
+- Un vínculo se identifica por el par de códigos. Si cambia el tipo o el lag, es modificado. Un lag vacío no se compara como cero.
+- Se comparan duración original, duración remanente, restricción, calendario y fechas reales solo cuando el campo existe en ambos lados.
+- La entrada y la salida de la ruta, y la erosión de holgura, usan la holgura total guardada. No se recalcula el CPM. Sin holgura en ambos updates, la actividad no entra a esa cuenta.
+- La tendencia de una métrica es la serie guardada en la biblioteca, en el orden de las corridas.
