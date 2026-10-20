@@ -99,3 +99,31 @@ La limpieza borra únicamente las filas `TASKPRED` confirmadas. El resto del arc
 ## Modo A de la ruta
 
 No recalcula CPM. Bandas de holgura total guardada, en días: ≤ 0, 0–10, 10–20, 20–44, > 44. Crítica si los días son ≤ `critical_float_days` (0). Una actividad sin holgura convertible no entra. Los vínculos driving no se marcan: no hay un campo citado de holgura libre del vínculo.
+
+## Riesgo (M5)
+
+Los rangos mínimo / más probable / máximo, la distribución, la correlación y los eventos son configuración del usuario. No son columnas del XER.
+
+- Ancho cero (`mínimo = probable = máximo`) devuelve el probable y no usa el generador. Sin eventos, cada iteración reproduce el CPM determinístico.
+- Triangular, uniforme y BetaPERT. BetaPERT: α = 1 + 4 × (probable − mínimo) / (máximo − mínimo), β = 1 + 4 × (máximo − probable) / (máximo − mínimo).
+- Iman-Conover solo si se pide correlación y hay al menos dos rangos con ancho. Si la matriz no admite Cholesky, se omite y queda anotado. A la diagonal se le suma 1e-8. Correlación 1 o −1 copia el orden de rangos.
+- Un evento suma horas de impacto al remanente cuando sale su probabilidad. Probabilidad 0 no suma. Probabilidad 1 suma en cada iteración.
+- P50, P80 y P90 son el percentil empírico del término: el menor valor cuya fracción acumulada alcanza el percentil. Si todos los términos son iguales, los tres coinciden.
+- Criticidad: fracción de iteraciones en que la actividad queda crítica.
+- SSI = criticidad × σ de la duración / σ del término, en horas laborales. Si σ del término es 0, SSI, crucialidad (Pearson) y Spearman quedan `no_evaluable`.
+- El tornado suma las horas pedidas a la duración remanente de una actividad y mide cuánto se mueve el término, en el calendario de esa actividad.
+- El motor es Python puro. numba no se cargó en esta fase. La semilla queda en `RunMetadata.seed` y en `run_manifest.json`.
+
+## EVM y Earned Schedule (M6)
+
+Códigos `CP_Phys`, `CP_Drtn` y `CP_Units`: vistos en XER públicos, sin confirmar en un export de Nicolás. Un código desconocido queda `no_evaluable`.
+
+- `CP_Drtn`: porcentaje = acotar(1 − remanente / original, 0, 1), si la original es mayor que 0.
+- `CP_Phys`: si `phys_complete_pct` es mayor que 1, se lee como 0–100 y se divide por 100.
+- `CP_Units`: `no_evaluable`. No hay un campo de cantidad real cargado.
+- BAC = suma de `target_cost`. AC = suma de `act_reg_cost`. Si todos los reales vienen vacíos, AC y CPI quedan `no_evaluable`.
+- EV = porcentaje × BAC, acotado a BAC.
+- PV lineal entre `target_start_date` y `target_end_date` hasta la fecha de corte, en tiempo laboral del calendario de la actividad. Sin calendario usable, el PV usa tiempo de reloj y lo anota. No hay curva de recurso.
+- SPI = EV / PV solo si PV > 0. CPI = EV / AC solo si AC > 0.
+- Earned Schedule, con PV lineal: PD es el tiempo laboral entre el inicio baseline más temprano y el fin baseline más tardío de las actividades con BAC. ES = (mín(EV, BAC) / BAC) × PD. AT es el tiempo laboral desde ese inicio hasta la fecha de corte. SPI(t) = ES / AT. IEAC(t) = PD / SPI(t).
+- El histograma de recursos suma `target_qty` por `rsrc_id`. El tope contra `RSRCRATE` queda `no_evaluable`: no hay un campo citado de límite.

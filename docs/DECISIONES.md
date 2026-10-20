@@ -83,6 +83,16 @@ Los nombres leídos están en `docs/XER_SPEC.md`, con la marca de que no hay un 
 - LOE y WBS summary se arman después del pase y no marcan la ruta crítica. `TT_Rsrc` usa el calendario de la actividad.
 - La redundancia no usa reducción transitiva ni el criterio "hoy no es driver".
 
+## ADR-007 — Riesgo y EVM de la fase 3
+
+- Los rangos, la correlación y los eventos no se leen del XER. Son argumentos del módulo.
+- Monte Carlo queda en Python puro. numba no entró: no hay una medición que justifique el extra, y la invariante de varianza cero ya corre sin él.
+- Iman-Conover suma 1e-8 a la diagonal. Si Cholesky falla, la correlación se omite y queda anotada.
+- El PV es lineal en tiempo laboral. No se inventa una curva de recurso.
+- `CP_Units` y el tope de `RSRCRATE` quedan `no_evaluable`. No se inventan esos campos.
+- `CP_Phys` mayor que 1 se interpreta como porcentaje 0–100. Es un supuesto y queda anotado.
+- La semilla va en `RunMetadata.seed` y en la clave `seeds` del manifiesto.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

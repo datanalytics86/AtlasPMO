@@ -117,6 +117,11 @@ def _data_date(schedule: Schedule, notes: list[str]) -> datetime | None:
     return next(iter(dates))
 
 
+def build_clocks(schedule: Schedule) -> tuple[dict[str, WorkCalendar], list[str]]:
+    """Calendars the engine can walk. Empty clndr_data is not invented."""
+    return _clocks(schedule)
+
+
 def _clocks(schedule: Schedule) -> tuple[dict[str, WorkCalendar], list[str]]:
     notes: list[str] = []
     parsed: dict[str, WorkCalendar] = {}

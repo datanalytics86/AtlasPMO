@@ -17,4 +17,6 @@ def test_empty_selector_is_in_spanish():
     assert "Ruta crítica (modo B)" in app.multiselect[0].options
     assert "Lógica redundante" in app.multiselect[0].options
     assert "Limpieza de XER" in app.multiselect[0].options
+    assert "Riesgo (Monte Carlo)" in app.multiselect[0].options
+    assert "EVM y Earned Schedule" in app.multiselect[0].options
     assert app.exception == []

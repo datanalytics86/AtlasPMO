@@ -71,6 +71,7 @@ No están verificados en un export. Se usan tal como los cita el megaprompt:
 - Actividades: `TT_Task`, `TT_Rsrc`, `TT_Mile`, `TT_FinMile`, `TT_LOE`, `TT_WBS`.
 - Estados: `TK_NotStart`, `TK_Active`, `TK_Complete`.
 - Restricciones: `CS_MSO`, `CS_MSOA`, `CS_MSOB`, `CS_MEO`, `CS_MEOA`, `CS_MEOB`, `CS_MANDSTART`, `CS_MANDFIN`, `CS_ALAP`.
+- Porcentaje completo, vistos en XER públicos y sin confirmar en un export de Nicolás: `CP_Phys`, `CP_Drtn`, `CP_Units`. `CP_Units` no se evalúa: no se carga una cantidad real.
 
 El conjunto duro por defecto (`CS_MSO`, `CS_MEO`, `CS_MANDSTART`, `CS_MANDFIN`) es una decisión de producto, no un campo del archivo. El perfil contratista deja solo `CS_MANDSTART` y `CS_MANDFIN`.
 
@@ -91,4 +92,4 @@ Traducción explícita, no leída de un XER:
 
 ## Tablas que el megaprompt nombra y esta fase no modela
 
-`RSRC`, `RSRCRATE`, `ACTVTYPE`, `ACTVCODE`, `UDFTYPE`, `UDFVALUE` y la tabla de curvas de recurso. El nombre de esa última tabla no tiene evidencia. El lector genérico conserva sus líneas para el round-trip.
+`RSRC`, `RSRCRATE`, `ACTVTYPE`, `ACTVCODE`, `UDFTYPE`, `UDFVALUE` y la tabla de curvas de recurso. El nombre de esa última tabla no tiene evidencia. El lector genérico conserva sus líneas para el round-trip. El tope de recurso no se evalúa: no hay un campo citado de límite en `RSRCRATE`.

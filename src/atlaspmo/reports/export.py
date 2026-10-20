@@ -105,6 +105,7 @@ def write_manifest(
         "input_name": source.name if source else None,
         "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "modules": [item.module_id for item in results],
+        "seeds": [item.metadata.seed for item in results],
         "approximations": [note for item in results for note in item.approximations],
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

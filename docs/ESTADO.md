@@ -84,6 +84,29 @@ Encima de la fase 1. Sin push.
 - `ATLASPMO_GOLDEN_DIR` no se abre ni se listan sus nombres. El 99,5 % y el delta cero dentro de P6 quedan para la iteración con Nicolás.
 - No se midió el criterio de redundancia bajo 3 minutos de la sección 11.
 
+## Fase 3 — en `fase-3`
+
+Encima de la fase 2. Sin push.
+
+### Entregado
+
+- Monte Carlo en Python puro, con semilla en el manifiesto. Distribuciones triangular, BetaPERT y uniforme. Iman-Conover solo si hay correlación y algún rango con ancho.
+- Tornado por atraso de horas, criticidad, y SSI, crucialidad y Spearman cuando hay varianza.
+- EVM y Earned Schedule con los campos ya cargados. El tope de recurso queda `no_evaluable`.
+
+### Evidencia (2026-10-20)
+
+- `py -3.12 -m uv run python -m pytest -q --tb=line` — 73 passed in 3.61s.
+- `py -3.12 -m uv run python -m ruff check .` — All checks passed.
+- `py -3.12 -m uv run python -m mypy src` — Success: no issues found in 48 source files.
+- La invariante de varianza cero está en `test_zero_variance_reproduces_the_cpm`: cinco iteraciones terminan el mismo miércoles 16:00 que el CPM, y la criticidad es 1 en las dos actividades de la cadena.
+- El EVM a mano está en `test_hand_evm_and_earned_schedule`: PV 50, EV 50, AC 40, SPI 1, CPI 1,25, ES 8 h, AT 8 h, SPI(t) 1, IEAC(t) 16. No se contrastó con P6.
+- numba no se cargó. No se midió el criterio de 30 000 actividades por 1 000 iteraciones bajo 5 minutos.
+
+### Abierto
+
+- El EVM contra un caso real y el tiempo de Monte Carlo de la sección 11 quedan para la iteración con Nicolás.
+
 ## Siguiente
 
-Fase 3: riesgo y EVM, con la invariante de varianza cero.
+Fase 4: MSPDI, comparación de updates, lote, biblioteca y PBIP.
