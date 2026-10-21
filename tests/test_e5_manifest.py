@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from atlaspmo.analysis.contract import AnalysisContext
+from atlaspmo.bootstrap import bootstrap
 from atlaspmo.io.load import schedule_from_xer
 from atlaspmo.io.xer import read_xer
 from atlaspmo.reports.export import excel_bytes, write_manifest
@@ -16,6 +17,7 @@ FIXTURE = ROOT / "tests" / "fixtures" / "synthetic" / "minimal.xer"
 
 
 def test_manifest_leaves_the_input_bytes_unchanged(tmp_path: Path) -> None:
+    bootstrap()
     source = tmp_path / "in.xer"
     source.write_bytes(FIXTURE.read_bytes())
     before = source.read_bytes()
