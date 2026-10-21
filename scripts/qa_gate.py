@@ -165,7 +165,73 @@ def check_g3(root: Path) -> Control:
     return Control("G3", "pass", "\n".join(notes))
 
 
+_STRICT_LINES = 90.0
+_STRICT_BRANCHES = 85.0
+_REST_LINES = 80.0
+_STRICT_BUCKETS = {"model", "calendars", "engine", "logic"}
+
+
+def _coverage_bucket(path: str) -> str:
+    rel = path.replace("\\", "/")
+    marker = "atlaspmo/"
+    if marker not in rel:
+        return "resto"
+    tail = rel.split(marker, 1)[1]
+    if tail.startswith("analysis/logic/"):
+        return "logic"
+    top = tail.split("/", 1)[0]
+    if top in {"model", "calendars", "engine"}:
+        return top
+    return "resto"
+
+
+def _pct(missing: int, total: int) -> float:
+    if total == 0:
+        return 100.0
+    return 100.0 * (total - missing) / total
+
+
+def judge_coverage(data: dict[str, object]) -> Control:
+    """Apply section 8.1 to a coverage JSON payload. Never invents a pass."""
+    files = data.get("files")
+    if not isinstance(files, dict) or not files:
+        return Control("G4", "fail", "sin archivos medidos")
+    totals: dict[str, list[int]] = {}
+    for name, info in files.items():
+        if not isinstance(info, dict):
+            continue
+        summary = info.get("summary")
+        if not isinstance(summary, dict):
+            continue
+        bucket = _coverage_bucket(str(name))
+        slot = totals.setdefault(bucket, [0, 0, 0, 0])
+        slot[0] += int(summary.get("num_statements", 0))
+        slot[1] += int(summary.get("missing_lines", 0))
+        slot[2] += int(summary.get("num_branches", 0))
+        slot[3] += int(summary.get("missing_branches", 0))
+    if not totals:
+        return Control("G4", "fail", "sin archivos medidos")
+    problems: list[str] = []
+    notes: list[str] = []
+    for bucket, (stmts, miss, branches, bmiss) in sorted(totals.items()):
+        lines = _pct(miss, stmts)
+        branch = _pct(bmiss, branches)
+        notes.append(f"{bucket} lineas {lines:.1f}% ramas {branch:.1f}%")
+        if bucket in _STRICT_BUCKETS:
+            if lines < _STRICT_LINES:
+                problems.append(f"{bucket} lineas {lines:.1f} < {_STRICT_LINES:.0f}")
+            if branches and branch < _STRICT_BRANCHES:
+                problems.append(f"{bucket} ramas {branch:.1f} < {_STRICT_BRANCHES:.0f}")
+        elif lines < _REST_LINES:
+            problems.append(f"{bucket} lineas {lines:.1f} < {_REST_LINES:.0f}")
+    detail = "; ".join(notes)
+    if problems:
+        return Control("G4", "fail", "; ".join(problems) + " | " + detail)
+    return Control("G4", "pass", detail)
+
+
 def check_g4(root: Path) -> Control:
+    report = root / "coverage-gate.json"
     proc = _run(
         [
             sys.executable,
@@ -175,18 +241,23 @@ def check_g4(root: Path) -> Control:
             "--cov=src/atlaspmo",
             "--cov-branch",
             "--cov-report=term-missing",
+            f"--cov-report=json:{report.name}",
         ],
         root,
     )
     text = proc.stdout + proc.stderr
-    if proc.returncode != 0:
-        return Control("G4", "fail", text[-1500:])
-    return Control(
-        "G4",
-        "linea_base",
-        "Cobertura medida. El umbral de la seccion 8.1 no se declara cumplido en E0. "
-        + text[-800:],
-    )
+    try:
+        if proc.returncode != 0:
+            return Control("G4", "fail", text[-1500:])
+        if not report.is_file():
+            return Control("G4", "fail", "pytest en verde sin coverage-gate.json")
+        judged = judge_coverage(json.loads(report.read_text(encoding="utf-8")))
+        return Control("G4", judged.status, judged.detail + " | " + text[-400:])
+    finally:
+        report.unlink(missing_ok=True)
+        dot = root / ".coverage"
+        if dot.is_file():
+            dot.unlink()
 
 
 def check_g5(root: Path) -> Control:
@@ -356,6 +427,12 @@ def check_g9(root: Path) -> Control:
     return Control("G9", "pass", "tablas y campos literales de src/ estan en XER_SPEC.md")
 
 
+def _cited_test_files(line: str) -> list[str]:
+    parts = [part.strip() for part in line.split("|")]
+    cell = parts[4] if len(parts) > 4 else ""
+    return re.findall(r"tests/[A-Za-z0-9_./-]+\.py", cell)
+
+
 def check_g10(root: Path, etapa: str) -> Control:
     path = root / "docs" / "qa" / "TRAZABILIDAD.md"
     if not path.is_file():
@@ -367,11 +444,23 @@ def check_g10(root: Path, etapa: str) -> Control:
     ]
     if not rows:
         return Control("G10", "fail", f"sin requisitos de {etapa}")
-    open_rows = [line.split("|")[1].strip() for line in rows if "tests/" not in line]
-    if open_rows:
-        return Control("G10", "fail", "sin test planificado: " + ", ".join(open_rows[:20]))
+    missing: list[str] = []
+    for line in rows:
+        cited = _cited_test_files(line)
+        ident = line.split("|")[1].strip()
+        if not cited:
+            missing.append(f"{ident} sin archivo de test")
+            continue
+        for rel in cited:
+            if not (root / rel).is_file():
+                missing.append(f"{ident} {rel}")
+    if missing:
+        return Control("G10", "fail", "test inexistente: " + ", ".join(missing[:20]))
     return Control(
-        "G10", "linea_base", f"{len(rows)} requisitos de {etapa}; el verde se exige desde E1"
+        "G10",
+        "pass",
+        f"{len(rows)} requisitos de {etapa} citan un archivo de test que existe. "
+        "El verde de la suite lo mide G3.",
     )
 
 
@@ -446,9 +535,21 @@ def check_g13(root: Path, etapa: str) -> Control:
     if not report.is_file():
         return Control("G13", "fail", "no medido: falta el informe de qa-sabotaje")
     text = report.read_text(encoding="utf-8")
-    if "kill_score" not in text:
-        return Control("G13", "fail", "el informe no trae kill_score")
-    return Control("G13", "pass", text[-500:])
+    scope = re.search(r"alcance:\s*(\w+)", text)
+    score = re.search(r"kill_score:\s*([0-9]+(?:\.[0-9]+)?)", text)
+    if scope is None or scope.group(1) != "completo" or score is None:
+        return Control("G13", "fail", "no medido: el informe no es una corrida completa")
+    value = float(score.group(1))
+    problems: list[str] = []
+    if value < 70:
+        problems.append(f"kill_score {value:.1f} < 70")
+    for name, minimum in (("engine", 85), ("calendars", 85), ("logic", 85)):
+        found = re.search(rf"^{name}:\s*([0-9]+(?:\.[0-9]+)?)", text, re.MULTILINE)
+        if found and float(found.group(1)) < minimum:
+            problems.append(f"{name} {found.group(1)} < {minimum}")
+    if problems:
+        return Control("G13", "fail", "; ".join(problems))
+    return Control("G13", "pass", f"kill_score {value:.1f} alcance completo")
 
 
 def run_gate(etapa: str, root: Path | None = None, base: str = "HEAD") -> tuple[list[Control], int]:
@@ -490,6 +591,7 @@ def write_report(etapa: str, controls: list[Control], code: int, root: Path) -> 
     payload = {
         "etapa": etapa,
         "exit_code": code,
+        "test_count": max((_passed_count(item.detail) for item in controls), default=0),
         "controls": [
             {"id": item.id, "status": item.status, "detail": _redact(item.detail)}
             for item in controls

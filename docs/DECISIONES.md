@@ -136,6 +136,16 @@ G9 mira tablas P6 en todo `src/` y literales con forma de columna solo en `io/`,
 
 Los tests marcados `perf` no entran en `addopts`. No son `skip` ni `xfail`: G6 los ejecuta con `pytest -m perf`. Deseleccionarlos no relaja un umbral. En E0 todavía no hay `tests/perf`; G6 queda en línea base, no medido.
 
+## ADR-014 — Umbrales reales del gate, sin declararlos cumplidos en E0
+
+El ciclo 1 de E0 rechazó la etapa porque los tests del gate no cubrían G1–G13 y porque G4 no aplicaba el umbral de la sección 8.1. Este ADR precisa ADR-011.
+
+- G4 lee `coverage-gate.json` y aplica 90 % de líneas y 85 % de ramas en `model`, `calendars`, `engine` y `analysis/logic`, y 80 % de líneas en el resto. Si no llega, el control falla. En E0 ese fallo sigue reescrito a línea base: no es un pass.
+- G10 pasa solo cuando cada fila de la etapa cita un archivo `tests/*.py` que existe. El verde de esos tests lo mide G3. Una fila de una etapa futura puede apuntar a un test que todavía no existe; eso no se declara en verde.
+- G13 pasa solo con `alcance: completo` y `kill_score` de al menos 70, y 85 en `engine`, `calendars` o `logic` si el informe los trae. Una muestra (`alcance: muestra`) no pasa.
+- `gate.json` guarda `test_count` para G12.
+- La herramienta de mutación de esta corrida es `scripts/qa_sabotage.py`. No se instaló un mutador de terceros.
+
 ## ADR-013 — Esta corrida no se detiene en el tercer rechazo
 
 Nicolás pidió, el 2026-10-21, que una etapa que siga RECHAZADA tras 3 ciclos se registre como RECHAZADA-BLOQUEADA y que la corrida continúe. No se marca APROBADO. Las etapas que dependan de ella quedan condicionales. Esto precisa la sección 0.3 punto 4 para esta corrida.
