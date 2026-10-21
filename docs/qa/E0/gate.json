@@ -1,0 +1,71 @@
+{
+  "etapa": "E0",
+  "exit_code": 0,
+  "controls": [
+    {
+      "id": "G1",
+      "status": "pass",
+      "detail": "ruff check y ruff format --check en verde"
+    },
+    {
+      "id": "G2",
+      "status": "pass",
+      "detail": "mypy src sin errores"
+    },
+    {
+      "id": "G3",
+      "status": "pass",
+      "detail": "python -m pytest exit 0\nuv run pytest no arranca aqui (ADR-004); corrio python -m pytest"
+    },
+    {
+      "id": "G4",
+      "status": "linea_base",
+      "detail": "Cobertura medida. El umbral de la seccion 8.1 no se declara cumplido en E0. 35\nsrc\\atlaspmo\\reports\\gantt.py                    17      2      6      2    83%   13, 19\nsrc\\atlaspmo\\reports\\parquet_star.py             50      3     18      3    88%   105->103, 112, 129-130\nsrc\\atlaspmo\\reports\\pbip.py                     55      0     10      0   100%\nsrc\\atlaspmo\\runner.py                           14      0      4      1    94%   22->24\nsrc\\atlaspmo\\ui\\__init__.py                       0      0      0      0   100%\nsrc\\atlaspmo\\ui\\app.py                           12      1      2      1    86%   18\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          3618    451   1376    329    83%\n93 passed in 6.11s\n"
+    },
+    {
+      "id": "G5",
+      "status": "linea_base",
+      "detail": "no existe tests/property"
+    },
+    {
+      "id": "G6",
+      "status": "linea_base",
+      "detail": "no medido: no hay tests/perf"
+    },
+    {
+      "id": "G7",
+      "status": "pass",
+      "detail": "no hay skip ni xfail"
+    },
+    {
+      "id": "G8",
+      "status": "pass",
+      "detail": "sin cronogramas fuera de fixtures, sin rutas de perfil, sin red"
+    },
+    {
+      "id": "G9",
+      "status": "pass",
+      "detail": "tablas y campos literales de src/ estan en XER_SPEC.md"
+    },
+    {
+      "id": "G10",
+      "status": "linea_base",
+      "detail": "8 requisitos de E0; el verde se exige desde E1"
+    },
+    {
+      "id": "G11",
+      "status": "pass",
+      "detail": "cambios protegidos citan un ADR"
+    },
+    {
+      "id": "G12",
+      "status": "pass",
+      "detail": "sin etapa anterior; no hay regresion que medir"
+    },
+    {
+      "id": "G13",
+      "status": "linea_base",
+      "detail": "no medido: falta el informe de qa-sabotaje"
+    }
+  ]
+}
