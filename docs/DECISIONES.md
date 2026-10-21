@@ -160,6 +160,14 @@ El ciclo 1 de E0 rechazó la etapa porque los tests del gate no cubrían G1–G1
 
 Nicolás pidió, el 2026-10-21, que una etapa que siga RECHAZADA tras 3 ciclos se registre como RECHAZADA-BLOQUEADA y que la corrida continúe. No se marca APROBADO. Las etapas que dependan de ella quedan condicionales. Esto precisa la sección 0.3 punto 4 para esta corrida.
 
+## ADR-016 — Confirmación conjunta y XER que no se entrega si el delta no es cero
+
+G5 exige las invariantes b, c y d para cerrar cualquier etapa, incluida E1. El código de `redundant.py::_confirm` unía subconjuntos que pasaban por separado. Dos vínculos pueden ser redundantes solo el uno por el otro. Desde esta corrida el conjunto final se acepta solo si, quitado entero, el CPM no cambia y ningún inicio o fin se queda sin vínculo.
+
+`clean_document` devuelve el documento original cuando el CPM del archivo ya recortado no coincide. El módulo anota que no se escribió. La lista de hitos contractuales entra vacía: un hito no queda protegido solo por ser hito. La identificación por UDF no se lee: no hay columna UDF verificada.
+
+Esto no relaja G5 ni G13. El filtro de candidatos sigue recorriendo el grafo por vínculo. El benchmark de 30k de redundancia queda para E2. B-02 no está cerrado.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

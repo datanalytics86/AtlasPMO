@@ -47,6 +47,13 @@ class CleanModule:
             return _empty(["Hace falta el cronograma y el XER original."], ctx)
         cleaned, before, after, removed = clean_document(ctx.document, ctx.schedule, options)
         same = _same_result(before, after)
+        notes = [
+            *ctx.schedule.parse_notes,
+            *before.approximations,
+            f"bytes={len(cleaned.to_bytes())}",
+        ]
+        if not same:
+            notes.append("No se escribió el XER: el delta de fechas u holgura no es cero.")
         return ModuleResult(
             module_id=self.id,
             metrics={
@@ -59,15 +66,7 @@ class CleanModule:
             },
             findings=empty_findings(),
             tables={},
-            approximations=list(
-                dict.fromkeys(
-                    [
-                        *ctx.schedule.parse_notes,
-                        *before.approximations,
-                        f"bytes={len(cleaned.to_bytes())}",
-                    ]
-                )
-            ),
+            approximations=list(dict.fromkeys(notes)),
             metadata=RunMetadata(app_version=__version__, input_sha256=ctx.input_sha256),
         )
 
@@ -88,6 +87,8 @@ def clean_document(
     }
     cleaned = document.drop_rows("TASKPRED", indexes)
     after = schedule_cpm(schedule_from_xer(cleaned), chosen)
+    if not _same_result(before, after):
+        return document, before, after, 0
     return cleaned, before, after, len(indexes)
 
 

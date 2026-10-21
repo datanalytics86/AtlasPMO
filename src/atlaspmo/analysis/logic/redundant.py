@@ -21,11 +21,17 @@ class LinkClass:
 def classify_links(
     schedule: Schedule,
     options: EngineOptions | None = None,
+    contractual_codes: frozenset[str] | None = None,
 ) -> tuple[tuple[LinkClass, ...], CpmResult]:
-    """Return one class per relationship and the CPM of the original file."""
+    """Return one class per relationship and the CPM of the original file.
+
+    ``contractual_codes`` lists activity codes whose links stay. An empty
+    set does not protect every milestone. UDF identification is not read:
+    no verified UDF column is wired, so the list is the supported path.
+    """
     chosen = options or EngineOptions()
     base = schedule_cpm(schedule, chosen)
-    protected = _protected(schedule)
+    protected = _protected(schedule, contractual_codes or frozenset())
     classes: list[LinkClass] = []
     candidates: list[Relationship] = []
     for link in schedule.relationships:
@@ -62,7 +68,7 @@ def classify_links(
     return tuple(classes), base
 
 
-def _protected(schedule: Schedule) -> dict[str, str]:
+def _protected(schedule: Schedule, contractual_codes: frozenset[str]) -> dict[str, str]:
     by_id = {item.task_id: item for item in schedule.activities if item.task_id}
     pair_kinds: dict[frozenset[str], set[str]] = {}
     for link in schedule.relationships:
@@ -80,8 +86,8 @@ def _protected(schedule: Schedule) -> dict[str, str]:
         if pred and succ and pred.proj_id and succ.proj_id and pred.proj_id != succ.proj_id:
             reasons[identity] = "Vínculo entre proyectos."
             continue
-        if _milestone(pred) or _milestone(succ):
-            reasons[identity] = "Entra o sale de un hito."
+        if _listed(pred, contractual_codes) or _listed(succ, contractual_codes):
+            reasons[identity] = "Entra o sale de un hito contractual."
             continue
         kinds = pair_kinds.get(frozenset({link.pred_task_id or "", link.task_id or ""}), set())
         if "PR_SS" in kinds and "PR_FF" in kinds:
@@ -89,8 +95,8 @@ def _protected(schedule: Schedule) -> dict[str, str]:
     return reasons
 
 
-def _milestone(activity: Activity | None) -> bool:
-    return activity is not None and activity.task_type in _MILESTONE
+def _listed(activity: Activity | None, codes: frozenset[str]) -> bool:
+    return activity is not None and activity.task_code in codes
 
 
 def _is_candidate(schedule: Schedule, link: Relationship) -> bool:
@@ -204,6 +210,11 @@ def _confirm(
     candidates: list[Relationship],
     options: EngineOptions,
 ) -> tuple[list[Relationship], list[Relationship]]:
+    """Confirm a subset that still matches the CPM when removed together.
+
+    Halves that pass on their own are not united until the whole set passes.
+    Two links can each be redundant only because the other remains.
+    """
     if not candidates:
         return [], []
     if _unchanged(schedule, base, candidates, options):
@@ -211,33 +222,31 @@ def _confirm(
     if len(candidates) == 1:
         return [], list(candidates)
     mid = len(candidates) // 2
-    left, right = candidates[:mid], candidates[mid:]
-    left_ok = _unchanged(schedule, base, left, options)
-    right_ok = _unchanged(schedule, base, right, options)
-    if left_ok and right_ok:
-        confirmed = list(left)
-        rejected: list[Relationship] = []
-        for link in right:
-            if _unchanged(schedule, base, confirmed + [link], options):
-                confirmed.append(link)
-            else:
-                rejected.append(link)
-        return confirmed, rejected
-    kept: list[Relationship] = []
-    rejected = []
-    if left_ok:
-        kept.extend(left)
-    else:
-        nested_ok, nested_bad = _confirm(schedule, base, left, options)
-        kept.extend(nested_ok)
-        rejected.extend(nested_bad)
-    if right_ok:
-        kept.extend(right)
-    else:
-        nested_ok, nested_bad = _confirm(schedule, base, right, options)
-        kept.extend(nested_ok)
-        rejected.extend(nested_bad)
-    return kept, rejected
+    left_ok, left_bad = _confirm(schedule, base, candidates[:mid], options)
+    right_ok, right_bad = _confirm(schedule, base, candidates[mid:], options)
+    return _join(schedule, base, left_ok, right_ok, left_bad + right_bad, options)
+
+
+def _join(
+    schedule: Schedule,
+    base: CpmResult,
+    left: list[Relationship],
+    right: list[Relationship],
+    rejected: list[Relationship],
+    options: EngineOptions,
+) -> tuple[list[Relationship], list[Relationship]]:
+    pooled = left + right
+    if _unchanged(schedule, base, pooled, options):
+        return pooled, rejected
+    confirmed: list[Relationship] = []
+    rest = list(rejected)
+    for link in pooled:
+        trial = [*confirmed, link]
+        if _unchanged(schedule, base, trial, options):
+            confirmed.append(link)
+        else:
+            rest.append(link)
+    return confirmed, rest
 
 
 def _unchanged(
@@ -247,6 +256,8 @@ def _unchanged(
     options: EngineOptions,
 ) -> bool:
     drop = {link.task_pred_id for link in links}
+    if not _events_stay_covered(schedule, drop):
+        return False
     reduced = replace(
         schedule,
         relationships=tuple(
@@ -255,6 +266,31 @@ def _unchanged(
     )
     again = schedule_cpm(reduced, options)
     return _same(base, again)
+
+
+def _events_stay_covered(schedule: Schedule, drop: set[str | None]) -> bool:
+    """Reject a deletion that opens a start or closes off a finish."""
+    incoming: dict[str, int] = {}
+    outgoing: dict[str, int] = {}
+    incoming_left: dict[str, int] = {}
+    outgoing_left: dict[str, int] = {}
+    for link in schedule.relationships:
+        tail, head = _ends(link)
+        if tail is None or head is None:
+            continue
+        outgoing[tail] = outgoing.get(tail, 0) + 1
+        incoming[head] = incoming.get(head, 0) + 1
+        if link.task_pred_id in drop:
+            continue
+        outgoing_left[tail] = outgoing_left.get(tail, 0) + 1
+        incoming_left[head] = incoming_left.get(head, 0) + 1
+    for event, count in incoming.items():
+        if count > 0 and incoming_left.get(event, 0) == 0:
+            return False
+    for event, count in outgoing.items():
+        if count > 0 and outgoing_left.get(event, 0) == 0:
+            return False
+    return True
 
 
 def _same(left: CpmResult, right: CpmResult) -> bool:
