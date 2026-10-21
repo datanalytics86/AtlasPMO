@@ -4,9 +4,9 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E1, ciclo 3, gate en rojo, veredicto todavía no emitido. Condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO. Sin push de cierre.
+- Etapa actual: E2, contrato en `docs/qa/E2/QC1_contrato.md`. E1 quedó RECHAZADA-BLOQUEADA en el ciclo 3 (`947cfcf`). No es APROBADO. Condicional a I-3, I-11, I-12, I-13 e I-14 parcial. E0 sigue RECHAZADA-BLOQUEADA.
 - Gate E1 ciclo 2: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 167. cobertura_total 87.9. Modelo líneas 100.0 y ramas 100.0. Siguen bajo 8.1: calendars líneas 81.6 y ramas 63.9, engine líneas 86.0 y ramas 74.8, logic líneas 87.3 y ramas 73.6. G13 sin reejecutar mutación: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. G3 es `python -m pytest`; `uv run pytest` no arranca (ADR-004).
-- Ciclo 1 RECHAZADO (`b0c5039`, veredicto `797f559`). El veredicto de trabajo sigue siendo el del ciclo 1 hasta que el revisor del ciclo 2 lo reemplace.
+- E1 ciclos: 1 RECHAZADO (`797f559`), 2 RECHAZADO (`1773c0d`), 3 bloqueado. No hay cuarto ciclo.
 - Corrección del ciclo 2, ya en `734efc9`: oráculo de un caso de CPLI en `tests/oracle/span.py` (ADR-017) y ramas de `Schedule.calendar_for` y `select`. No cierra calendarios, motor, lógica ni G13. QC-2 sigue incompleto fuera de ese caso.
 - E0 ciclos: 1 RECHAZADO (`0f26968`), 2 RECHAZADO (`ecc1e56`), 3 bloqueado (`9bcf40a`). No hay cuarto ciclo (ADR-013).
 - Hallazgo abierto de E0: I-3. R-198 no prueba que el script no abra `ATLASPMO_GOLDEN_DIR`. El script no la abre. Evidencia: `docs/qa/E0/hallazgos.md`, `docs/qa/E0/VEREDICTO.md`.
@@ -15,7 +15,7 @@ Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama
 - Lectura 30k realista: 0.197 s en `docs/qa/E1/perf.md`. Por debajo de 15 s. El resto de la sección 11 no está medido.
 - B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
 - Ciclo 3, gate sobre `1e4c8bc`: salida 1. test_count 173. cobertura_total 88.8. Calendars líneas 85.2 y ramas 70.9. Engine líneas 89.4 y ramas 79.5. Logic líneas 87.3 y ramas 73.6. G13 sin reejecutar: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. Sigue en fail. No es APROBADO.
-- Siguiente control: qa-revisor del ciclo 3. Si rechaza, el orquestador marca RECHAZADA-BLOQUEADA, hace push de `v2` y sigue con E2. Los resultados de E2 en adelante quedan condicionales a I-3, I-11, I-12, I-13 e I-14 parcial.
+- Siguiente control: filtro de candidatos de B-02 (un grafo, agrupado por origen) y la medición de 30k. B-03 y B-04 ya tienen tests. No se relajan.
 
 ### Hecho de la v1
 
