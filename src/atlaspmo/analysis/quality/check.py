@@ -12,6 +12,8 @@ import pandas as pd
 
 from atlaspmo.analysis.contract import FINDING_COLUMNS, Metric
 from atlaspmo.analysis.quality.profiles import Profile
+from atlaspmo.calendars.worktime import CalendarLimitError, WorkCalendar
+from atlaspmo.engine.cpm import build_clocks
 from atlaspmo.model.schedule import Activity, Relationship, Schedule
 
 MILESTONES = frozenset({"TT_Mile", "TT_FinMile"})
@@ -47,7 +49,7 @@ def evaluate(
         schedule, baseline, data_date, profile, findings, missed=True
     )
     metrics["bei"] = _baseline_ratio(schedule, baseline, data_date, profile, findings, missed=False)
-    metrics["cpli"] = _cpli(schedule, profile, findings)
+    metrics["cpli"] = _cpli(schedule, baseline, data_date, profile, findings, notes)
     _extras(schedule, population, profile, data_date, findings, metrics)
     _gao(schedule, metrics, findings)
     metrics["quality_index"] = _index(metrics, profile)
@@ -499,7 +501,12 @@ def _baseline_ratio(
         status = _max_status(value, limit)
         message = "Debió terminar y llegó tarde o sigue abierta."
     else:
-        completed = [item for item, _end in due if item.status_code == "TK_Complete"]
+        completed = [
+            item
+            for item in schedule.activities
+            if item.status_code == "TK_Complete"
+            and (item.act_end_date is None or item.act_end_date <= data_date)
+        ]
         value = len(completed) / len(due)
         status = _min_status(value, limit)
         if status == "no_cumple":
@@ -525,48 +532,54 @@ def _baseline_ratio(
     return Metric(value, limit, status)
 
 
-def _cpli(schedule: Schedule, profile: Profile, findings: list[dict[str, object]]) -> Metric:
-    column, order_column = _path_columns(schedule)
-    if column is None:
+def _cpli(
+    schedule: Schedule,
+    baseline: Schedule | None,
+    data_date: datetime | None,
+    profile: Profile,
+    findings: list[dict[str, object]],
+    notes: list[str],
+) -> Metric:
+    """CPLI from working time, not from the sum of remaining durations."""
+    if data_date is None:
+        return _gap(findings, "cpli", "CPLI", "DCMA", "Falta la fecha de corte.")
+    target = _target_finish(baseline) or _target_finish(schedule)
+    if target is None:
         return _gap(
             findings,
             "cpli",
             "CPLI",
             "DCMA",
-            "No está TASK.float_path ni TASK.int_path. El CPLI de la fase 1 no inventa la ruta.",
+            "Falta la fecha objetivo de término (baseline o plan del proyecto).",
         )
-    group = [item for item in schedule.activities if _path_value(item, column) == "1"]
-    if not group:
-        return _gap(findings, "cpli", "CPLI", "DCMA", "No hay actividades con ruta 1.")
-    hours = 0.0
-    for item in group:
-        if item.remain_drtn_hr_cnt is None:
-            return _gap(
-                findings, "cpli", "CPLI", "DCMA", "Hay duración remanente vacía en la ruta 1."
-            )
-        converted = _days(item.remain_drtn_hr_cnt, item, schedule, profile)
-        if converted is None:
-            return _gap(
-                findings, "cpli", "CPLI", "DCMA", "Falta day_hr_cnt para convertir la ruta 1."
-            )
-        hours += converted
-    if hours == 0:
-        return _gap(findings, "cpli", "CPLI", "DCMA", "El largo remanente de la ruta 1 es cero.")
-    finish = _path_finish(group, order_column)
-    if finish is None or finish.total_float_hr_cnt is None:
+    finish = _critical_finish(schedule)
+    if finish is None:
         return _gap(
             findings,
             "cpli",
             "CPLI",
             "DCMA",
-            "La actividad final de la ruta 1 no tiene holgura total.",
+            "No hay término pronosticado de la ruta crítica.",
         )
-    tf_days = _days(finish.total_float_hr_cnt, finish, schedule, profile)
-    if tf_days is None:
+    clocks, clock_notes = build_clocks(schedule)
+    notes.extend(note for note in clock_notes if note not in notes)
+    calendar = _one_project_calendar(schedule, clocks)
+    if calendar is None:
+        return _gap(findings, "cpli", "CPLI", "DCMA", "Falta el calendario del proyecto.")
+    try:
+        length = calendar.work_between(data_date, finish)
+        slack = calendar.work_between(finish, target)
+    except CalendarLimitError:
+        return _gap(findings, "cpli", "CPLI", "DCMA", "El calendario no cubre el CPLI.")
+    if length <= 0:
         return _gap(
-            findings, "cpli", "CPLI", "DCMA", "No se pudo convertir la holgura del fin de ruta."
+            findings,
+            "cpli",
+            "CPLI",
+            "DCMA",
+            "El largo laboral hasta el término pronosticado no es positivo.",
         )
-    value = (hours + tf_days) / hours
+    value = (length + slack) / length
     status = _min_status(value, profile.cpli_min)
     if status == "no_cumple":
         _add(
@@ -581,9 +594,47 @@ def _cpli(schedule: Schedule, profile: Profile, findings: list[dict[str, object]
             value=value,
             threshold=profile.cpli_min,
             passed=False,
-            message_es="CPLI bajo el umbral, calculado con la ruta 1 guardada.",
+            message_es="CPLI bajo el umbral, medido en tiempo laboral del calendario.",
         )
     return Metric(value, profile.cpli_min, status)
+
+
+def _one_project_calendar(
+    schedule: Schedule, clocks: dict[str, WorkCalendar]
+) -> WorkCalendar | None:
+    if len(schedule.projects) != 1:
+        return None
+    calendar_id = schedule.projects[0].clndr_id or ""
+    return clocks.get(calendar_id)
+
+
+def _target_finish(schedule: Schedule | None) -> datetime | None:
+    if schedule is None:
+        return None
+    for project in schedule.projects:
+        if project.plan_end_date is not None:
+            return project.plan_end_date
+        if project.scd_end_date is not None:
+            return project.scd_end_date
+    return None
+
+
+def _critical_finish(schedule: Schedule) -> datetime | None:
+    column, _order = _path_columns(schedule)
+    if column is not None:
+        group = [item for item in schedule.activities if _path_value(item, column) == "1"]
+    else:
+        group = []
+    if not group:
+        group = [
+            item
+            for item in schedule.activities
+            if item.total_float_hr_cnt is not None and item.total_float_hr_cnt <= 0
+        ]
+    finishes = [item.early_end_date for item in group if item.early_end_date is not None]
+    if not finishes:
+        return None
+    return max(finishes)
 
 
 def _path_columns(schedule: Schedule) -> tuple[str | None, str | None]:
