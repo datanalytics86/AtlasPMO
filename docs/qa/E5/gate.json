@@ -1,0 +1,74 @@
+{
+  "etapa": "E5",
+  "exit_code": 1,
+  "test_count": 208,
+  "coverage_percent": 89.6,
+  "benchmarks": {},
+  "controls": [
+    {
+      "id": "G1",
+      "status": "pass",
+      "detail": "ruff check y ruff format --check en verde"
+    },
+    {
+      "id": "G2",
+      "status": "pass",
+      "detail": "mypy src sin errores"
+    },
+    {
+      "id": "G3",
+      "status": "pass",
+      "detail": "python -m pytest exit 0\nuv run pytest no arranca aqui (ADR-004); corrio python -m pytest"
+    },
+    {
+      "id": "G4",
+      "status": "fail",
+      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 89.6; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.0% ramas 77.9% |                       44      1     16      2    95%   40, 65->57\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4143    430   1608    316    86%\nCoverage JSON written to file coverage-gate.json\n208 passed, 4 deselected in 21.55s\n"
+    },
+    {
+      "id": "G5",
+      "status": "pass",
+      "detail": "invariantes a-e con perfil qa"
+    },
+    {
+      "id": "G6",
+      "status": "pass",
+      "detail": "....                                                                     [100%]\n4 passed in 4.57s\n"
+    },
+    {
+      "id": "G7",
+      "status": "pass",
+      "detail": "no hay skip ni xfail"
+    },
+    {
+      "id": "G8",
+      "status": "pass",
+      "detail": "sin cronogramas fuera de fixtures, sin rutas de perfil, sin red"
+    },
+    {
+      "id": "G9",
+      "status": "pass",
+      "detail": "tablas y campos literales de src/ estan en XER_SPEC.md"
+    },
+    {
+      "id": "G10",
+      "status": "pass",
+      "detail": "5 requisitos de E5 citan un archivo de test que existe. El verde de la suite lo mide G3."
+    },
+    {
+      "id": "G11",
+      "status": "pass",
+      "detail": "cambios protegidos citan un ADR"
+    },
+    {
+      "id": "G12",
+      "status": "pass",
+      "detail": "tests 208 frente a 205"
+    },
+    {
+      "id": "G13",
+      "status": "fail",
+      "detail": "no medido: falta el informe de qa-sabotaje"
+    }
+  ]
+}
