@@ -14,7 +14,8 @@ Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama
 - E1 integrado en local: `366209b` (xer-io) y `3ddbddd` (motor-cpm). QC-1 está en `docs/qa/E1/QC1_contrato.md` y es posterior al código (I-13).
 - Lectura 30k realista: 0.197 s en `docs/qa/E1/perf.md`. Por debajo de 15 s. El resto de la sección 11 no está medido.
 - B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
-- Siguiente control: corrección acotada del ciclo 3 (ramas de calendario que el gate dejó en fail) y gate `--etapa E1`. No se bajan umbrales. I-14 queda parcial: el oráculo cubre un solo caso de CPLI.
+- Ciclo 3, corrección acotada, sin gate todavía: `tests/test_e1_cycle3_edges.py` cubre notas del parser, minutos negativos, piso del epoch, calendario solo con excepción y desajustes de conformidad. No afirma G4 ni G13. I-14 sigue parcial.
+- Siguiente control: gate `--etapa E1` del ciclo 3. No se bajan umbrales. Si sale en rojo, el revisor es el rechazo 3 y la etapa queda RECHAZADA-BLOQUEADA.
 
 ### Hecho de la v1
 
