@@ -33,6 +33,7 @@ class ScheduledActivity:
     total_float_hours: float
     free_float_hours: float
     critical: bool
+    driving_pred_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -539,6 +540,7 @@ def _pack(
         total_float_hours=total / 60,
         free_float_hours=_free_float(node, nodes) / 60,
         critical=critical,
+        driving_pred_ids=tuple(node.driving_preds),
     )
 
 

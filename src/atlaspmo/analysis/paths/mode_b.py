@@ -18,7 +18,7 @@ from atlaspmo.analysis.contract import (
 )
 from atlaspmo.calendars.data import parse_clndr_data
 from atlaspmo.calendars.worktime import WorkCalendar
-from atlaspmo.engine.cpm import schedule_cpm
+from atlaspmo.engine.cpm import CpmResult, schedule_cpm
 from atlaspmo.engine.options import EngineOptions
 from atlaspmo.model.schedule import Activity, Schedule
 
@@ -31,6 +31,7 @@ class PathsBConfig(BaseModel):
     float_kind: str = "minimum"
     critical_hours: float = 0.0
     proj_id: str | None = None
+    milestone_code: str | None = None
 
 
 class PathsModeB:
@@ -63,9 +64,11 @@ class PathsModeB:
                 "total_float_hours": item.total_float_hours,
                 "free_float_hours": item.free_float_hours,
                 "critical": item.critical,
+                "driving_codes": _driving_codes(item.driving_pred_ids, codes),
             }
             for item in result.by_id.values()
         ]
+        chain = _driving_chain(result, codes, chosen.milestone_code)
         critical = sum(1 for item in result.by_id.values() if item.critical)
         status, detail = _cp_test(schedule, options)
         return ModuleResult(
@@ -75,12 +78,18 @@ class PathsModeB:
                 "cp_test": Metric(None, None, status),
             },
             findings=empty_findings(),
-            tables={"cpm": pd.DataFrame(rows)},
+            tables={"cpm": pd.DataFrame(rows), "driving_chain": pd.DataFrame(chain)},
             approximations=list(
                 dict.fromkeys(
                     [
                         *schedule.parse_notes,
                         *result.approximations,
+                        (
+                            "La cadena driving recorre las predecesoras cuyo límite "
+                            "fija el inicio temprano. No es un float path de P6."
+                        ),
+                        "Multiple float paths no se calculan.",
+                        "La continuidad desde la fecha de corte hasta el término no se verifica.",
                         (
                             "CP Test atrasa 8 horas la primera actividad crítica "
                             "ordenada por task_code."
@@ -95,6 +104,51 @@ class PathsModeB:
                 parameters={"progress": options.progress},
             ),
         )
+
+
+def _driving_codes(pred_ids: tuple[str, ...], codes: dict[str | None, str | None]) -> str:
+    names = [codes.get(pred_id) or pred_id for pred_id in pred_ids]
+    return ",".join(name for name in names if name)
+
+
+def _driving_chain(
+    result: CpmResult,
+    codes: dict[str | None, str | None],
+    milestone_code: str | None,
+) -> list[dict[str, object]]:
+    """Walk driving predecessors back from a milestone or the project finish.
+
+    A predecessor is driving when the CPM bound it imposes equals the
+    successor's early start, including the open-milestone rule in the engine.
+    The walk is not multiple float paths and it does not check continuity
+    from the data date.
+    """
+    starts: list[str] = []
+    if milestone_code:
+        starts = [
+            item.task_id
+            for item in result.by_id.values()
+            if codes.get(item.task_id) == milestone_code
+        ]
+    elif result.project_finish is not None:
+        starts = [
+            item.task_id
+            for item in result.by_id.values()
+            if item.early_finish == result.project_finish
+        ]
+    seen: set[str] = set()
+    ordered: list[str] = []
+    stack = list(starts)
+    while stack:
+        current = stack.pop()
+        if current in seen or current not in result.by_id:
+            continue
+        seen.add(current)
+        ordered.append(current)
+        stack.extend(result.by_id[current].driving_pred_ids)
+    return [
+        {"task_code": codes.get(task_id), "step": index} for index, task_id in enumerate(ordered)
+    ]
 
 
 def _cp_test(schedule: Schedule, options: EngineOptions) -> tuple[str, list[str]]:

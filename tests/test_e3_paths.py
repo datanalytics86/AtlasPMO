@@ -7,6 +7,7 @@ from pathlib import Path
 
 from atlaspmo.analysis.contract import AnalysisContext
 from atlaspmo.analysis.paths.mode_a import PathsConfig, PathsModeA, _classify
+from atlaspmo.analysis.paths.mode_b import PathsBConfig, PathsModeB
 from atlaspmo.analysis.quality.profiles import load_profile
 from test_cpm import _link, _load, _task
 
@@ -43,3 +44,20 @@ def test_mode_a_does_not_trace_a_driving_chain(tmp_path: Path) -> None:
         "critical",
         "path",
     ]
+
+
+def test_the_longer_predecessor_is_the_driving_one(tmp_path: Path) -> None:
+    schedule = _load(
+        tmp_path,
+        [_task("1", "SHORT", "8"), _task("2", "LONG", "16"), _task("3", "JOIN", "8")],
+        [_link("1", "1", "3"), _link("2", "2", "3")],
+    )
+    result = PathsModeB().run(AnalysisContext(schedule=schedule), PathsBConfig())
+    rows = result.tables["cpm"].set_index("task_code")
+    assert rows.loc["JOIN", "driving_codes"] == "LONG"
+    assert set(result.tables["driving_chain"]["task_code"]) == {"LONG", "JOIN"}
+    targeted = PathsModeB().run(
+        AnalysisContext(schedule=schedule),
+        PathsBConfig(milestone_code="JOIN"),
+    )
+    assert set(targeted.tables["driving_chain"]["task_code"]) == {"LONG", "JOIN"}
