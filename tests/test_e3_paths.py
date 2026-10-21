@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
-from atlaspmo.analysis.paths.mode_a import _classify
+from atlaspmo.analysis.contract import AnalysisContext
+from atlaspmo.analysis.paths.mode_a import PathsConfig, PathsModeA, _classify
 from atlaspmo.analysis.quality.profiles import load_profile
-from test_cpm import _load, _task
+from test_cpm import _link, _load, _task
 
 
 def test_custom_edges_move_the_same_float(tmp_path: Path) -> None:
@@ -21,3 +22,24 @@ def test_custom_edges_move_the_same_float(tmp_path: Path) -> None:
     assert counts[">5"] == 1
     _rows, defaults, _critical = _classify(schedule, profile, [])
     assert defaults["0-10"] == 2
+
+
+def test_mode_a_does_not_trace_a_driving_chain(tmp_path: Path) -> None:
+    schedule = _load(
+        tmp_path,
+        [_task("1", "A", "8"), _task("2", "B", "8")],
+        [_link("1", "1", "2")],
+    )
+    activities = tuple(replace(item, total_float_hr_cnt=0) for item in schedule.activities)
+    schedule = replace(schedule, activities=activities)
+    result = PathsModeA().run(AnalysisContext(schedule=schedule), PathsConfig())
+    text = " ".join(result.approximations)
+    assert "driving no se marcan" in text
+    assert list(result.tables["bands"].columns) == [
+        "task_code",
+        "task_name",
+        "float_days",
+        "band",
+        "critical",
+        "path",
+    ]

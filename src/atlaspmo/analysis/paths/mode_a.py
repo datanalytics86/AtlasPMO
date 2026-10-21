@@ -33,18 +33,27 @@ def _band_rules(
     ordered = tuple(sorted(edges))
     rules: list[tuple[str, Callable[[float], bool]]] = []
     first = ordered[0]
-    rules.append((f"<={_label(first)}", lambda value, cut=first: value <= cut))
+
+    def _at_most(value: float, cut: float = first) -> bool:
+        return value <= cut
+
+    rules.append((f"<={_label(first)}", _at_most))
     previous = first
     for edge in ordered[1:]:
         low = previous
         high = edge
+
         def _inside(value: float, low: float = low, high: float = high) -> bool:
             return low < value <= high
 
         rules.append((f"{_label(low)}-{_label(high)}", _inside))
         previous = edge
     last = previous
-    rules.append((f">{_label(last)}", lambda value, cut=last: value > cut))
+
+    def _above(value: float, cut: float = last) -> bool:
+        return value > cut
+
+    rules.append((f">{_label(last)}", _above))
     return tuple(rules)
 
 
