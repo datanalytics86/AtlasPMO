@@ -1,6 +1,6 @@
-# Hallazgos E0 — ciclo 2
+# Hallazgos E0 — ciclo 3
 
-Revisión de QC-6 sobre `docs/qa/E0/gate.json` (exit_code 0, test_count 127), el código de `scripts/qa_gate.py`, `scripts/qa_sabotage.py`, `scripts/hooks/pre_push.py`, `.grok/config.toml`, `tests/test_qa_gate.py`, `tests/test_qa_sabotage.py`, `tests/test_pre_push.py`, `tests/test_e0_install.py` y las filas de `docs/qa/TRAZABILIDAD.md`. No se reejecutó la suite: la corrida es la del gate. No se leyó `data/real/` ni `ATLASPMO_GOLDEN_DIR`.
+Revisión de QC-6 sobre `docs/qa/E0/gate.json` (exit_code 0, test_count 137), el código de `scripts/qa_gate.py`, `scripts/run_conformance.py`, `scripts/hooks/pre_commit_g8.py`, `scripts/hooks/reject_schedules.py`, `.pre-commit-config.yaml`, `tests/test_qa_gate.py`, `tests/test_conformance_stub.py`, `tests/test_pre_commit_g8.py`, `tests/test_reject_schedules.py` y las filas de `docs/qa/TRAZABILIDAD.md`. No se reejecutó la suite: la corrida es la del gate. No se leyó `data/real/` ni `ATLASPMO_GOLDEN_DIR`.
 
 ## Crítico
 
@@ -8,80 +8,47 @@ No hay hallazgos críticos.
 
 ## Importante
 
-Abiertos. Cada uno bloquea el cierre.
+Abierto. Bloquea el cierre.
 
-### I-3 — La trazabilidad de las secciones 2, 6 y 7 sigue incompleta, y R-198 no prueba su requisito
+### I-3 — R-198 sigue sin probar que el script no abre el golden
 
-Lo que el ciclo 1 pedía y sí quedó: fila de formato XER (R-105, R-110 a R-121), una fila por métrica DCMA (R-130 a R-143) y una fila por caso borde de la sección 7 (R-190 a R-195, más R-116 para restricciones, R-114 y R-164 para LOE, WBS e hitos, R-119 para multiproyecto y R-120 para baseline). R-002 y R-063 ahora apuntan a un test que hace lo que dicen; ver el cierre más abajo. Una fila de etapa futura puede citar un test que todavía no existe: eso no es verde y no es fallo de E0.
+Lo que el ciclo 2 pedía y sí quedó en `docs/qa/TRAZABILIDAD.md`:
 
-Siguen sin R-xxx requisitos que la sección 10.2 pide en esta tabla:
+- M1: R-320 a R-329 (no evaluable, lag mayor que la sucesora, SF de calidad, convergencia, calendario distinto, LOE impropio, códigos o WBS, densidad, tres perfiles, índice 0 a 100).
+- M2: R-330 (modo A y modo B) y R-331 (continuidad).
+- M5: R-340 a R-344 (triangular, uniforme y BetaPERT; Iman-Conover; eventos; P50, P80, P90, criticidad, SSI, crucialidad y Spearman; convergencia).
+- Sección 7: R-350, R-351 y R-352. R-350 dice explícitamente que SYNTH sigue en el generador viejo y no está en verde. `scripts/gen_synthetic.py` todavía declara la tabla `SYNTH`. Eso no se reabre: la fila lo deja fuera de verde a propósito.
+- Hooks: R-312 y R-313.
 
-- Sección 6, M1: «No evaluable» con motivo si falta baseline o fecha objetivo. Chequeos adicionales sin fila: lag mayor que la duración de la sucesora, vínculos SF como hallazgo de calidad (R-113 solo cubre el código `PR_SF` en el motor), puntos de convergencia, calendario distinto al dominante, LOE con lógica impropia, actividades sin códigos o WBS requeridos, densidad de lógica. Perfiles `dcma_estricto`, `corporativo` y `contratista`, e índice compuesto de 0 a 100.
-- Sección 6, M2: modo A frente a modo B, y continuidad de la ruta crítica. R-032 nombra cadena driving, float paths y bandas, no estos dos.
-- Sección 6, M5: distribuciones triangular, BetaPERT y uniforme; correlación Iman-Conover; eventos de riesgo; salidas P50, P80, P90, criticidad, SSI, crucialidad, Spearman y efecto de convergencia. R-168 solo dice tornado por cono y Monte Carlo con semilla.
-- Sección 7: `scripts/gen_synthetic.py` sin tablas inventadas. R-006 solo mira `gen_scale`. El generador viejo sigue declarando la tabla `SYNTH` en `scripts/gen_synthetic.py`. También faltan los casos pequeños con esperado a mano, la red realista del generador de escala (WBS, feriados, mezcla de vínculos, avance, dos a tres predecesoras, cadena larga) más allá de los nombres de tabla, y que `sanitize_fixture.py` anonimice `ERMHDR` antes de versionar `p6_verified`.
-- Sección 2: los hooks pre-commit y pre-push que rechazan xer, mpp, XML de cronograma, `data/real/`, `.env` y rutas de perfil. R-003 es G8 sobre un xer; R-310 es el destino del push. No hay fila del hook.
+Esas filas de etapa futura citan archivos que no existen (`tests/test_e3_dcma.py`, `tests/test_e3_extra.py`, `tests/test_e3_profiles.py`, `tests/test_e3_paths.py`, `tests/test_e4_outputs.py`, `tests/test_e1_synthetic.py`, `tests/test_e1_scale_shape.py`). No están en verde y no son fallo de E0. G10 solo mira las 22 filas de E0 y cada una cita un `tests/*.py` que sí existe. R-330, R-340, R-341, R-342 y R-352 citan tests que ya están en el árbol; eso tampoco pone la fila en verde.
 
-R-198 es fila de E0 y el test citado no prueba el requisito. Dice «la sesión no lee el golden real» y apunta a `tests/test_qa_gate.py::test_project_config_denies_real_data_and_dotenv`. Ese test solo busca en `.grok/config.toml` las cadenas `Read/Edit/Grep(**/data/real/**)` y `(**/.env)`. No menciona `ATLASPMO_GOLDEN_DIR` ni comprueba que nadie lea esa ruta. Es el mismo defecto que R-002 y R-063 tenían en el ciclo 1.
+Los casos pequeños con esperado en YAML ya los recorre `tests/test_phase1.py::test_hand_calculated_metrics` sobre `tests/fixtures/synthetic/cases/*.yaml`. R-193 cita ese test para extremos abiertos. R-351 no repite restricciones, dos a tres predecesoras ni cadena larga. No reabro el hallazgo por ese recorte: la fila de la red de escala existe y apunta a un test de E1 que aún no está.
 
-### I-6 — G5 no falla si el perfil `qa` tiene menos de 500 ejemplos
+Lo que no quedó: R-198 es fila de E0 y el test citado no prueba el requisito. La fila dice «con ATLASPMO_GOLDEN_DIR definido el script no abre esa carpeta» y el oráculo dice «bytes del archivo de prueba sin leer». Apunta a `tests/test_conformance_stub.py::test_stub_exits_and_leaves_files_untouched`. Ese test hace tres cosas: fija la variable en un temporal, escribe `secret.xer` con los bytes `SECRET`, y tras `main()` comprueba que esos bytes siguen iguales y que la salida no contiene la cadena `secret`.
 
-La sección 8.3 hace fallar G5 si falta un invariante a–e o si corre con menos de 500 ejemplos en el perfil `qa`. `check_g5` no corre hypothesis: lee el texto de `tests/property/*.py`. La condición de los 500 es un AND:
-
-```python
-if "max_examples=500" not in blob and 'register_profile("qa"' not in blob:
-```
-
-Con `register_profile("qa", max_examples=1)` y los cinco nombres de invariante, las dos partes no se cumplen a la vez y G5 devuelve pass. El caso que pasa (`test_g5_passes_when_the_five_invariants_use_the_qa_profile`) incluye `max_examples=500`, así que no ve el agujero. El caso que falla solo cubre la carpeta ausente. Hoy G5 está en linea_base porque no existe `tests/property`; el control que E0 entrega igual aceptaría un perfil de un ejemplo.
-
-### I-7 — G7 no exige que cada skip esté en la lista
-
-La sección 8.3 hace fallar G7 si un `skip`, `skipif` o `xfail` no está en `docs/qa/skips.toml` con un motivo aceptado. `check_g7` solo falla por marcas en tests cuando la tabla está vacía. Si `skips.toml` tiene una fila con motivo aceptado, cualquier skip extra en `tests/` pasa. `test_g7_fails_when_a_skip_is_not_listed` cubre el toml vacío, no este caso. Hoy el pass es honesto: no hay marcas y el toml no tiene filas. El control no implementa la regla para cuando sí las haya.
-
-### I-8 — G8 no mira XML de cronograma
-
-La sección 8.3 hace fallar G8 si hay `.xer`, `.mpp` o XML de cronograma fuera de `tests/fixtures/`. `check_g8` solo trata los sufijos `.xer` y `.mpp`. No hay `xml` en `scripts/qa_gate.py`. El test que falla usa `notes.xer`. En este árbol los XML de cronograma están bajo `tests/fixtures/`; esta corrida no esconde un archivo. El control marcado pass no vería uno fuera de fixtures. El hook `scripts/hooks/reject_schedules.py` sí reconoce marcadores P6 y MSPDI, pero el gate no lo usa.
-
-### I-9 — G12 no compara cobertura ni benchmarks
-
-La sección 8.3 hace fallar G12 si baja la cantidad de tests, si la cobertura cae más de 0,5 puntos o si un benchmark empeora más de 20 % respecto de la etapa anterior. `check_g12` solo compara el «N passed» de una pytest nueva con `test_count` del `gate.json` anterior. No lee cobertura ni benchmarks. En E0 el pass es honesto: no hay etapa anterior. Los tests cubren esa rama y la caída del conteo, no las otras dos condiciones.
-
-### I-10 — El pre-commit no corre G8
-
-La sección 14.2 pide hooks pre-commit y pre-push con G8. El pre-push sí llama a `check_g8` y, además, exige `origin` y `refs/heads/v2` (I-4 cerrado). `.pre-commit-config.yaml` en pre-commit solo ejecuta `scripts/hooks/reject_schedules.py`, que rechaza xer, mpp y XML con marcador de cronograma. No rechaza `.env`, `data/real/` ni una ruta de perfil. Un commit local de esos archivos no lo frena este hook; lo vería el pre-push o el gate si el archivo queda versionado.
+Leer no cambia los bytes. Un `main()` que abra el temporal, lea cada `.xer` y no escriba ni imprima `secret` sigue en verde. Imprimir el contenido `SECRET` tampoco falla: la comparación distingue mayúsculas. Hoy `scripts/run_conformance.py` no usa la ruta: si la variable está definida, imprime una frase fija y sale 0. El código actual no abre la carpeta. El test no fija ese comportamiento. Es el mismo tipo de defecto que R-198 tenía en el ciclo 2.
 
 ## Cerrados en este ciclo
 
-### I-1 — Cada control tiene un caso que pasa y uno que falla
+### I-6 — G5 falla si el perfil `qa` trae menos de 500 ejemplos
 
-`tests/test_qa_gate.py` llama al control real en los dos sentidos:
+`check_g5` lee `tests/property/*.py` y `_qa_examples` saca el entero de `register_profile('qa', … max_examples=N)`. Si no hay número o es menor que 500, el control falla. `tests/test_qa_gate.py::test_g5_fails_when_the_qa_profile_has_too_few_examples` escribe `settings.register_profile('qa', max_examples=1)` con los cinco invariantes y espera fail. El caso que pasa sigue usando `max_examples=500`. Hoy G5 está en linea_base porque no existe `tests/property`. El agujero del ciclo 2, en el que un perfil de un ejemplo pasaba, ya no está en ese camino.
 
-- G1 `test_g1_fails_on_an_unused_import`, `test_g1_passes_a_clean_tree` (`ruff check` y `ruff format --check`).
-- G2 `test_g2_fails_on_a_bad_return`, `test_g2_passes_a_typed_module`.
-- G3 `test_g3_fails_when_pytest_fails`, `test_g3_passes_when_pytest_passes_and_uv_is_unavailable` (el pass cita ADR-004).
-- G4 `test_g4_fails_when_pytest_fails`, `test_g4_passes_when_the_json_meets_the_threshold`. El umbral de la sección 8.1 lo aplica `judge_coverage` (90 % de líneas y 85 % de ramas en `model`, `calendars`, `engine` y `logic`; 80 % de líneas en el resto): `test_judge_coverage_fails_under_the_engine_line` y `test_judge_coverage_passes_when_thresholds_hold`.
-- G5 a G13: un fail y un pass cada uno. G13 además falla con `alcance: muestra` y con kill score bajo el umbral, y solo pasa con `alcance: completo` en el umbral.
+### I-7 — G7 exige una fila por test omitido
 
-### I-2 — Hay herramienta de mutación, y G13 no está en pass
+`check_g7` arma `ruta::función` por cada `skip`, `skipif` o `xfail` y falla si esa cadena no está en `docs/qa/skips.toml` con un motivo aceptado. `test_g7_fails_when_the_listed_skip_is_a_different_test` deja un skip en `tests/test_demo.py::test_a` y una fila de `tests/test_other.py::test_a` con motivo `dependencia_opcional`: el control falla. El caso pareado pasa cuando la fila nombra el mismo test. Hoy el pass del gate es honesto: no hay marcas y `skips.toml` no tiene filas.
 
-`scripts/qa_sabotage.py` cambia un operador o un `return`, corre pytest y restaura el archivo. `tests/test_qa_sabotage.py::test_sample_kills_a_return_and_keeps_an_equivalent_comparison` usa `return n > 0`: el mutante `>=` sigue cumpliendo el test (vivo) y `return None` lo rompe (muerto). El informe dice `alcance: muestra`. No existe `docs/qa/E0/sabotaje.md`. G13 en linea_base con «no medido: falta el informe de qa-sabotaje» es honesto. No se exige kill score de todo `src` para cerrar E0.
+### I-8 — G8 mira XML de cronograma
 
-### I-4 — El pre-push exige el remoto `origin`
+`check_g8` trata `.xml` versionado fuera de `tests/fixtures/` si los bytes traen `APIBusinessObjects` o `http://schemas.microsoft.com/project`. `test_g8_fails_on_schedule_xml` usa el marcador P6 y espera fail. `test_g8_allows_plain_xml` usa `<note/>` y espera pass. En este árbol los XML de cronograma están bajo `tests/fixtures/`. El pass de esta corrida no esconde uno fuera de fixtures.
 
-`scripts/hooks/pre_push.py` rechaza si el remoto no es `origin` (`PRE_COMMIT_REMOTE_NAME` o `argv[1]`) y si algún ref no es `refs/heads/v2` ni `v2`. `tests/test_pre_push.py` cubre remoto ajeno, otra rama, G8 en fallo y la aceptación de `origin` más `refs/heads/v2`.
+### I-9 — G12 compara cobertura y benchmarks cuando los dos números existen
 
-### I-5 — La config niega `.env`
+`check_g12` falla si `coverage_percent` de la etapa anterior menos la actual es mayor que 0,5, y si un benchmark actual supera en más de 20 % al anterior, solo cuando ambos valores están. `test_g12_fails_when_coverage_drops` baja de 90 a 80. `test_g12_fails_when_a_benchmark_slows_more_than_twenty_percent` pasa `read_30k` de 10 a 13. En E0 `_previous_gate` devuelve vacío: el pass «sin etapa anterior; no hay regresion que medir» es honesto. No es una comparación de cobertura.
 
-`.grok/config.toml` niega Read, Edit y Grep sobre `**/data/real/**`, `**/.env` y `**/.env.*`. `test_project_config_denies_real_data_and_dotenv` afirma las dos primeras para las tres herramientas.
+### I-10 — El pre-commit corre G8 y el hook de archivos frena `.env` y `data/real`
 
-### R-002 y R-063
-
-- R-002 cita `test_g1_passes_a_clean_tree`, que ejecuta `check_g1`: `ruff check .` y `ruff format --check .`.
-- R-063 y R-307 citan `tests/test_e0_install.py::test_dev_tools_import_and_the_install_was_recorded`. Importa `hypothesis`, `pytest_benchmark` y `pytest_cov`, y exige en `docs/qa/E0/acciones.md` las cadenas `uv sync --group dev` y `sin administrador`. Esa fila de la bitácora está.
-
-### M-2 — `docs/ESTADO.md` ya no está en QC-3
-
-Dice ciclo 2, control QC-6. Cerrado.
+`.pre-commit-config.yaml` tiene el hook `commit-g8`, que llama a `scripts/hooks/pre_commit_g8.py`. Ese script corre `check_g8` y sale 1 si el estado no es pass. `tests/test_pre_commit_g8.py::test_pre_commit_rejects_when_g8_fails` fija un G8 en fallo y espera 1. `scripts/hooks/reject_schedules.py` rechaza un nombre `.env` o `.env.*` y cualquier ruta `data/real`. `tests/test_reject_schedules.py::test_env_and_real_data_are_rejected` cubre `.env`, `notes/.env.local` y `data/real/plan.xer`. Las rutas de perfil las sigue viendo G8, que este hook ya ejecuta.
 
 ## Menor
 
@@ -89,29 +56,41 @@ No bloquean.
 
 ### M-1 — No quedó la salida en rojo previa al arreglo de B-17
 
-Igual que en el ciclo 1. En `docs/qa/E0/` no está la salida de colección con `No module named 'scripts'`. Hoy `pyproject.toml` tiene `pythonpath = [".", "src"]` y `tests/test_phase2.py` importa `scripts.run_conformance`. No cambia el resultado del gate.
+Igual que en los ciclos 1 y 2. En `docs/qa/E0/` no está la salida de colección con `No module named 'scripts'`. Hoy `pyproject.toml` tiene `pythonpath = [".", "src"]` y `tests/test_phase2.py` importa `scripts.run_conformance`. No cambia el resultado del gate.
 
-### M-3 — R-310 cita solo el rechazo del remoto ajeno
+### M-3 — Cerrado
 
-El requisito dice «solo acepta origin y refs/heads/v2». La fila apunta a `test_pre_push_rejects_a_foreign_remote`, que prueba el remoto. La rama y el caso que acepta están en `test_pre_push_rejects_another_branch` y `test_pre_push_accepts_origin_v2`, en el mismo archivo. El código hace las dos cosas. No es un test de otro tema; la cita no nombra los tres.
+R-310 ahora cita `test_pre_push_rejects_a_foreign_remote`, `test_pre_push_rejects_another_branch` y `test_pre_push_accepts_origin_v2`.
+
+### M-4 — El respaldo de G5 puede contar otro `max_examples`
+
+Si `register_profile('qa')` no trae `max_examples` en la misma llamada, `_qa_examples` usa el primer `max_examples=N` del archivo siempre que aparezca la cadena `qa`. Un 500 de otro perfil alcanzaría. El caso que el ciclo 2 pedía, `max_examples=1` dentro del perfil `qa`, sí falla.
+
+### M-5 — El comando del gate no alimenta benchmarks
+
+`run_gate` le pasa a `check_g12` solo la cobertura de G4. `write_report` guarda `"benchmarks": {}`. La comparación de tiempos corre si alguien llama a la función con los dos diccionarios, que es lo que hace el test. En E0 no hay etapa anterior ni tiempos: el pass no depende de esa rama.
+
+### M-6 — `ecc1e56` toca el gate y no cita un ADR propio
+
+Ese commit cambia `scripts/qa_gate.py`. El mensaje no trae `ADR-`. G11 igual da pass: busca `ADR-` en todo el log desde `108f11a`, y ahí ya están ADR-011 y ADR-014. No es un relajo de umbral. El pass coincide con ese log acumulado, igual que en el ciclo 2.
 
 ## Línea base — no cumplida
 
-G4, G5, G6 y G13 están en `linea_base`. No son pass. La excepción de la sección 10.2 permite ese estado en E0 y, por sí sola, no rechaza la etapa. G10 ya no está en linea_base: pasó porque los archivos citados por E0 existen (ADR-014). Eso no declara verdes los tests de etapas futuras.
+G4, G5, G6 y G13 están en `linea_base`. No son pass. La excepción de la sección 10.2 permite ese estado en E0 y, por sí sola, no rechaza la etapa. G10 pasó porque los 22 archivos citados por E0 existen. Eso no declara verdes los tests de etapas futuras ni las filas que aún no tienen archivo.
 
 | Control | Estado en `gate.json` | Qué muestra el detalle |
 |---|---|---|
-| G4 | linea_base | Umbral de la sección 8.1 aplicado y no alcanzado: calendars ramas 81,0; engine líneas 83,5 y ramas 72,4; logic líneas 76,1 y ramas 60,6; model ramas 62,5. El recorte dice `127 passed`. |
+| G4 | linea_base | Umbral de la sección 8.1 aplicado y no alcanzado: calendars ramas 81,0; engine líneas 83,5 y ramas 72,4; logic líneas 76,1 y ramas 60,6; model ramas 62,5. Cobertura total 87,5. El recorte dice `137 passed`. |
 | G5 | linea_base | No existe `tests/property`. |
 | G6 | linea_base | No medido: no hay `tests/perf`. |
 | G13 | linea_base | No medido: falta el informe de qa-sabotaje. La herramienta y su muestra están; no hay corrida `alcance: completo`. |
 
 ## Gate bloqueante
 
-En verde, y no alcanza para aprobar mientras I-3 e I-6 a I-10 sigan abiertos.
+En verde, y no alcanza para aprobar mientras I-3 siga abierto.
 
-- Exit code: 0. test_count: 127, tomado del «127 passed» de la corrida de cobertura que quedó en el detalle de G4.
+- Exit code: 0. test_count: 137, tomado del «137 passed» de la corrida de cobertura que quedó en el detalle de G4.
 - Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12.
-- G11: desde `108f11a` hay cambios en `scripts/qa_gate.py`; el historial de esos commits cita ADR-011 y ADR-014. El pass «cambios protegidos citan un ADR» coincide con ese log.
-- G12 en pass es «sin etapa anterior», no una comparación de cobertura.
 - G3 no ejecutó `uv run pytest`. El detalle dice `python -m pytest exit 0` y la frase de ADR-004. No se declara cumplido el comando `uv run pytest` en este equipo.
+- G11: el log desde `108f11a` cita ADR-011 y ADR-014. Ver M-6.
+- G12 en pass es «sin etapa anterior», no una comparación de cobertura.
