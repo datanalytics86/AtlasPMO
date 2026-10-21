@@ -14,7 +14,7 @@ Base `b131428` (fase 5) más el megaprompt en `108f11a`. Rama `v2`. E0 a E6 qued
 | E3 | RECHAZADA-BLOQUEADA | 3 | salida 1. 201 tests. Cobertura 89.4. Fail G4. G13 no medido | `2ff0eac` |
 | E4 | RECHAZADA-BLOQUEADA | 3 | salida 1. 205 tests. Cobertura 89.5. Fail G4. G13 no medido | `a8e5106` |
 | E5 | RECHAZADA-BLOQUEADA | 3 | salida 1. 212 tests. Cobertura 89.8. Fail G4. G13 no medido | `b1b3dea` |
-| E6 | RECHAZADA-BLOQUEADA | 3 | salida 1. 216 tests. Cobertura 89.8. Fail G4 y G13 | el commit de este reporte, sobre el gate `7de4564` |
+| E6 | RECHAZADA-BLOQUEADA | 3 | salida 1. 216 tests. Cobertura 89.8. Fail G4 y G13 | `6fea288`, sobre el gate `7de4564` |
 
 E0 a E4 ya estaban en `origin/v2` antes de este tramo. E5 se empujó en `0f8461d..b1b3dea`. E6 se empuja con este cierre.
 
