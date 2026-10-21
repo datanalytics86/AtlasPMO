@@ -26,7 +26,12 @@ def write_star(
     project_name: str,
     run_id: str,
 ) -> dict[str, Path]:
-    """Write the seven star tables. Time-phased rows are empty in this phase."""
+    """Write the seven star tables.
+
+    Time-phased rows, when the EVM table has ``spread_hours``, are the
+    remaining duration in the single bucket ``corte``. They are not a
+    period curve.
+    """
     folder.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
     try:
@@ -130,6 +135,16 @@ def _fill(
                 con.execute(
                     "INSERT INTO fact_risk VALUES (?, ?, ?)",
                     [run_id, row.task_code, row.criticality],
+                )
+        phased = result.tables.get("activities")
+        if result.module_id == "evm" and phased is not None and "spread_hours" in phased.columns:
+            for row in phased.itertuples(index=False):
+                hours = row.spread_hours
+                if not isinstance(hours, int | float):
+                    continue
+                con.execute(
+                    "INSERT INTO fact_timephased VALUES (?, ?, ?, ?)",
+                    [run_id, row.task_code, "corte", float(hours)],
                 )
     for rule_id, name, source in sorted(rules):
         con.execute("INSERT INTO dim_rule VALUES (?, ?, ?)", [rule_id, name, source])

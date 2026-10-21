@@ -356,6 +356,10 @@ def _tornado(
     if base.project_finish is None:
         notes.append("Sin término determinístico: el tornado no se calcula.")
         return []
+    notes.append(
+        "El tornado reprograma el cronograma completo por cada actividad. "
+        "No recorta al cono de sucesoras."
+    )
     rows: list[TornadoRow] = []
     for activity in schedule.activities:
         if activity.task_id not in base.by_id or activity.task_code is None:

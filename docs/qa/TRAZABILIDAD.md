@@ -30,7 +30,7 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-033 | E3 | DCMA sobre 30k bajo 10 s | tests/perf/test_quality.py | gen_scale.py |
 | R-040 | E4 | Monte Carlo 30k por 1000 bajo 5 min | tests/perf/test_montecarlo.py | gen_scale.py |
 | R-041 | E4 | tornado solo sobre el cono de sucesoras | tests/test_e4_tornado.py | conteo de actividades recalculadas |
-| R-042 | E4 | invariante e, varianza cero igual al CPM | tests/property/test_risk.py | CPM determinístico |
+| R-042 | E4 | invariante e, varianza cero igual al CPM | tests/property/test_invariant_e.py | CPM determinístico |
 | R-043 | E4 | curvas S y fact_timephased poblado | tests/test_e4_spreads.py | distribución lineal anotada como aproximación |
 | R-050 | E5 | e2e AppTest de carga, ejecución y exportación | tests/test_e5_ui.py | sintético de tests/fixtures |
 | R-051 | E5 | la app escucha en localhost y no envía estadísticas | tests/test_e5_ui.py | .streamlit/config.toml |
