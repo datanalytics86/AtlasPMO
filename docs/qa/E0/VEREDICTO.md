@@ -1,0 +1,3 @@
+RECHAZADO
+
+Ciclo 1. El gate bloqueante está en verde: exit_code 0, con G1, G2, G3, G7, G8, G9 y G11 en pass. G12 está en pass porque no hay etapa anterior. G3 no corrió `uv run pytest` (en este equipo no arranca, ADR-004); corrió `python -m pytest` con exit 0, y el detalle de G4 recoge 93 passed. G4, G5, G6, G10 y G13 están en linea_base: no están cumplidos y no se marcan pass. Esa excepción de E0 no cierra la etapa. Hay cinco hallazgos importantes abiertos (tests del gate incompletos, sin herramienta de mutación, trazabilidad que no cubre la spec y dos filas que no prueban su requisito, pre-push que no ata el destino a origin, y `.env` sin denegación en la config del proyecto). No hay críticos. El menor de la salida en rojo de B-17 no decide el cierre.
