@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.qa_sabotage import render_report, score_file
+from scripts.qa_sabotage import alcance_for, render_report, score_file
 
 
 def test_sample_kills_a_return_and_keeps_an_equivalent_comparison(tmp_path: Path):
@@ -25,3 +25,8 @@ def test_sample_kills_a_return_and_keeps_an_equivalent_comparison(tmp_path: Path
     report = render_report(score, module)
     assert "kill_score:" in report
     assert "alcance: muestra" in report
+    full = render_report(score, module, alcance="completo", label="sample.py")
+    assert "alcance: completo" in full
+    assert "C:\\Users" not in full
+    assert alcance_for(3, 3) == "completo"
+    assert alcance_for(3, 2) == "muestra"

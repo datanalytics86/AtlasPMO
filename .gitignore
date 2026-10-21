@@ -15,6 +15,8 @@ __pycache__/
 .coverage.*
 coverage-gate.json
 htmlcov/
+.pytest-sabotage/
+pytest-sabotage.ini
 *.egg-info/
 dist/
 build/

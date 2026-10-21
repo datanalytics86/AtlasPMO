@@ -7,6 +7,7 @@ restored before the function returns. A sample run is not a G13 pass.
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -68,34 +69,52 @@ def mutants_of(source: str, limit: int) -> list[Mutant]:
     return found[:limit]
 
 
-def score_file(module: Path, tests: list[Path], limit: int = 40) -> SabotageScore:
-    """Mutate `module` in place, run `tests`, and always restore the original."""
+def score_file(
+    module: Path,
+    tests: list[Path],
+    limit: int = 40,
+    cwd: Path | None = None,
+    timeout: float | None = None,
+) -> SabotageScore:
+    """Mutate `module` in place, run `tests`, and always restore the original.
+
+    ``cwd`` is the pytest root. The default is the module directory, which is
+    enough for a single-file sample. A package under ``src`` needs the repo.
+    """
     original = module.read_text(encoding="utf-8")
     killed = 0
     survived = 0
     invalid = 0
-    config = module.parent / "pytest-sabotage.ini"
+    root = cwd or module.parent
+    config = root / "pytest-sabotage.ini"
     config.write_text("[pytest]\naddopts =\n", encoding="utf-8")
     try:
         for mutant in mutants_of(original, limit):
             module.write_text(mutant.source, encoding="utf-8")
-            proc = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "pytest",
-                    "-q",
-                    "-c",
-                    config.name,
-                    "-p",
-                    "no:cacheprovider",
-                    *[str(path) for path in tests],
-                ],
-                cwd=module.parent,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            try:
+                proc = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "pytest",
+                        "-q",
+                        "-c",
+                        config.name,
+                        "-p",
+                        "no:cacheprovider",
+                        "--basetemp",
+                        str(root / ".pytest-sabotage"),
+                        *[str(path) for path in tests],
+                    ],
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                killed += 1
+                continue
             blob = f"{proc.stdout}\n{proc.stderr}"
             if proc.returncode == 0:
                 survived += 1
@@ -106,19 +125,40 @@ def score_file(module: Path, tests: list[Path], limit: int = 40) -> SabotageScor
     finally:
         module.write_text(original, encoding="utf-8")
         config.unlink(missing_ok=True)
+        shutil.rmtree(root / ".pytest-sabotage", ignore_errors=True)
     return SabotageScore(killed, survived, invalid)
 
 
-def render_report(score: SabotageScore, module: Path) -> str:
+def alcance_for(available: int, limit: int) -> str:
+    """A run is complete only when every mutant of the file was attempted."""
+    if available > 0 and limit >= available:
+        return "completo"
+    return "muestra"
+
+
+def render_report(
+    score: SabotageScore,
+    module: Path,
+    *,
+    alcance: str = "muestra",
+    label: str | None = None,
+) -> str:
+    """Render one score. ``alcance`` is ``completo`` only when every mutant ran."""
+    shown = label or module.name
+    note = (
+        "Cada mutante de los modulos medidos entro en la corrida."
+        if alcance == "completo"
+        else "Esta corrida es una muestra. No es el kill score del paquete."
+    )
     return (
         "# Sabotaje\n\n"
-        "alcance: muestra\n"
+        f"alcance: {alcance}\n"
         f"kill_score: {score.kill_score:.1f}\n"
         f"killed: {score.killed}\n"
         f"survived: {score.survived}\n"
         f"invalid: {score.invalid}\n"
-        f"modulo: {module.as_posix()}\n"
-        "\nEsta corrida es una muestra. No es el kill score del paquete.\n"
+        f"modulo: {shown}\n"
+        f"\n{note}\n"
     )
 
 
@@ -128,10 +168,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test", action="append", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--limit", type=int, default=40)
+    parser.add_argument("--completo", action="store_true")
     args = parser.parse_args(argv)
     module = Path(args.module)
-    score = score_file(module, [Path(path) for path in args.test], args.limit)
-    text = render_report(score, module)
+    original = module.read_text(encoding="utf-8")
+    available = len(mutants_of(original, limit=1_000_000))
+    limit = available if args.completo else args.limit
+    alcance = alcance_for(available, limit)
+    score = score_file(
+        module,
+        [Path(path) for path in args.test],
+        limit,
+        cwd=Path(__file__).resolve().parents[1],
+    )
+    text = render_report(score, module, alcance=alcance, label=module.name)
     destination = Path(args.out)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(text, encoding="utf-8")
