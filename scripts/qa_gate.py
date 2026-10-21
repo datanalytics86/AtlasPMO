@@ -14,7 +14,7 @@ import shutil
 import subprocess
 import sys
 import tomllib
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 # G8: absolute profile paths. The pattern stays here and in the gate tests.
@@ -161,7 +161,7 @@ def check_g3(root: Path) -> Control:
         if not _environment_gap(direct):
             notes.append((direct.stdout + direct.stderr)[-800:])
             return Control("G3", "fail", "\n".join(notes))
-    notes.append("uv run pytest no arranca en este equipo (ADR-004); la suite corrio con python -m pytest")
+    notes.append("uv run pytest no arranca aqui (ADR-004); corrio python -m pytest")
     return Control("G3", "pass", "\n".join(notes))
 
 
