@@ -3,7 +3,7 @@
 ### Grok 4.7 en Grok Build · modo autónomo multiagente · auto-aprobación · QA/QC estricto por etapa
 
 > **Para Nicolás — cómo iniciar**
-> 1. En `C:\Users\nicolas.andrade\AtlasPMO`:
+> 1. En la raíz de tu clon local del repositorio:
 >    ```
 >    git fetch origin
 >    git checkout -b v2 origin/claude/beautiful-goodall-m0q2zj
@@ -101,7 +101,7 @@ Te detienes, actualizas `ESTADO.md` y reportas solo si:
    - `data/real/` existe solo como respaldo local y está en `.gitignore`.
    - `.grok/config.toml` niega `Read`, `Edit` y `Grep` sobre `**/data/real/**` (ADR-001). Esas reglas no cubren comandos de shell: la prohibición de leer esas rutas con `cat`, `type`, `Get-Content`, Python u otro medio es absoluta (sección 14).
    - Los tests de conformidad con archivos reales los ejecuta Nicolás. Su salida debe ser **anonimizada** (IDs hasheados; solo conteos, porcentajes y categorías) para que pueda pegártela sin exponer datos.
-   - Hooks de git **pre-commit y pre-push** que rechacen `*.xer`, `*.mpp` y XML de cronograma fuera de `tests/fixtures/`, cualquier archivo bajo `data/real/`, archivos `.env` y rutas absolutas de usuario (`C:\Users\...`) en archivos versionados.
+   - Hooks de git **pre-commit y pre-push** que rechacen `*.xer`, `*.mpp` y XML de cronograma fuera de `tests/fixtures/`, cualquier archivo bajo `data/real/`, archivos `.env` y rutas absolutas a perfiles de usuario (Windows o Unix) en archivos versionados.
 3. **Entradas en solo lectura.** Todo resultado va a una carpeta de salida con timestamp y un `run_manifest.json`.
 4. **Reproducibilidad.** Cada corrida registra:
    - versión de la app y hash de git;
@@ -549,7 +549,7 @@ Comando: `uv run python scripts/qa_gate.py --etapa E<n>`. Escribe `docs/qa/E<n>/
 | G5 | Propiedades | falta alguno de los invariantes a–e de la sección 7, o corre con menos de 500 ejemplos en el perfil `qa` |
 | G6 | Rendimiento | un criterio de la sección 11 medible en la etapa supera su meta con el generador de escala; se registra el equipo (CPU, RAM, SO) |
 | G7 | Omisiones | un `skip`, `skipif` o `xfail` no figura en `docs/qa/skips.toml` con motivo, o su motivo no es uno de los aceptados (dependencia opcional ausente, fixture pendiente de Nicolás, plataforma) |
-| G8 | Privacidad y red | `.xer`, `.mpp` o XML de cronograma fuera de `tests/fixtures/`; algo bajo `data/real/`; `.env`; rutas absolutas de usuario en archivos versionados; un `ERMHDR` de fixture con valores fuera de la lista anónima; imports de red en `src/` (`socket`, `requests`, `urllib.request`, `http.client`, `httpx`, `aiohttp`); Streamlit sin `localhost` o con estadísticas activas |
+| G8 | Privacidad y red | `.xer`, `.mpp` o XML de cronograma fuera de `tests/fixtures/`; algo bajo `data/real/`; `.env`; rutas absolutas a perfiles de usuario o nombres de usuario del equipo en archivos versionados (el patrón vive solo en `qa_gate.py` y sus tests, excluidos de ese control); un `ERMHDR` de fixture con valores fuera de la lista anónima; imports de red en `src/` (`socket`, `requests`, `urllib.request`, `http.client`, `httpx`, `aiohttp`); Streamlit sin `localhost` o con estadísticas activas |
 | G9 | Campos XER | una tabla o campo XER literal usado en `src/` no aparece en `docs/XER_SPEC.md` |
 | G10 | Trazabilidad | un requisito R-xxx de la etapa en `docs/qa/TRAZABILIDAD.md` no tiene un test existente y en verde |
 | G11 | Rutas protegidas | cambiaron esperados, oráculos, `skips.toml`, umbrales o `qa_gate.py` sin un ADR que lo justifique, citado en el commit |
@@ -711,6 +711,7 @@ Revisión independiente del 2026-10-20. Ejecuté la suite, lint y tipos, leí el
 | B-20 | Importante | Un XER con bytes indefinidos en cp1252 (p.ej. `0x81`) se rechaza entero | `read_xer_bytes` → "no decodifica como cp1252" | Se lee, se registra la aproximación y el round-trip sigue siendo byte a byte |
 | B-21 | Menor | Un hito de inicio que sigue a una FS que termina a las 16:00 queda en el mismo instante (16:00) y no en el inicio laboral siguiente | caso de 3 actividades en un calendario de 08:00 a 16:00 | Regla de la sección 6 (M0), marcada `[VALIDAR]` con caso para `p6_verified` |
 | B-22 | Importante | Proceso: un commit por fase, sin evidencia de test primero, y `fase-1` se creó antes del gate de la Fase 0 | historial de `fase-0` a `fase-5` | Reglas de trabajo 2 y 5 de la sección 0; G11 y G12 |
+| B-23 | Importante | Ruta absoluta con el usuario de Windows de Nicolás en código publicado (`reports/export.py::_git_executable`) y en `ESTADO.md`; detectada por G8 el 2026-10-21 | `git grep` sobre `fase-1` a `fase-5` | **Corregido en `claude/beautiful-goodall-m0q2zj`**: el código usa `git` del PATH o la variable `ATLASPMO_GIT`. Queda en la historia de `fase-1` a `fase-5`; limpiarla exige reescribir historia publicada y lo decide Nicolás (sección 14) |
 
 Lo que la v1 hizo bien y se conserva: el lector y escritor XER con reposición de bytes; la estructura de contrato, registro y módulos; la honestidad del `ESTADO.md` y los ADR; la semilla en el manifiesto; el hook de privacidad; los imports sin red; y el PBIP con TMDL basado en la documentación vigente.
 
@@ -852,7 +853,7 @@ Si Nicolás usa Grok 4.7 desde Cursor o GitHub Copilot, `AGENTS.md` y esta secci
 
 1. Verifica que estás en la rama `v2` y que el árbol está limpio. Si no existe, créala: `git checkout -b v2 origin/claude/beautiful-goodall-m0q2zj`.
 2. Lee este documento completo y `docs/ESTADO.md`. Si `ESTADO.md` indica una etapa v2 en curso, retómala desde el control QC pendiente.
-3. Registra en `ESTADO.md` el inicio de la v2: base `b131428`, brechas B-01 a B-22, etapas E0 a E6.
+3. Registra en `ESTADO.md` el inicio de la v2: base `b131428`, brechas B-01 a B-23, etapas E0 a E6.
 4. Ejecuta E0 a E6 con el ciclo de 9.5, sin pausas, cada una con QC-1 a QC-6.
 5. Al terminar E6, escribe el reporte final (sección 16) y detente.
 
@@ -866,7 +867,7 @@ Escríbelo en `docs/ESTADO.md` y muéstralo en la sesión. Incluye:
   - veredicto y número de ciclos de QA;
   - gate (G1–G13: estado y valores);
   - último commit.
-- **Brechas:** tabla B-01 a B-22 con estado final (cerrada / abierta) y evidencia.
+- **Brechas:** tabla B-01 a B-23 con estado final (cerrada / abierta) y evidencia.
 - **Pruebas:**
   - suite completa con su comando y resultado;
   - cobertura por paquete;

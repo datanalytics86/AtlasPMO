@@ -32,7 +32,7 @@ Rama `fase-0`, sin push. Base `main` `00f05a6`.
 ### Qué revisar tú
 
 - `AGENTS.md`, los nueve agentes y las reglas de privacidad.
-- Reiniciar Grok en `C:\Users\nicolas.andrade\AtlasPMO` y abrir `/agents`.
+- Reiniciar Grok en la raíz del repositorio y abrir `/agents`.
 - Si quieres tapar el directorio golden, la regla está en `docs/DECISIONES.md`.
 
 ## Fase 1 — en `fase-1`

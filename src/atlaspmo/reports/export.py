@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -123,10 +124,8 @@ def _sheet_name(module_id: str) -> str:
 
 
 def _git_executable() -> str | None:
-    candidates = (
-        "git",
-        r"C:\Users\nicolas.andrade\AppData\Local\Programs\Git\cmd\git.exe",
-    )
+    # ATLASPMO_GIT points to git.exe when git is not on PATH; no user paths in code.
+    candidates = [item for item in ("git", os.environ.get("ATLASPMO_GIT")) if item]
     for candidate in candidates:
         try:
             subprocess.run([candidate, "--version"], capture_output=True, check=True)
