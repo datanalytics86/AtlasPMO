@@ -1,6 +1,7 @@
 {
   "etapa": "E0",
   "exit_code": 0,
+  "test_count": 127,
   "controls": [
     {
       "id": "G1",
@@ -20,7 +21,7 @@
     {
       "id": "G4",
       "status": "linea_base",
-      "detail": "Cobertura medida. El umbral de la seccion 8.1 no se declara cumplido en E0. 35\nsrc\\atlaspmo\\reports\\gantt.py                    17      2      6      2    83%   13, 19\nsrc\\atlaspmo\\reports\\parquet_star.py             50      3     18      3    88%   105->103, 112, 129-130\nsrc\\atlaspmo\\reports\\pbip.py                     55      0     10      0   100%\nsrc\\atlaspmo\\runner.py                           14      0      4      1    94%   22->24\nsrc\\atlaspmo\\ui\\__init__.py                       0      0      0      0   100%\nsrc\\atlaspmo\\ui\\app.py                           12      1      2      1    86%   18\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          3618    451   1376    329    83%\n93 passed in 6.11s\n"
+      "detail": "calendars ramas 81.0 < 85; engine lineas 83.5 < 90; engine ramas 72.4 < 85; logic lineas 76.1 < 90; logic ramas 60.6 < 85; model ramas 62.5 < 85 | calendars lineas 91.8% ramas 81.0%; engine lineas 83.5% ramas 72.4%; logic lineas 76.1% ramas 60.6%; model lineas 98.3% ramas 62.5%; resto lineas 88.8% ramas 73.9% | tlaspmo\\ui\\app.py                           12      1      2      1    86%   18\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          3618    451   1376    329    83%\nCoverage JSON written to file coverage-gate.json\n127 passed in 10.88s\n"
     },
     {
       "id": "G5",
@@ -49,8 +50,8 @@
     },
     {
       "id": "G10",
-      "status": "linea_base",
-      "detail": "8 requisitos de E0; el verde se exige desde E1"
+      "status": "pass",
+      "detail": "16 requisitos de E0 citan un archivo de test que existe. El verde de la suite lo mide G3."
     },
     {
       "id": "G11",

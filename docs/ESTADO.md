@@ -4,10 +4,13 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E0, ciclo de QA 1, control QC-3 (implementación del gate).
+- Etapa actual: E0, ciclo de QA 2, control QC-6 (veredicto). El ciclo 1 quedó RECHAZADO en `0f26968`.
 - QC-1 escrito en `docs/qa/E0/QC1_contrato.md`.
 - QC-2 de E0 no tiene oráculo numérico: el gate se prueba con árboles temporales.
+- Gate del ciclo 2, todavía sin commit de la evidencia: salida 0. G1, G2, G3, G7, G8, G9, G10, G11 y G12 en pass. G4, G5, G6 y G13 en linea_base. `test_count` 127. G3 no corrió `uv run pytest` (ADR-004).
+- Hallazgos del ciclo 1 que esta corrección intenta cerrar: tests pasa/falla de G1–G13, `scripts/qa_sabotage.py`, trazabilidad de las secciones 2, 5, 6, 7 y 11, pre-push atado a `origin`, denegación de `.env`.
 - Bloqueos: ninguno. B-23 queda en la historia de fase-1 a fase-5; no se reescribe.
+- E1 en worktree, sin integrar: xer-io en `e1-xer-io` (`9437dd2`). motor-cpm sigue en curso.
 
 ### Hecho de la v1
 
