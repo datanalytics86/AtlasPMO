@@ -37,10 +37,19 @@ PRED_FIELDS = [
 ]
 
 
+_LINK_TYPES = ("PR_FS", "PR_SS", "PR_FF", "PR_SF")
+
+
 def build_tables(activities: int, *, series: bool) -> list[dict[str, object]]:
-    """Return PROJECT, CALENDAR, PROJWBS, TASK and TASKPRED for one project."""
+    """Return PROJECT, CALENDAR, PROJWBS, TASK and TASKPRED for one project.
+
+    A series is one FS chain on one calendar. A realistic network adds a
+    second calendar, several WBS nodes, mixed link types, lags, a holiday
+    exception, partial progress and about two predecessors per activity.
+    """
     if activities < 2:
         raise ValueError("activities must be at least 2")
+    wbs_count = 1 if series else max(2, min(4, activities // 5))
     project = {
         "name": "PROJECT",
         "fields": ["proj_id", "proj_short_name", "proj_name", "clndr_id", "last_recalc_date"],
@@ -49,40 +58,47 @@ def build_tables(activities: int, *, series: bool) -> list[dict[str, object]]:
     calendar = {
         "name": "CALENDAR",
         "fields": ["clndr_id", "clndr_name", "proj_id", "day_hr_cnt", "clndr_data"],
-        "rows": [["1", "Lunes a viernes", "1", "8", _calendar_text()]],
+        "rows": _calendar_rows(series),
     }
     wbs = {
         "name": "PROJWBS",
         "fields": ["wbs_id", "proj_id", "wbs_short_name", "wbs_name"],
-        "rows": [["1", "1", "ESC", "Escala"]],
+        "rows": [
+            [str(item), "1", f"W{item}", f"Paquete {item}"] for item in range(1, wbs_count + 1)
+        ],
     }
     tasks: list[list[str]] = []
     preds: list[list[str]] = []
     for index in range(1, activities + 1):
-        progressed = index == 1
+        target = "16" if index % 17 == 0 else "8"
+        progressed = (not series and index % 7 == 1) or (series and index == 1)
+        remain = "4" if progressed and not series else ("8" if progressed else target)
         tasks.append(
             [
                 str(index),
                 "1",
-                "1",
-                "1",
+                str(1 + (index - 1) % wbs_count),
+                "1" if series or index % 2 else "2",
                 f"A{index}",
                 f"Actividad {index}",
                 "TT_Task",
                 "TK_Active" if progressed else "TK_NotStart",
-                "16" if index % 17 == 0 else "8",
-                "8" if progressed else ("16" if index % 17 == 0 else "8"),
+                target,
+                remain,
                 "CS_MSO" if index == activities else "",
                 "2026-06-01 08:00" if index == activities else "",
             ]
         )
         if index == 1:
             continue
-        pred_type = "PR_FS" if series or index % 11 else "PR_SS"
-        lag = "0" if series or index % 13 else "8"
+        pred_type = "PR_FS" if series else _LINK_TYPES[(index - 2) % 4]
+        lag = "0" if series or index % 4 else "8"
         preds.append([str(index - 1), str(index), str(index - 1), "1", "1", pred_type, lag])
-        if not series and index > 3 and index % 29 == 0:
-            preds.append([f"x{index}", str(index), str(index - 3), "1", "1", "PR_FF", "0"])
+        if series or index <= 2:
+            continue
+        preds.append([f"e{index}", str(index), str(index - 2), "1", "1", "PR_SS", "0"])
+        if index > 4 and index % 3 == 0:
+            preds.append([f"f{index}", str(index), "1", "1", "1", "PR_FF", "8"])
     return [
         project,
         calendar,
@@ -92,12 +108,27 @@ def build_tables(activities: int, *, series: bool) -> list[dict[str, object]]:
     ]
 
 
-def _calendar_text() -> str:
-    days = "".join(f"(0||{number}()((0||0(s|08:00|f|16:00)())))" for number in range(1, 8))
+def _calendar_rows(series: bool) -> list[list[str]]:
+    rows = [["1", "Lunes a viernes", "1", "8", _weekday_with_holiday()]]
+    if not series:
+        rows.append(["2", "Media jornada siete dias", "1", "4", _half_day_week()])
+    return rows
+
+
+def _weekday_with_holiday() -> str:
+    days = "".join(
+        f"(0||{number}()((0||0(s|08:00|f|16:00)())))" if number < 6 else f"(0||{number}()())"
+        for number in range(1, 8)
+    )
     return (
         f"(0||CalendarData()((0||DaysOfWeek()({days}))"
         "(0||Exceptions()((0||46000()())))(0||VIEW(ShowTotal|N)())))"
     )
+
+
+def _half_day_week() -> str:
+    days = "".join(f"(0||{number}()((0||0(s|08:00|f|12:00)())))" for number in range(1, 8))
+    return f"(0||CalendarData()((0||DaysOfWeek()({days}))(0||VIEW(ShowTotal|N)())))"
 
 
 def write_scale(path: Path, activities: int, *, series: bool = False) -> None:

@@ -2,7 +2,7 @@
 
 Nombres usados por el lector de la fase 1. **Sin confirmar en un export de Nicolás.**
 
-La evidencia pública de esta sesión es el lector PyP6Xer (`task.py`, `taskpred.py`) y los ejemplos de la sección 5 de `MEGAPROMPT.md`. Un nombre que no está en esa evidencia queda marcado como supuesto. `scripts/gen_synthetic.py` sigue emitiendo la tabla `SYNTH` con `col_a` y `col_b`: esos nombres no son campos de P6.
+La evidencia pública de esta sesión es el lector PyP6Xer (`task.py`, `taskpred.py`) y los ejemplos de la sección 5 de `MEGAPROMPT.md`. Un nombre que no está en esa evidencia queda marcado como supuesto. `scripts/gen_synthetic.py` emite `PROJECT`, `CALENDAR`, `TASK` y `TASKPRED`. Ya no escribe la tabla inventada `SYNTH`.
 
 ## Archivo
 
