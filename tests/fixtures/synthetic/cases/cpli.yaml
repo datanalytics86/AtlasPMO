@@ -1,3 +1,6 @@
 file: cpli.xer
+calculado_por: calendario 08:00-16:00 de siete dias, lunes 08:00 a miercoles 16:00 y de ahi al viernes 16:00
+verificado_por: tests/oracle/span.py
+metodo: recorrido dia a dia, sin el indice del motor
 expect:
   cpli: {value: 1.6666666666666667, status: cumple}

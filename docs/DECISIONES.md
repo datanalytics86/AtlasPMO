@@ -168,6 +168,10 @@ G5 exige las invariantes b, c y d para cerrar cualquier etapa, incluida E1. El c
 
 Esto no relaja G5 ni G13. El filtro de candidatos sigue recorriendo el grafo por vínculo. El benchmark de 30k de redundancia queda para E2. B-02 no está cerrado.
 
+## ADR-017 — Oráculo de CPLI aparte del índice
+
+`tests/oracle/span.py` recorre la jornada 08:00–16:00 día a día y no importa `src/atlaspmo`. Sirve para el caso de CPLI cuyo largo es 24 h y cuya holgura al objetivo es 16 h. No cubre los demás esperados de E1. QC-2 sigue incompleto fuera de ese caso.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió
