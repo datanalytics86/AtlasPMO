@@ -23,7 +23,7 @@
     {
       "id": "G4",
       "status": "fail",
-      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 89.8; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.2% ramas 78.5% | 3      6     42      5    93%   53, 95->97, 111-112, 156-157, 163\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4256    435   1636    317    86%\nCoverage JSON written to file coverage-gate.json\n216 passed, 4 deselected in 26.70s\n"
+      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 89.8; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.2% ramas 78.5% | 3      6     42      5    93%   53, 95->97, 111-112, 156-157, 163\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4256    435   1636    317    86%\nCoverage JSON written to file coverage-gate.json\n216 passed, 4 deselected in 21.38s\n"
     },
     {
       "id": "G5",
@@ -33,7 +33,7 @@
     {
       "id": "G6",
       "status": "pass",
-      "detail": "....                                                                     [100%]\n4 passed in 3.66s\n"
+      "detail": "....                                                                     [100%]\n4 passed in 3.69s\n"
     },
     {
       "id": "G7",
