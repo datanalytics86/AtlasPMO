@@ -100,7 +100,7 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-195 | E2 | sección 7: vínculo no driver que no es redundante | tests/test_e2_guards.py | CPM |
 | R-196 | E6 | sección 7: p6_verified ausente se omite con motivo | tests/test_e6_skips.py | skips.toml |
 | R-197 | E3 | sección 7: esperado con doble firma | tests/test_e3_oracle.py | qa-oraculo, sin importar src |
-| R-198 | E0 | sección 7: la sesión no lee el golden real | tests/test_qa_gate.py::test_project_config_denies_real_data_and_dotenv | sección 14 |
+| R-198 | E0 | sección 7: con ATLASPMO_GOLDEN_DIR definido el script no abre esa carpeta | tests/test_conformance_stub.py::test_stub_exits_and_leaves_files_untouched | bytes del archivo de prueba sin leer |
 | R-300 | E1 | sección 11: lectura 30k bajo 15 s | tests/perf/test_scale.py | gen_scale.py, no medido hasta G6 |
 | R-301 | E3 | sección 11: DCMA bajo 10 s | tests/perf/test_quality.py | gen_scale.py, no medido hasta G6 |
 | R-302 | E2 | sección 11: redundancia bajo 3 min | tests/perf/test_redundancy.py | gen_scale.py, no medido hasta G6 |
@@ -111,5 +111,31 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-307 | E0 | sección 11: instalación sin administrador | tests/test_e0_install.py::test_dev_tools_import_and_the_install_was_recorded | acciones.md |
 | R-308 | E0 | sección 11: la suite corre | tests/test_qa_gate.py::test_g3_passes_when_pytest_passes_and_uv_is_unavailable | G3 |
 | R-309 | E0 | herramienta de mutación con un mutante muerto y uno vivo | tests/test_qa_sabotage.py::test_sample_kills_a_return_and_keeps_an_equivalent_comparison | muestra, no es G13 |
-| R-310 | E0 | pre-push solo acepta origin y refs/heads/v2 | tests/test_pre_push.py::test_pre_push_rejects_a_foreign_remote | sección 14.2 |
+| R-310 | E0 | pre-push solo acepta origin y refs/heads/v2 | tests/test_pre_push.py::test_pre_push_rejects_a_foreign_remote tests/test_pre_push.py::test_pre_push_rejects_another_branch tests/test_pre_push.py::test_pre_push_accepts_origin_v2 | sección 14.2 |
 | R-311 | E0 | cada control G1–G13 tiene caso que pasa y caso que falla | tests/test_qa_gate.py | árboles temporales |
+| R-312 | E0 | pre-commit corre G8 | tests/test_pre_commit_g8.py::test_pre_commit_rejects_when_g8_fails | sección 14.2 |
+| R-313 | E0 | el hook rechaza .env y data/real | tests/test_reject_schedules.py::test_env_and_real_data_are_rejected | forbidden_reason |
+| R-314 | E0 | G5 falla si el perfil qa tiene menos de 500 ejemplos | tests/test_qa_gate.py::test_g5_fails_when_the_qa_profile_has_too_few_examples | texto del perfil |
+| R-315 | E0 | G7 exige una fila por cada skip | tests/test_qa_gate.py::test_g7_fails_when_the_listed_skip_is_a_different_test | AST y skips.toml |
+| R-316 | E0 | G8 rechaza XML de cronograma fuera de fixtures | tests/test_qa_gate.py::test_g8_fails_on_schedule_xml | marcadores P6 y MSPDI |
+| R-317 | E0 | G12 compara cobertura y benchmarks cuando existen | tests/test_qa_gate.py::test_g12_fails_when_coverage_drops | gate.json anterior |
+| R-320 | E3 | M1 queda No evaluable si falta baseline o fecha objetivo | tests/test_e3_dcma.py | motivo escrito, no un cero |
+| R-321 | E3 | M1 lag mayor que la duración de la sucesora | tests/test_e3_extra.py | caso a mano |
+| R-322 | E3 | M1 vínculo SF como hallazgo de calidad | tests/test_e3_extra.py | caso a mano |
+| R-323 | E3 | M1 puntos de convergencia | tests/test_e3_extra.py | conteo de predecesoras |
+| R-324 | E3 | M1 calendario distinto al dominante | tests/test_e3_extra.py | caso a mano |
+| R-325 | E3 | M1 LOE con lógica impropia | tests/test_e3_extra.py | caso a mano |
+| R-326 | E3 | M1 actividades sin códigos o WBS requeridos | tests/test_e3_extra.py | perfil |
+| R-327 | E3 | M1 densidad de lógica sin umbral por defecto | tests/test_e3_extra.py | se reporta, no se compara con un umbral |
+| R-328 | E3 | perfiles dcma_estricto, corporativo y contratista | tests/test_e3_profiles.py | profiles/*.yaml |
+| R-329 | E3 | índice de calidad de 0 a 100 con desglose | tests/test_e3_profiles.py | pesos del perfil |
+| R-330 | E3 | M2 modo A con fechas guardadas y modo B con el motor | tests/test_phase1.py::test_mode_a_marks_negative_float_critical tests/test_phase5.py::test_mode_b_names_the_probe | fechas guardadas y motor |
+| R-331 | E3 | M2 continuidad de la ruta crítica | tests/test_e3_paths.py | de la fecha de corte al término |
+| R-340 | E4 | M5 triangular, uniforme y BetaPERT | tests/test_risk.py::test_samples_stay_inside_the_range_and_repeat_with_the_seed | rangos a mano |
+| R-341 | E4 | M5 correlación Iman-Conover | tests/test_risk.py::test_perfect_correlation_matches_ranks | rangos iguales |
+| R-342 | E4 | M5 eventos de riesgo | tests/test_risk.py::test_certain_event_moves_the_finish | caso cierto |
+| R-343 | E4 | M5 P50, P80, P90, criticidad, SSI, crucialidad y Spearman | tests/test_e4_outputs.py | semilla fija |
+| R-344 | E4 | M5 efecto de convergencia determinístico contra P50 | tests/test_e4_outputs.py | CPM determinístico |
+| R-350 | E1 | gen_synthetic.py sin tablas inventadas | tests/test_e1_synthetic.py | XER_SPEC; hoy SYNTH sigue en el generador viejo y no está en verde |
+| R-351 | E1 | red de escala con WBS, feriados, mezcla de vínculos y avance | tests/test_e1_scale_shape.py | gen_scale.py |
+| R-352 | E1 | sanitize_fixture anonimiza ERMHDR antes de versionar | tests/test_phase1.py::test_sanitize_clears_header_and_user_column | encabezado anónimo |
