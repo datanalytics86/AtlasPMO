@@ -75,6 +75,12 @@ No están verificados en un export. Se usan tal como los cita el megaprompt:
 
 El conjunto duro por defecto (`CS_MSO`, `CS_MEO`, `CS_MANDSTART`, `CS_MANDFIN`) es una decisión de producto, no un campo del archivo. El perfil contratista deja solo `CS_MANDSTART` y `CS_MANDFIN`.
 
+Semántica de motor, no un campo nuevo. [VALIDAR] contra `p6_verified`; no está leída de un export:
+
+- `CS_MANDSTART` fija el inicio temprano y el inicio tarde en la fecha de la restricción, en el pase adelante y en el pase atrás, aunque los vínculos digan otra cosa. No se comporta como `CS_MSO`, que solo atrasa. Si la fecha impuesta es anterior al inicio por red, queda anotada como violación.
+- `CS_MANDFIN` fija el fin temprano y el fin tarde del mismo modo.
+- `TT_Mile` (hito de inicio): si la fecha cae en el cierre de una jornada, se mueve al inicio laboral siguiente. `TT_FinMile` permanece en el cierre.
+
 ## Baseline
 
 No hay un campo de baseline por actividad verificado. La fase 1 toma el fin baseline como `target_end_date` del proyecto indicado por `baseline_proj_id`, emparejado por `task_code`.
