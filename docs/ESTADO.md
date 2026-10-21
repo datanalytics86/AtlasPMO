@@ -4,7 +4,7 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E1, ciclo 1, condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO.
+- Etapa actual: E1, ciclo 1 RECHAZADO (`b0c5039`, veredicto en `docs/qa/E1/VEREDICTO.md`). Condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO.
 - E0 ciclos: 1 RECHAZADO (`0f26968`), 2 RECHAZADO (`ecc1e56`), 3 bloqueado (`9bcf40a`). No hay cuarto ciclo (ADR-013).
 - Hallazgo abierto de E0: I-3. R-198 no prueba que el script no abra `ATLASPMO_GOLDEN_DIR`. El script no la abre. Evidencia: `docs/qa/E0/hallazgos.md`, `docs/qa/E0/VEREDICTO.md`.
 - Gate E0: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base, no cumplidos: G4, G5, G6, G13. test_count 137. G3 no corrió `uv run pytest` (ADR-004). Push en `f64ef03`.
