@@ -1,0 +1,23 @@
+"""Float bands follow the edges passed in. Driving chains are not claimed here."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from pathlib import Path
+
+from atlaspmo.analysis.paths.mode_a import _classify
+from atlaspmo.analysis.quality.profiles import load_profile
+from test_cpm import _load, _task
+
+
+def test_custom_edges_move_the_same_float(tmp_path: Path) -> None:
+    schedule = _load(tmp_path, [_task("1", "A", "8"), _task("2", "B", "8")], [])
+    low = replace(schedule.activities[0], total_float_hr_cnt=16)
+    high = replace(schedule.activities[1], total_float_hr_cnt=48)
+    schedule = replace(schedule, activities=(low, high))
+    profile, _note = load_profile("dcma_estricto", hours_per_day=8)
+    _rows, counts, _critical = _classify(schedule, profile, [], (0, 5))
+    assert counts["0-5"] == 1
+    assert counts[">5"] == 1
+    _rows, defaults, _critical = _classify(schedule, profile, [])
+    assert defaults["0-10"] == 2

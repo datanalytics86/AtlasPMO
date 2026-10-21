@@ -20,39 +20,39 @@ from atlaspmo.analysis.quality.profiles import Profile, load_profile
 from atlaspmo.model.schedule import Activity, Schedule
 
 
-def _band_non_positive(value: float) -> bool:
-    return value <= 0
+def _label(value: float) -> str:
+    if value == int(value):
+        return str(int(value))
+    return str(value)
 
 
-def _band_to_10(value: float) -> bool:
-    return 0 < value <= 10
+def _band_rules(
+    edges: tuple[float, ...],
+) -> tuple[tuple[str, Callable[[float], bool]], ...]:
+    """Half-open bands from sorted edges. The default matches the old 0/10/20/44 cuts."""
+    ordered = tuple(sorted(edges))
+    rules: list[tuple[str, Callable[[float], bool]]] = []
+    first = ordered[0]
+    rules.append((f"<={_label(first)}", lambda value, cut=first: value <= cut))
+    previous = first
+    for edge in ordered[1:]:
+        low = previous
+        high = edge
+        def _inside(value: float, low: float = low, high: float = high) -> bool:
+            return low < value <= high
 
-
-def _band_to_20(value: float) -> bool:
-    return 10 < value <= 20
-
-
-def _band_to_44(value: float) -> bool:
-    return 20 < value <= 44
-
-
-def _band_above_44(value: float) -> bool:
-    return value > 44
-
-
-_BANDS: tuple[tuple[str, Callable[[float], bool]], ...] = (
-    ("<=0", _band_non_positive),
-    ("0-10", _band_to_10),
-    ("10-20", _band_to_20),
-    ("20-44", _band_to_44),
-    (">44", _band_above_44),
-)
+        rules.append((f"{_label(low)}-{_label(high)}", _inside))
+        previous = edge
+    last = previous
+    rules.append((f">{_label(last)}", lambda value, cut=last: value > cut))
+    return tuple(rules)
 
 
 class PathsConfig(BaseModel):
     profile: str = "dcma_estricto"
     proj_id: str | None = None
     hours_per_day: float | None = None
+    band_edges: tuple[float, ...] = (0, 10, 20, 44)
 
 
 class PathsModeA:
@@ -77,7 +77,7 @@ class PathsModeA:
             return _empty(approximations, ctx)
         schedule = ctx.schedule.select(chosen.proj_id)
         approximations.extend(schedule.parse_notes)
-        rows, counts, critical = _classify(schedule, profile, approximations)
+        rows, counts, critical = _classify(schedule, profile, approximations, chosen.band_edges)
         metrics = {
             "critical_count": Metric(float(critical), profile.critical_float_days, "info"),
             **{
@@ -102,10 +102,12 @@ def _classify(
     schedule: Schedule,
     profile: object,
     approximations: list[str],
+    edges: tuple[float, ...] = (0, 10, 20, 44),
 ) -> tuple[pd.DataFrame, dict[str, int], int]:
     if not isinstance(profile, Profile):
         raise TypeError("profile")
-    counts = {name: 0 for name, _rule in _BANDS}
+    rules = _band_rules(edges)
+    counts = {name: 0 for name, _rule in rules}
     records: list[dict[str, object]] = []
     critical = 0
     skipped = False
@@ -125,7 +127,7 @@ def _classify(
         if days is None:
             skipped = True
             continue
-        band = next(name for name, rule in _BANDS if rule(days))
+        band = next(name for name, rule in rules if rule(days))
         counts[band] += 1
         is_critical = days <= profile.critical_float_days
         if is_critical:
