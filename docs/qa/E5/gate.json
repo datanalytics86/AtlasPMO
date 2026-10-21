@@ -1,8 +1,8 @@
 {
   "etapa": "E5",
   "exit_code": 1,
-  "test_count": 208,
-  "coverage_percent": 89.6,
+  "test_count": 210,
+  "coverage_percent": 89.7,
   "benchmarks": {},
   "controls": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "G4",
       "status": "fail",
-      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 89.6; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.0% ramas 77.9% |                       44      1     16      2    95%   40, 65->57\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4143    430   1608    316    86%\nCoverage JSON written to file coverage-gate.json\n208 passed, 4 deselected in 21.55s\n"
+      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 89.7; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.1% ramas 78.2% |              74      3     24      3    94%   50, 75->77, 119-120\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4197    432   1618    316    86%\nCoverage JSON written to file coverage-gate.json\n210 passed, 4 deselected in 22.56s\n"
     },
     {
       "id": "G5",
@@ -33,7 +33,7 @@
     {
       "id": "G6",
       "status": "pass",
-      "detail": "....                                                                     [100%]\n4 passed in 4.57s\n"
+      "detail": "....                                                                     [100%]\n4 passed in 3.84s\n"
     },
     {
       "id": "G7",
@@ -63,7 +63,7 @@
     {
       "id": "G12",
       "status": "pass",
-      "detail": "tests 208 frente a 205"
+      "detail": "tests 210 frente a 205"
     },
     {
       "id": "G13",
