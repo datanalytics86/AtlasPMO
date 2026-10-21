@@ -4,7 +4,10 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E0, ciclo de QA 3, control QC-6 (veredicto). Ciclo 1 RECHAZADO en `0f26968`. Ciclo 2 RECHAZADO en `ecc1e56`.
+- Etapa actual: E0 cerrada como RECHAZADA-BLOQUEADA en el ciclo 3. No es APROBADO. Siguiente: E1, condicional a I-3.
+- Ciclos: 1 RECHAZADO (`0f26968`), 2 RECHAZADO (`ecc1e56`), 3 RECHAZADO y bloqueado (`cfdfbd2` más este registro). No hay cuarto ciclo (ADR-013).
+- Hallazgo abierto: I-3. R-198 no prueba que el script no abra `ATLASPMO_GOLDEN_DIR`; el test solo mira bytes y la palabra `secret`. El script actual no abre la carpeta. Evidencia: `docs/qa/E0/hallazgos.md`, `docs/qa/E0/VEREDICTO.md`, `docs/qa/E0/gate.json`.
+- Gate E0: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base, no cumplidos: G4, G5, G6, G13. test_count 137. G3 no corrió `uv run pytest` (ADR-004).
 - QC-1 escrito en `docs/qa/E0/QC1_contrato.md`.
 - QC-2 de E0 no tiene oráculo numérico: el gate se prueba con árboles temporales.
 - Gate del ciclo 3, evidencia en el commit que sigue a este párrafo si ya está: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base: G4, G5, G6, G13. G3 no corrió `uv run pytest` (ADR-004).
