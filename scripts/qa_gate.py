@@ -95,13 +95,16 @@ def _rel(path: Path, root: Path) -> str:
 
 
 def _run(command: list[str], root: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            command,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        return subprocess.CompletedProcess(command, 127, "", str(exc))
 
 
 def _spawn_failed(proc: subprocess.CompletedProcess[str]) -> bool:
@@ -127,7 +130,7 @@ def check_g2(root: Path) -> Control:
 
 def check_g3(root: Path) -> Control:
     module = _run([sys.executable, "-m", "pytest", "-q"], root)
-    direct = _run(["uv", "run", "pytest", "-q"], root)
+    direct = _run([sys.executable, "-m", "uv", "run", "pytest", "-q"], root)
     notes = [f"python -m pytest exit {module.returncode}"]
     if module.returncode != 0:
         notes.append((module.stdout + module.stderr)[-800:])
