@@ -1,8 +1,10 @@
 """XER reader and writer.
 
 The writer replays the original lines. An unchanged document is byte
-identical, including cp1252 bytes and the original newline style.
-Column names are not interpreted here.
+identical, including the original newline style. Bytes that cp1252 does
+not define stay in the text as lone surrogates and encode back to the
+same byte. The reader records that approximation. Column names are not
+interpreted here.
 """
 
 from __future__ import annotations
@@ -39,13 +41,14 @@ class XerFile:
     trailing_newline: bool
     lines: list[str]
     tables: tuple[XerTable, ...]
+    parse_notes: tuple[str, ...] = ()
 
     def to_bytes(self) -> bytes:
-        """Encode the current lines as cp1252."""
+        """Encode the current lines as cp1252, preserving undefined bytes."""
         text = self.newline.join(self.lines)
         if self.trailing_newline:
             text += self.newline
-        return text.encode("cp1252")
+        return _encode_cp1252(text)
 
     def table(self, name: str) -> XerTable | None:
         for item in self.tables:
@@ -60,7 +63,13 @@ class XerFile:
         cannot rewrite the rest of the file.
         """
         if not line_indexes:
-            return XerFile(self.newline, self.trailing_newline, list(self.lines), self.tables)
+            return XerFile(
+                self.newline,
+                self.trailing_newline,
+                list(self.lines),
+                self.tables,
+                self.parse_notes,
+            )
         owned = {
             row.line_index
             for table in self.tables
@@ -77,7 +86,7 @@ class XerFile:
         text = self.newline.join(lines)
         if self.trailing_newline:
             text += self.newline
-        return text.encode("cp1252")
+        return _encode_cp1252(text)
 
 
 def read_xer(path: Path) -> XerFile:
@@ -89,17 +98,40 @@ def read_xer_bytes(raw: bytes) -> XerFile:
     """Parse XER bytes. The line list round-trips through `to_bytes`."""
     if raw.startswith(b"\xef\xbb\xbf"):
         raise ValueError("XER con BOM: se espera cp1252 sin marca")
-    try:
-        text = raw.decode("cp1252")
-    except UnicodeDecodeError as exc:
-        raise ValueError("el archivo no decodifica como cp1252") from exc
+    text, notes = _decode_cp1252(raw)
     newline, lines, trailing = _split_lines(text)
     if not lines or not lines[0].startswith("ERMHDR"):
         raise ValueError("la primera línea debe empezar por ERMHDR")
     tables = _parse_tables(lines)
     if not any(line.startswith("%E") for line in lines):
         raise ValueError("falta el marcador final %E")
-    return XerFile(newline, trailing, lines, tables)
+    return XerFile(newline, trailing, lines, tables, notes)
+
+
+# cp1252 leaves these bytes unassigned. They must not reject the file.
+_UNDEFINED_CP1252 = (0x81, 0x8D, 0x8F, 0x90, 0x9D)
+
+
+def _decode_cp1252(raw: bytes) -> tuple[str, tuple[str, ...]]:
+    """Decode cp1252. Undefined bytes survive as surrogates."""
+    found = tuple(byte for byte in _UNDEFINED_CP1252 if byte in raw)
+    try:
+        text = raw.decode("cp1252", errors="surrogateescape")
+    except UnicodeDecodeError as exc:
+        raise ValueError("el archivo no decodifica como cp1252") from exc
+    if not found:
+        return text, ()
+    listed = ", ".join(f"0x{byte:02X}" for byte in found)
+    note = (
+        "Aproximación: bytes sin carácter definido en cp1252 "
+        f"({listed}) preservados para el round-trip."
+    )
+    return text, (note,)
+
+
+def _encode_cp1252(text: str) -> bytes:
+    """Encode cp1252 and map lone surrogates back to the original bytes."""
+    return text.encode("cp1252", errors="surrogateescape")
 
 
 def _split_lines(text: str) -> tuple[str, list[str], bool]:

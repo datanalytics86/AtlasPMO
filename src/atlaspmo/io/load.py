@@ -26,7 +26,7 @@ _DATE_FORMATS = ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d")
 def schedule_from_xer(document: XerFile) -> Schedule:
     """Map the cited columns of one XER document into a Schedule."""
     absent: set[str] = set()
-    notes: list[str] = []
+    notes: list[str] = list(document.parse_notes)
     projects = _projects(document.table("PROJECT"), absent, notes)
     calendars = _calendars(document.table("CALENDAR"), absent, notes)
     wbs = _wbs(document.table("PROJWBS"), absent)
