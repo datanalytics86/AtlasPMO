@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import subprocess
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -41,6 +42,18 @@ def git_commit(root: Path) -> str | None:
         return None
     token = done.stdout.strip()
     return token or None
+
+
+def excel_bytes(results: list[ModuleResult]) -> bytes:
+    """Write the workbook to memory. The caller does not keep the temp file."""
+    descriptor, name = tempfile.mkstemp(suffix=".xlsx")
+    os.close(descriptor)
+    path = Path(name)
+    try:
+        write_excel(path, results)
+        return path.read_bytes()
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def write_excel(path: Path, results: list[ModuleResult]) -> None:
