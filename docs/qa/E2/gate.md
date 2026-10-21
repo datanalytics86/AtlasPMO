@@ -13,5 +13,5 @@ Codigo de salida: 1
 - **G9** pass: tablas y campos literales de src/ estan en XER_SPEC.md
 - **G10** pass: 12 requisitos de E2 citan un archivo de test que existe. El verde de la suite lo mide G3.
 - **G11** pass: cambios protegidos citan un ADR
-- **G12** pass: tests 174 frente a 173
+- **G12** pass: tests 175 frente a 173
 - **G13** fail: no medido: falta el informe de qa-sabotaje

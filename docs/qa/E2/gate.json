@@ -1,7 +1,7 @@
 {
   "etapa": "E2",
   "exit_code": 1,
-  "test_count": 174,
+  "test_count": 175,
   "coverage_percent": 88.9,
   "benchmarks": {},
   "controls": [
@@ -23,7 +23,7 @@
     {
       "id": "G4",
       "status": "fail",
-      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 88.9; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 88.9% ramas 74.7% | .py                           12      1      2      1    86%   18\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4055    450   1576    333    85%\nCoverage JSON written to file coverage-gate.json\n174 passed, 2 deselected in 18.47s\n"
+      "detail": "calendars lineas 85.2 < 90; calendars ramas 70.9 < 85; engine lineas 89.4 < 90; engine ramas 79.5 < 85; logic lineas 88.6 < 90; logic ramas 75.3 < 85 | cobertura_total: 88.9; calendars lineas 85.2% ramas 70.9%; engine lineas 89.4% ramas 79.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 88.9% ramas 74.7% | .py                           12      1      2      1    86%   18\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          4055    450   1576    333    85%\nCoverage JSON written to file coverage-gate.json\n175 passed, 2 deselected in 24.38s\n"
     },
     {
       "id": "G5",
@@ -33,7 +33,7 @@
     {
       "id": "G6",
       "status": "pass",
-      "detail": "..                                                                       [100%]\n2 passed in 1.93s\n"
+      "detail": "..                                                                       [100%]\n2 passed in 1.83s\n"
     },
     {
       "id": "G7",
@@ -63,7 +63,7 @@
     {
       "id": "G12",
       "status": "pass",
-      "detail": "tests 174 frente a 173"
+      "detail": "tests 175 frente a 173"
     },
     {
       "id": "G13",
