@@ -172,6 +172,12 @@ Esto no relaja G5 ni G13. El filtro de candidatos sigue recorriendo el grafo por
 
 `tests/oracle/span.py` recorre la jornada 08:00–16:00 día a día y no importa `src/atlaspmo`. Sirve para el caso de CPLI cuyo largo es 24 h y cuya holgura al objetivo es 16 h. No cubre los demás esperados de E1. QC-2 sigue incompleto fuera de ese caso.
 
+## ADR-018 — Oráculo de un camino alterno, y el filtro por origen
+
+`tests/oracle/pathlen.py` suma duraciones y no importa `src/atlaspmo`. Cubre un solo caso: el camino A–B–C de 8 h + 8 h es más largo que un vínculo directo con lag 0. No confirma el CPM ni los demás vínculos. QC-2 de E2 sigue incompleto fuera de ese caso.
+
+El filtro de candidatos ya no recorre el grafo por vínculo. Lo hace una vez por origen. La frase de ADR-016 que decía lo contrario queda superada por esta. La confirmación conjunta no cambió. La de 30 000 actividades no cabe en 3 minutos con un CPM por candidato.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió
