@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import io
+import tempfile
+import zipfile
 from pathlib import Path
 
 import duckdb
@@ -17,6 +20,27 @@ _TABLES = (
     "fact_timephased",
     "fact_risk",
 )
+
+
+def parquet_zip_bytes(
+    results: list[ModuleResult],
+    *,
+    project_name: str,
+    run_id: str,
+) -> bytes:
+    """Zip the seven star tables. The caller does not keep the temp folder."""
+    with tempfile.TemporaryDirectory() as folder:
+        written = write_star(
+            Path(folder),
+            results,
+            project_name=project_name,
+            run_id=run_id,
+        )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            for path in written.values():
+                archive.write(path, arcname=path.name)
+        return buffer.getvalue()
 
 
 def write_star(

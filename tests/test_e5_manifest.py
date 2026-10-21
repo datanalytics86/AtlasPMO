@@ -9,7 +9,8 @@ from atlaspmo.analysis.contract import AnalysisContext
 from atlaspmo.bootstrap import bootstrap
 from atlaspmo.io.load import schedule_from_xer
 from atlaspmo.io.xer import read_xer
-from atlaspmo.reports.export import excel_bytes, write_manifest
+from atlaspmo.reports.export import excel_bytes, manifest_bytes, pdf_bytes, write_manifest
+from atlaspmo.reports.parquet_star import parquet_zip_bytes
 from atlaspmo.runner import run_selected
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,3 +31,9 @@ def test_manifest_leaves_the_input_bytes_unchanged(tmp_path: Path) -> None:
     assert payload["input_sha256"]
     assert payload["modules"] == ["quality"]
     assert excel_bytes(results).startswith(b"PK")
+    assert pdf_bytes(results).startswith(b"%PDF")
+    assert parquet_zip_bytes(results, project_name="in.xer", run_id="ui").startswith(b"PK")
+    manifest = json.loads(manifest_bytes(results, "in.xer", before, ROOT))
+    assert manifest["input_name"] == "in.xer"
+    assert manifest["input_sha256"] == payload["input_sha256"]
+    assert source.read_bytes() == before

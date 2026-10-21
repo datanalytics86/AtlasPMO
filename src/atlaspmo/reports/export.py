@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import tempfile
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -46,14 +47,12 @@ def git_commit(root: Path) -> str | None:
 
 def excel_bytes(results: list[ModuleResult]) -> bytes:
     """Write the workbook to memory. The caller does not keep the temp file."""
-    descriptor, name = tempfile.mkstemp(suffix=".xlsx")
-    os.close(descriptor)
-    path = Path(name)
-    try:
-        write_excel(path, results)
-        return path.read_bytes()
-    finally:
-        path.unlink(missing_ok=True)
+    return _temp_bytes(".xlsx", lambda path: write_excel(path, results))
+
+
+def pdf_bytes(results: list[ModuleResult]) -> bytes:
+    """Write the PDF to memory. The caller does not keep the temp file."""
+    return _temp_bytes(".pdf", lambda path: write_pdf(path, results))
 
 
 def write_excel(path: Path, results: list[ModuleResult]) -> None:
@@ -112,17 +111,51 @@ def write_manifest(
     root: Path,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+    name = source.name if source else None
+    digest = file_sha256(source) if source else None
+    payload = _manifest_payload(results, name, digest, root)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def manifest_bytes(
+    results: list[ModuleResult],
+    source_name: str | None,
+    source_bytes: bytes | None,
+    root: Path,
+) -> bytes:
+    """Manifest JSON for the bytes already in memory. Does not write the source."""
+    digest = hashlib.sha256(source_bytes).hexdigest() if source_bytes is not None else None
+    payload = _manifest_payload(results, source_name, digest, root)
+    return json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+
+
+def _temp_bytes(suffix: str, write: Callable[[Path], None]) -> bytes:
+    descriptor, name = tempfile.mkstemp(suffix=suffix)
+    os.close(descriptor)
+    path = Path(name)
+    try:
+        write(path)
+        return path.read_bytes()
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def _manifest_payload(
+    results: list[ModuleResult],
+    source_name: str | None,
+    source_sha256: str | None,
+    root: Path,
+) -> dict[str, object]:
+    return {
         "app_version": __version__,
         "git_commit": git_commit(root),
-        "input_sha256": file_sha256(source) if source else None,
-        "input_name": source.name if source else None,
+        "input_sha256": source_sha256,
+        "input_name": source_name,
         "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "modules": [item.module_id for item in results],
         "seeds": [item.metadata.seed for item in results],
         "approximations": [note for item in results for note in item.approximations],
     }
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _num(value: float | None) -> str:

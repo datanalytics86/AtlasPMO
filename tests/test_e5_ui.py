@@ -6,6 +6,8 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
+from test_cpm import _link, _load, _task
+
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "src" / "atlaspmo" / "ui" / "app.py"
 FIXTURE = ROOT / "tests" / "fixtures" / "synthetic" / "minimal.xer"
@@ -31,4 +33,34 @@ def test_load_run_and_show_approximations() -> None:
     assert app.exception == []
     assert app.subheader[0].value == "quality"
     assert len(app.caption) > 2
-    assert len(app.download_button) == 1
+    assert "no hay Gantt" in " ".join(item.value for item in app.caption)
+    labels = {item.label for item in app.download_button}
+    assert labels == {
+        "Exportar Excel",
+        "Exportar PDF",
+        "Exportar Parquet",
+        "Exportar manifiesto",
+    }
+
+
+def test_mode_b_shows_the_cpm_gantt(tmp_path: Path) -> None:
+    _load(tmp_path, [_task("1", "A", "8"), _task("2", "B", "16")], [_link("1", "1", "2")])
+    app = AppTest.from_file(APP)
+    app.run()
+    app.file_uploader[0].upload("chain.xer", (tmp_path / "case.xer").read_bytes()).run()
+    app.multiselect[0].set_value(["Ruta crítica (modo B)"]).run()
+    app.button[0].click().run()
+    assert app.exception == []
+    assert app.get("plotly_chart")
+    assert "No recalcula fechas" in " ".join(item.value for item in app.caption)
+
+
+def test_batch_ranks_one_synthetic(tmp_path: Path) -> None:
+    (tmp_path / "minimal.xer").write_bytes(FIXTURE.read_bytes())
+    app = AppTest.from_file(APP)
+    app.run()
+    app.text_input[0].set_value(str(tmp_path)).run()
+    app.button[1].click().run()
+    assert app.exception == []
+    rendered = " ".join(str(item.value) for item in app.dataframe)
+    assert "minimal.xer" in rendered
