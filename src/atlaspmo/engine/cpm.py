@@ -13,13 +13,14 @@ from atlaspmo.model.schedule import Activity, Calendar, Relationship, Schedule
 
 _MAIN = {"TT_Task", "TT_Rsrc", "TT_Mile", "TT_FinMile"}
 _MILESTONE = {"TT_Mile", "TT_FinMile"}
-_START_ON = {"CS_MSO", "CS_MANDSTART"}
+_START_ON = {"CS_MSO"}
 _START_AFTER = {"CS_MSOA"}
 _START_BEFORE = {"CS_MSOB"}
-_FINISH_ON = {"CS_MEO", "CS_MANDFIN"}
+_FINISH_ON = {"CS_MEO"}
 _FINISH_AFTER = {"CS_MEOA"}
 _FINISH_BEFORE = {"CS_MEOB"}
 _KNOWN_LINKS = {"PR_FS", "PR_SS", "PR_FF", "PR_SF"}
+_ROLLUP = {"TT_LOE", "TT_WBS"}
 
 
 @dataclass(frozen=True)
@@ -56,16 +57,25 @@ class _Node:
     finished: bool = False
     preds: list[Relationship] = field(default_factory=list)
     succs: list[Relationship] = field(default_factory=list)
+    driving_preds: list[str] = field(default_factory=list)
 
 
 def schedule_cpm(schedule: Schedule, options: EngineOptions | None = None) -> CpmResult:
     """Forward and backward pass. A cycle returns no dates."""
     chosen = options or EngineOptions()
     notes: list[str] = []
+    rule = chosen.critical_rule
+    if rule not in {"float", "longest"}:
+        notes.append("Criterio de crítico desconocido. Se usó holgura.")
+        rule = "float"
     if chosen.progress not in {"retained", "progress_override", "actual_dates"}:
         notes.append("Opción de avance desconocida. Se usó retained logic.")
         chosen = EngineOptions(
-            "retained", chosen.lag_calendar, chosen.float_kind, chosen.critical_hours
+            "retained",
+            chosen.lag_calendar,
+            chosen.float_kind,
+            chosen.critical_hours,
+            rule,
         )
     cycles = [item.message_es for item in validate_schedule(schedule) if item.code == "cycle"]
     if cycles:
@@ -87,16 +97,17 @@ def schedule_cpm(schedule: Schedule, options: EngineOptions | None = None) -> Cp
         return CpmResult({}, None, tuple(notes), tuple(skipped))
     project_cal = _project_calendar(schedule, clocks)
     elapsed = elapsed_calendar()
-    _forward(nodes, order, data_date, chosen, project_cal, elapsed)
+    _forward(nodes, order, data_date, chosen, project_cal, elapsed, notes)
     finish = _project_finish(nodes)
     if finish is None:
         return CpmResult({}, None, tuple(notes), tuple(skipped))
-    _backward(nodes, order, finish, chosen, project_cal, elapsed)
+    _backward(nodes, order, finish, chosen, project_cal, elapsed, notes)
+    on_longest = _longest_ids(nodes, finish) if rule == "longest" else set()
     _apply_alap(nodes, notes)
     _rollup(schedule, nodes, clocks, notes)
     critical_minutes = int(round(chosen.critical_hours * 60))
     built = {
-        task_id: _pack(node, nodes, chosen.float_kind, critical_minutes)
+        task_id: _pack(node, nodes, chosen.float_kind, critical_minutes, rule, on_longest)
         for task_id, node in nodes.items()
         if node.early_start is not None
         and node.early_finish is not None
@@ -262,6 +273,7 @@ def _forward(
     options: EngineOptions,
     project_cal: WorkCalendar | None,
     elapsed: WorkCalendar,
+    notes: list[str],
 ) -> None:
     for task_id in order:
         node = nodes[task_id]
@@ -277,12 +289,12 @@ def _forward(
             node.early_finish = node.activity.act_end_date
             continue
         ignore_preds = node.started and options.progress in {"progress_override", "actual_dates"}
-        bounds: list[datetime] = []
+        pieces: list[tuple[str | None, datetime]] = []
         if node.started and options.progress == "actual_dates":
             origin = node.activity.act_start_date or data_date
-            bounds.append(node.calendar.add_work(origin, 0))
+            pieces.append((None, node.calendar.add_work(origin, 0)))
         else:
-            bounds.append(node.calendar.add_work(data_date, 0))
+            pieces.append((None, node.calendar.add_work(data_date, 0)))
         if not ignore_preds:
             for link in node.preds:
                 pred = nodes[link.pred_task_id or ""]
@@ -292,8 +304,8 @@ def _forward(
                 bound = _early_start_bound(link, pred, node, lag_cal)
                 if node.duration > 0:
                     bound = node.calendar.add_work(bound, 0)
-                bounds.append(bound)
-        start = _latest(bounds)
+                pieces.append((link.pred_task_id, bound))
+        start = _latest([item[1] for item in pieces])
         start = _delay_start(node, start)
         finish = start if node.duration == 0 else node.calendar.add_work(start, node.duration)
         if node.started:
@@ -304,6 +316,10 @@ def _forward(
             node.early_start = start
             node.early_finish = finish
         node.early_finish = _delay_finish(node)
+        if not node.started:
+            _impose_mandatory_forward(node, notes)
+            _snap_start_milestone(node)
+        node.driving_preds = _driving_ids(node, pieces)
 
 
 def _early_start_bound(
@@ -332,6 +348,7 @@ def _backward(
     options: EngineOptions,
     project_cal: WorkCalendar | None,
     elapsed: WorkCalendar,
+    notes: list[str],
 ) -> None:
     for task_id in reversed(order):
         node = nodes[task_id]
@@ -361,6 +378,9 @@ def _backward(
             late_start = min(late_start, capped)
         node.late_start = late_start
         node.late_finish = late_finish
+        if not node.started:
+            _impose_mandatory_backward(node, late_start, late_finish, notes)
+            _snap_start_milestone_late(node)
 
 
 def _late_bounds(
@@ -492,6 +512,8 @@ def _pack(
     nodes: dict[str, _Node],
     float_kind: str,
     critical_minutes: int,
+    rule: str,
+    on_longest: set[str],
 ) -> ScheduledActivity:
     assert node.early_start is not None and node.early_finish is not None
     assert node.late_start is not None and node.late_finish is not None
@@ -504,15 +526,19 @@ def _pack(
         total = finish_float
     else:
         total = min(start_float, finish_float)
+    task_id = node.activity.task_id or ""
+    critical = task_id in on_longest if rule == "longest" else total <= critical_minutes
+    if node.activity.task_type in _ROLLUP:
+        critical = False
     return ScheduledActivity(
-        task_id=node.activity.task_id or "",
+        task_id=task_id,
         early_start=node.early_start,
         early_finish=node.early_finish,
         late_start=node.late_start,
         late_finish=node.late_finish,
         total_float_hours=total / 60,
         free_float_hours=_free_float(node, nodes) / 60,
-        critical=total <= critical_minutes and node.activity.task_type not in {"TT_LOE", "TT_WBS"},
+        critical=critical,
     )
 
 
@@ -615,6 +641,157 @@ def _constraint_late(
         ls_bounds.append(node.calendar.subtract_work(raw, 0))
     for raw in _dates_for(node, _FINISH_ON | _FINISH_BEFORE):
         lf_bounds.append(node.calendar.subtract_work(raw, 0))
+
+
+def _longest_ids(nodes: dict[str, _Node], project_finish: datetime) -> set[str]:
+    """Activities on a driving chain that ends at the project finish."""
+    stack = [
+        task_id
+        for task_id, node in nodes.items()
+        if node.early_finish == project_finish and node.activity.task_type not in _ROLLUP
+    ]
+    on: set[str] = set()
+    while stack:
+        current = stack.pop()
+        if current in on:
+            continue
+        node = nodes[current]
+        if node.activity.task_type in _ROLLUP:
+            continue
+        on.add(current)
+        for pred_id in node.driving_preds:
+            if pred_id in nodes and pred_id not in on:
+                stack.append(pred_id)
+    return on
+
+
+def _driving_ids(node: _Node, pieces: list[tuple[str | None, datetime]]) -> list[str]:
+    if node.early_start is None:
+        return []
+    found: list[str] = []
+    for pred_id, bound in pieces:
+        if pred_id is None:
+            continue
+        same = bound == node.early_start or _open_milestone_follows(node, bound)
+        if same:
+            found.append(pred_id)
+    return found
+
+
+def _open_milestone_follows(node: _Node, bound: datetime) -> bool:
+    if node.activity.task_type != "TT_Mile" or node.early_start is None:
+        return False
+    return node.calendar.add_work(bound, 0) == node.early_start
+
+
+def _impose_mandatory_forward(node: _Node, notes: list[str]) -> None:
+    assert node.early_start is not None and node.early_finish is not None
+    logic_start = node.early_start
+    logic_finish = node.early_finish
+    mand_start = _constraint_date(node, "CS_MANDSTART")
+    mand_finish = _constraint_date(node, "CS_MANDFIN")
+    if mand_start is None and mand_finish is None:
+        return
+    code = node.activity.task_code or node.activity.task_id or ""
+    if mand_start is not None:
+        imposed = _minute_dt(mand_start)
+        if imposed < logic_start:
+            notes.append(
+                f"{code}: CS_MANDSTART impone {_shown(imposed)} "
+                f"y viola la lógica (inicio por red {_shown(logic_start)})."
+            )
+        node.early_start = imposed
+        if mand_finish is None:
+            node.early_finish = _finish_from(node, imposed)
+    if mand_finish is not None:
+        imposed_finish = _minute_dt(mand_finish)
+        if imposed_finish < logic_finish:
+            notes.append(
+                f"{code}: CS_MANDFIN impone {_shown(imposed_finish)} "
+                f"y viola la lógica (fin por red {_shown(logic_finish)})."
+            )
+        node.early_finish = imposed_finish
+        if mand_start is None:
+            node.early_start = _start_from(node, imposed_finish)
+
+
+def _impose_mandatory_backward(
+    node: _Node,
+    logic_start: datetime,
+    logic_finish: datetime,
+    notes: list[str],
+) -> None:
+    mand_start = _constraint_date(node, "CS_MANDSTART")
+    mand_finish = _constraint_date(node, "CS_MANDFIN")
+    if mand_start is None and mand_finish is None:
+        return
+    code = node.activity.task_code or node.activity.task_id or ""
+    if mand_start is not None:
+        imposed = _minute_dt(mand_start)
+        if logic_start < imposed:
+            notes.append(
+                f"{code}: CS_MANDSTART impone {_shown(imposed)} en el pase atrás "
+                f"y viola la lógica (inicio tarde por red {_shown(logic_start)})."
+            )
+        node.late_start = imposed
+        if mand_finish is None:
+            node.late_finish = _finish_from(node, imposed)
+    if mand_finish is not None:
+        imposed_finish = _minute_dt(mand_finish)
+        if logic_finish < imposed_finish:
+            notes.append(
+                f"{code}: CS_MANDFIN impone {_shown(imposed_finish)} en el pase atrás "
+                f"y viola la lógica (fin tarde por red {_shown(logic_finish)})."
+            )
+        node.late_finish = imposed_finish
+        if mand_start is None:
+            node.late_start = _start_from(node, imposed_finish)
+
+
+def _snap_start_milestone(node: _Node) -> None:
+    if node.activity.task_type != "TT_Mile" or node.early_start is None:
+        return
+    snapped = node.calendar.add_work(node.early_start, 0)
+    node.early_start = snapped
+    node.early_finish = snapped
+
+
+def _snap_start_milestone_late(node: _Node) -> None:
+    if node.activity.task_type != "TT_Mile":
+        return
+    if node.late_start is None or node.late_finish is None:
+        return
+    node.late_start = node.calendar.add_work(node.late_start, 0)
+    node.late_finish = node.calendar.add_work(node.late_finish, 0)
+
+
+def _finish_from(node: _Node, start: datetime) -> datetime:
+    if node.duration == 0:
+        return start
+    return node.calendar.add_work(start, node.duration)
+
+
+def _start_from(node: _Node, finish: datetime) -> datetime:
+    if node.duration == 0:
+        return finish
+    return node.calendar.subtract_work(finish, node.duration)
+
+
+def _constraint_date(node: _Node, code: str) -> datetime | None:
+    activity = node.activity
+    if activity.cstr_type == code and activity.cstr_date is not None:
+        return activity.cstr_date
+    if activity.cstr_type2 == code and activity.cstr_date2 is not None:
+        return activity.cstr_date2
+    return None
+
+
+def _minute_dt(instant: datetime) -> datetime:
+    return instant.replace(second=0, microsecond=0)
+
+
+def _shown(instant: datetime) -> str:
+    return instant.strftime("%Y-%m-%d %H:%M")
 
 
 def _project_finish(nodes: dict[str, _Node]) -> datetime | None:
