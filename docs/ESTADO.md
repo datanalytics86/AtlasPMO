@@ -4,7 +4,7 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E1, rechazo 2 de 3. Veredicto de ciclo 2: RECHAZADO. Gate `07007ad`, salida 1. Condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO. Sin push de cierre. Queda un ciclo. Si el tercero también es RECHAZADO, la etapa queda RECHAZADA-BLOQUEADA y se sigue con E2.
+- Etapa actual: E1, ciclo 3, gate en rojo, veredicto todavía no emitido. Condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO. Sin push de cierre.
 - Gate E1 ciclo 2: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 167. cobertura_total 87.9. Modelo líneas 100.0 y ramas 100.0. Siguen bajo 8.1: calendars líneas 81.6 y ramas 63.9, engine líneas 86.0 y ramas 74.8, logic líneas 87.3 y ramas 73.6. G13 sin reejecutar mutación: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. G3 es `python -m pytest`; `uv run pytest` no arranca (ADR-004).
 - Ciclo 1 RECHAZADO (`b0c5039`, veredicto `797f559`). El veredicto de trabajo sigue siendo el del ciclo 1 hasta que el revisor del ciclo 2 lo reemplace.
 - Corrección del ciclo 2, ya en `734efc9`: oráculo de un caso de CPLI en `tests/oracle/span.py` (ADR-017) y ramas de `Schedule.calendar_for` y `select`. No cierra calendarios, motor, lógica ni G13. QC-2 sigue incompleto fuera de ese caso.
@@ -14,8 +14,8 @@ Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama
 - E1 integrado en local: `366209b` (xer-io) y `3ddbddd` (motor-cpm). QC-1 está en `docs/qa/E1/QC1_contrato.md` y es posterior al código (I-13).
 - Lectura 30k realista: 0.197 s en `docs/qa/E1/perf.md`. Por debajo de 15 s. El resto de la sección 11 no está medido.
 - B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
-- Ciclo 3, corrección acotada, sin gate todavía: `tests/test_e1_cycle3_edges.py` cubre notas del parser, minutos negativos, piso del epoch, calendario solo con excepción y desajustes de conformidad. No afirma G4 ni G13. I-14 sigue parcial.
-- Siguiente control: gate `--etapa E1` del ciclo 3. No se bajan umbrales. Si sale en rojo, el revisor es el rechazo 3 y la etapa queda RECHAZADA-BLOQUEADA.
+- Ciclo 3, gate sobre `1e4c8bc`: salida 1. test_count 173. cobertura_total 88.8. Calendars líneas 85.2 y ramas 70.9. Engine líneas 89.4 y ramas 79.5. Logic líneas 87.3 y ramas 73.6. G13 sin reejecutar: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. Sigue en fail. No es APROBADO.
+- Siguiente control: qa-revisor del ciclo 3. Si rechaza, el orquestador marca RECHAZADA-BLOQUEADA, hace push de `v2` y sigue con E2. Los resultados de E2 en adelante quedan condicionales a I-3, I-11, I-12, I-13 e I-14 parcial.
 
 ### Hecho de la v1
 
