@@ -4,15 +4,17 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E1, ciclo 1 RECHAZADO (`b0c5039`, veredicto en `docs/qa/E1/VEREDICTO.md`). Condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO.
+- Etapa actual: E1, ciclo 2. Gate sobre el árbol de `734efc9`: salida 1. Evidencia en `docs/qa/E1/gate.md`. Condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO. Sin push de cierre.
+- Gate E1 ciclo 2: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 167. cobertura_total 87.9. Modelo líneas 100.0 y ramas 100.0. Siguen bajo 8.1: calendars líneas 81.6 y ramas 63.9, engine líneas 86.0 y ramas 74.8, logic líneas 87.3 y ramas 73.6. G13 sin reejecutar mutación: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. G3 es `python -m pytest`; `uv run pytest` no arranca (ADR-004).
+- Ciclo 1 RECHAZADO (`b0c5039`, veredicto `797f559`). El veredicto de trabajo sigue siendo el del ciclo 1 hasta que el revisor del ciclo 2 lo reemplace.
+- Corrección del ciclo 2, ya en `734efc9`: oráculo de un caso de CPLI en `tests/oracle/span.py` (ADR-017) y ramas de `Schedule.calendar_for` y `select`. No cierra calendarios, motor, lógica ni G13. QC-2 sigue incompleto fuera de ese caso.
 - E0 ciclos: 1 RECHAZADO (`0f26968`), 2 RECHAZADO (`ecc1e56`), 3 bloqueado (`9bcf40a`). No hay cuarto ciclo (ADR-013).
 - Hallazgo abierto de E0: I-3. R-198 no prueba que el script no abra `ATLASPMO_GOLDEN_DIR`. El script no la abre. Evidencia: `docs/qa/E0/hallazgos.md`, `docs/qa/E0/VEREDICTO.md`.
-- Gate E0: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base, no cumplidos: G4, G5, G6, G13. test_count 137. G3 no corrió `uv run pytest` (ADR-004). Push en `f64ef03`.
-- E1 integrado en local, todavía sin push de cierre: `366209b` (xer-io) y `3ddbddd` (motor-cpm). QC-1 está en `docs/qa/E1/QC1_contrato.md` y es posterior al código.
+- Gate E0: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base, no cumplidos: G4, G5, G6, G13. test_count 137. Push en `f64ef03`.
+- E1 integrado en local: `366209b` (xer-io) y `3ddbddd` (motor-cpm). QC-1 está en `docs/qa/E1/QC1_contrato.md` y es posterior al código (I-13).
 - Lectura 30k realista: 0.197 s en `docs/qa/E1/perf.md`. Por debajo de 15 s. El resto de la sección 11 no está medido.
-- Cobertura medida en el árbol integrado, todavía sin gate de E1: total de líneas 88.0. No llega a 8.1 en calendarios, motor, lógica ni ramas del modelo. No es un pass de G4.
 - B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
-- Siguiente control: gate `--etapa E1` cuando termine la mutación completa. Si el gate falla, el revisor rechaza. Tras 3 rechazos, RECHAZADA-BLOQUEADA y se sigue.
+- Siguiente control: qa-revisor del ciclo 2. Si rechaza, queda un ciclo. Tras el tercer rechazo, RECHAZADA-BLOQUEADA, push de `v2` y se sigue con E2. No se bajan umbrales.
 
 ### Hecho de la v1
 
