@@ -35,13 +35,25 @@ El lanzador y los comandos de arriba evitan ese fallo. El detalle está en
 Doble clic en `atlaspmo.bat`, o desde la raíz:
 
 ```
-uv run python -m streamlit run src/atlaspmo/ui/app.py
+py -3.12 -m uv run python -m streamlit run src/atlaspmo/ui/app.py
 ```
 
-La pantalla muestra el título, la leyenda de que nada sale del equipo y una
-lista de módulos en español. No carga un archivo. No ejecuta los módulos.
-No hay tabla para aprobar vínculos ni un visor de Gantt. Esas funciones están
-en la biblioteca de Python, no en la interfaz.
+`uv run streamlit` falla en este equipo (ADR-004). `.streamlit/config.toml`
+pide `localhost` y apaga las estadísticas de uso. Esta versión no demostró,
+con un socket, que un proceso esté escuchando.
+
+La pantalla carga un XER, muestra cuántas actividades tiene, deja elegir
+módulos y un perfil de calidad, y ejecuta. Resultados y exportaciones van en
+dos pestañas. Se descarga Excel, PDF, un zip Parquet y el manifiesto. El
+visor aparece solo si el módulo trae una tabla CPM con inicio y fin tempranos.
+Sin fecha de corte el motor no arma esa tabla y la pantalla lo dice. El lote
+corre los XER de una carpeta. La biblioteca guarda métricas en un DuckDB y no
+guarda el cronograma.
+
+El baseline no se asocia. No hay avance parcial: la barra se llena al
+terminar. No hay bandas de holgura ni filtro por WBS. No se abrió un
+navegador para escribir esto. La evidencia de la pantalla es AppTest, en
+`tests/test_e5_ui.py`.
 
 ## Módulos
 
@@ -56,9 +68,8 @@ en la biblioteca de Python, no en la interfaz.
 | EVM y Earned Schedule | PV, EV, AC y Earned Schedule a la fecha de corte | PV lineal. La curva es un solo punto |
 | Comparación de updates | Diferencias entre dos cronogramas | Solo por `task_code`. Hacen falta los dos cronogramas; la pantalla no pide el segundo |
 
-Cada simplificación queda en `approximations` del resultado y en el Excel, el PDF
-y el manifiesto cuando se exporta. La pantalla no las muestra, porque no corre
-los módulos.
+Cada simplificación queda en `approximations` del resultado, en la leyenda de
+la pantalla y en el Excel, el PDF y el manifiesto cuando se exporta.
 
 ## Riesgo
 
@@ -85,8 +96,10 @@ No se contrastó con P6.
 La comparación usa la holgura total guardada. No recalcula el CPM. Un lag vacío
 no se compara como cero.
 
-El lote lee solo `*.xer` de una carpeta, corre calidad por defecto y ordena por
-índice de mayor a menor. Un índice ausente queda al final. Desde Python:
+El lote lee solo `*.xer` de una carpeta. Sin módulos elegidos corre calidad.
+Si la pantalla tiene una selección, usa esos módulos. Ordena por índice de
+mayor a menor. Un índice ausente queda al final. También se puede llamar
+desde Python:
 
 ```python
 from pathlib import Path
@@ -98,8 +111,10 @@ write_ranking(Path("ranking.xlsx"), rows)
 ```
 
 La biblioteca DuckDB guarda corridas, métricas y hallazgos. Las actividades
-entran solo si `store_schedule` es verdadero. El Parquet en estrella deja
-`fact_timephased` vacío. `dim_activity` no se llena en esta versión.
+entran solo si `store_schedule` es verdadero. La pantalla guarda métricas y
+no pide guardar el cronograma. En EVM, `fact_timephased` guarda la duración
+remanente en el balde `corte` cuando la actividad trae `spread_hours`. No es
+una curva por periodo. `dim_activity` no se llena desde la pantalla.
 
 ## Power BI
 
