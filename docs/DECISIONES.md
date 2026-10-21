@@ -136,6 +136,16 @@ G9 mira tablas P6 en todo `src/` y literales con forma de columna solo en `io/`,
 
 Los tests marcados `perf` no entran en `addopts`. No son `skip` ni `xfail`: G6 los ejecuta con `pytest -m perf`. Deseleccionarlos no relaja un umbral. En E0 todavía no hay `tests/perf`; G6 queda en línea base, no medido.
 
+## ADR-015 — El gate compara lo que la sección 8.3 nombra
+
+El ciclo 2 de E0 rechazó G5, G7, G8 y G12 porque el control no aplicaba la regla completa. Este ADR precisa ADR-014.
+
+- G5 lee `max_examples` del `register_profile("qa")`. Menos de 500 es fallo, aunque el nombre del perfil esté.
+- G7 exige una fila de `skips.toml` por cada test que llama a `skip`, `skipif` o `xfail`. Una fila de otro test no cubre el resto.
+- G8 trata como cronograma un `.xml` con `APIBusinessObjects` o el espacio de nombres MSPDI, fuera de `tests/fixtures/`.
+- G12 compara, cuando las dos etapas los tienen, el conteo de tests, `coverage_percent` (baja de más de 0,5 puntos) y `benchmarks` (empeora más de 20 %). Si el número no existe, no se inventa.
+- El pre-commit corre `check_g8` además del rechazo por archivo. El pre-push sigue igual.
+
 ## ADR-014 — Umbrales reales del gate, sin declararlos cumplidos en E0
 
 El ciclo 1 de E0 rechazó la etapa porque los tests del gate no cubrían G1–G13 y porque G4 no aplicaba el umbral de la sección 8.1. Este ADR precisa ADR-011.

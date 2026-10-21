@@ -224,7 +224,10 @@ def judge_coverage(data: dict[str, object]) -> Control:
                 problems.append(f"{bucket} ramas {branch:.1f} < {_STRICT_BRANCHES:.0f}")
         elif lines < _REST_LINES:
             problems.append(f"{bucket} lineas {lines:.1f} < {_REST_LINES:.0f}")
-    detail = "; ".join(notes)
+    measured = _pct(
+        sum(slot[1] for slot in totals.values()), sum(slot[0] for slot in totals.values())
+    )
+    detail = f"cobertura_total: {measured:.1f}; " + "; ".join(notes)
     if problems:
         return Control("G4", "fail", "; ".join(problems) + " | " + detail)
     return Control("G4", "pass", detail)
@@ -267,15 +270,28 @@ def check_g5(root: Path) -> Control:
         missing.append("no existe tests/property")
     else:
         blob = "\n".join(path.read_text(encoding="utf-8") for path in folder.glob("*.py"))
+        examples = _qa_examples(blob)
         for key, token in INVARIANTS.items():
             if token not in blob or "qa" not in blob:
                 missing.append(f"invariante {key} ({token}) sin perfil qa")
-            if "max_examples=500" not in blob and 'register_profile("qa"' not in blob:
-                missing.append("perfil qa sin 500 ejemplos")
-                break
+        if examples is None or examples < 500:
+            missing.append(f"perfil qa con {examples} ejemplos; hacen falta 500")
     if missing:
         return Control("G5", "fail", "; ".join(missing))
     return Control("G5", "pass", "invariantes a-e con perfil qa")
+
+
+def _qa_examples(blob: str) -> int | None:
+    match = re.search(
+        r"register_profile\(\s*['\"]qa['\"][^)]*max_examples\s*=\s*(\d+)",
+        blob,
+    )
+    if match:
+        return int(match.group(1))
+    loose = re.search(r"max_examples\s*=\s*(\d+)", blob)
+    if loose and "qa" in blob:
+        return int(loose.group(1))
+    return None
 
 
 def check_g6(root: Path) -> Control:
@@ -289,37 +305,56 @@ def check_g6(root: Path) -> Control:
     return Control("G6", "pass", text)
 
 
-def _skip_calls(path: Path) -> list[str]:
+def _mark_name(node: ast.AST) -> str:
+    current = node
+    if isinstance(current, ast.Call):
+        current = current.func
+    if isinstance(current, ast.Attribute):
+        return current.attr
+    if isinstance(current, ast.Name):
+        return current.id
+    return ""
+
+
+def _skipped_tests(path: Path) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    found: list[str] = []
+    names: list[str] = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             continue
-        name = ""
-        func = node.func
-        if isinstance(func, ast.Attribute):
-            name = func.attr
-        elif isinstance(func, ast.Name):
-            name = func.id
-        if name in {"skip", "skipif", "xfail"}:
-            found.append(f"{path}:{node.lineno}:{name}")
-    return found
+        marks: list[ast.AST] = list(node.decorator_list)
+        marks.extend(child for child in ast.walk(node) if isinstance(child, ast.Call))
+        if any(_mark_name(mark) in {"skip", "skipif", "xfail"} for mark in marks):
+            names.append(node.name)
+    return names
+
+
+def _skip_listed(call: str, item: str) -> bool:
+    return bool(item) and (
+        item == call or item.startswith(call + "[") or item.startswith(call + " ")
+    )
 
 
 def check_g7(root: Path) -> Control:
     calls: list[str] = []
-    for path in (root / "tests").rglob("*.py"):
-        calls.extend(_skip_calls(path))
+    tests = root / "tests"
+    if tests.is_dir():
+        for path in tests.rglob("*.py"):
+            rel = _rel(path, root)
+            calls.extend(f"{rel}::{name}" for name in _skipped_tests(path))
     listed = _skip_table(root)
     if not calls and not listed:
         return Control("G7", "pass", "no hay skip ni xfail")
-    problems = []
+    problems: list[str] = []
+    listed_ids: list[str] = []
     for row in listed:
         reason = str(row.get("motivo", ""))
         if reason not in SKIP_REASONS:
             problems.append(f"motivo no aceptado: {reason}")
-    if calls and not listed:
-        problems.append("hay skip en tests y skips.toml no los lista: " + ", ".join(calls))
+        listed_ids.append(str(row.get("test", "")))
+    for call in calls:
+        if not any(_skip_listed(call, item) for item in listed_ids):
+            problems.append(f"skip sin fila: {call}")
     if problems:
         return Control("G7", "fail", "; ".join(problems))
     return Control("G7", "pass", f"{len(listed)} omisiones listadas; {len(calls)} marcas en tests")
@@ -345,6 +380,11 @@ def check_g8(root: Path) -> Control:
         suffix = path.suffix.lower()
         if suffix in {".xer", ".mpp"}:
             problems.append(f"{rel}: cronograma fuera de tests/fixtures")
+        if suffix == ".xml":
+            content = path.read_bytes()
+            markers = (b"APIBusinessObjects", b"http://schemas.microsoft.com/project")
+            if any(marker in content for marker in markers):
+                problems.append(f"{rel}: XML de cronograma fuera de tests/fixtures")
         if rel.startswith("data/real/") or path.name == ".env" or rel.endswith("/.env"):
             problems.append(f"{rel}: archivo privado")
         if suffix in {".py", ".md", ".toml", ".yaml", ".yml", ".bat", ".json"}:
@@ -500,15 +540,43 @@ def _is_protected(rel: str) -> bool:
     return rel.startswith("profiles/") and rel.endswith(".yaml")
 
 
-def check_g12(root: Path, etapa: str) -> Control:
+def _coverage_percent(detail: str) -> float | None:
+    match = re.search(r"cobertura_total:\s*([0-9]+(?:\.[0-9]+)?)", detail)
+    if match is None:
+        return None
+    return float(match.group(1))
+
+
+def check_g12(
+    root: Path,
+    etapa: str,
+    coverage: float | None = None,
+    benchmarks: dict[str, float] | None = None,
+) -> Control:
     previous = _previous_gate(root, etapa)
     if previous is None:
         return Control("G12", "pass", "sin etapa anterior; no hay regresion que medir")
     current = _run([sys.executable, "-m", "pytest", "-q"], root)
     count = _passed_count(current.stdout)
     old = int(previous.get("test_count") or 0)
-    if count < old:
-        return Control("G12", "fail", f"tests {count} < {old}")
+    problems: list[str] = []
+    if old and count < old:
+        problems.append(f"tests {count} < {old}")
+    stored = previous.get("coverage_percent")
+    if coverage is not None and isinstance(stored, int | float) and float(stored) - coverage > 0.5:
+        problems.append(f"cobertura {coverage:.1f} < {float(stored):.1f} - 0.5")
+    old_benchmarks = previous.get("benchmarks")
+    if isinstance(old_benchmarks, dict) and benchmarks:
+        for key, previous_value in old_benchmarks.items():
+            if key not in benchmarks or not isinstance(previous_value, int | float):
+                continue
+            current_value = float(benchmarks[key])
+            if current_value > float(previous_value) * 1.2:
+                problems.append(
+                    f"benchmark {key} {current_value:.1f} > {float(previous_value):.1f} * 1.2"
+                )
+    if problems:
+        return Control("G12", "fail", "; ".join(problems))
     return Control("G12", "pass", f"tests {count} frente a {old}")
 
 
@@ -554,11 +622,12 @@ def check_g13(root: Path, etapa: str) -> Control:
 
 def run_gate(etapa: str, root: Path | None = None, base: str = "HEAD") -> tuple[list[Control], int]:
     root = root or _root()
+    coverage_control = check_g4(root)
     controls = [
         check_g1(root),
         check_g2(root),
         check_g3(root),
-        check_g4(root),
+        coverage_control,
         check_g5(root),
         check_g6(root),
         check_g7(root),
@@ -566,7 +635,7 @@ def run_gate(etapa: str, root: Path | None = None, base: str = "HEAD") -> tuple[
         check_g9(root),
         check_g10(root, etapa),
         check_g11(root, base),
-        check_g12(root, etapa),
+        check_g12(root, etapa, _coverage_percent(coverage_control.detail)),
         check_g13(root, etapa),
     ]
     if etapa == "E0":
@@ -592,6 +661,15 @@ def write_report(etapa: str, controls: list[Control], code: int, root: Path) -> 
         "etapa": etapa,
         "exit_code": code,
         "test_count": max((_passed_count(item.detail) for item in controls), default=0),
+        "coverage_percent": next(
+            (
+                value
+                for value in (_coverage_percent(item.detail) for item in controls)
+                if value is not None
+            ),
+            None,
+        ),
+        "benchmarks": {},
         "controls": [
             {"id": item.id, "status": item.status, "detail": _redact(item.detail)}
             for item in controls

@@ -39,6 +39,12 @@ def is_under_fixtures(path: str) -> bool:
 
 def forbidden_reason(path: str, content: bytes | None = None) -> str | None:
     """Return a rejection message, or None when the path may be committed."""
+    normalized = _normalize(path)
+    name = Path(normalized).name
+    private = name == ".env" or name.startswith(".env.")
+    private = private or normalized == "data/real" or normalized.startswith("data/real/")
+    if private:
+        return f"{path}: private file"
     if is_under_fixtures(path):
         return None
     suffix = Path(_normalize(path)).suffix.lower()

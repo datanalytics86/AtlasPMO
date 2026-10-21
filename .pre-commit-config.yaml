@@ -6,6 +6,12 @@ repos:
         entry: python scripts/hooks/reject_schedules.py
         language: system
         pass_filenames: true
+      - id: commit-g8
+        name: G8 privacy before commit
+        entry: python scripts/hooks/pre_commit_g8.py
+        language: system
+        stages: [pre-commit]
+        pass_filenames: false
       - id: push-v2-g8
         name: Push only origin/v2 after G8
         entry: python scripts/hooks/pre_push.py

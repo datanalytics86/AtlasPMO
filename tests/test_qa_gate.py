@@ -104,6 +104,36 @@ def test_g7_passes_when_nothing_is_skipped(tmp_path: Path):
     assert result.status == "pass"
 
 
+def _skip_file(tmp_path: Path) -> None:
+    tests = tmp_path / "tests"
+    tests.mkdir(parents=True)
+    (tests / "test_demo.py").write_text(
+        "import pytest\n\n@pytest.mark.skip(reason='x')\ndef test_a():\n    assert True\n",
+        encoding="utf-8",
+    )
+
+
+def _skips_toml(tmp_path: Path, test_id: str) -> None:
+    qa = tmp_path / "docs" / "qa"
+    qa.mkdir(parents=True)
+    (qa / "skips.toml").write_text(
+        f'[[skip]]\ntest = "{test_id}"\nmotivo = "dependencia_opcional"\n',
+        encoding="utf-8",
+    )
+
+
+def test_g7_fails_when_the_listed_skip_is_a_different_test(tmp_path: Path):
+    _skip_file(tmp_path)
+    _skips_toml(tmp_path, "tests/test_other.py::test_a")
+    assert check_g7(tmp_path).status == "fail"
+
+
+def test_g7_passes_when_each_skip_is_listed(tmp_path: Path):
+    _skip_file(tmp_path)
+    _skips_toml(tmp_path, "tests/test_demo.py::test_a")
+    assert check_g7(tmp_path).status == "pass"
+
+
 def test_g9_fails_when_a_table_is_missing_from_the_spec(tmp_path: Path):
     io = tmp_path / "src" / "atlaspmo" / "io"
     io.mkdir(parents=True)
@@ -124,6 +154,23 @@ def test_g9_passes_when_the_table_is_documented(tmp_path: Path):
     docs.mkdir()
     (docs / "XER_SPEC.md").write_text("PROJECT es una tabla.\n", encoding="utf-8")
     assert check_g9(tmp_path).status == "pass"
+
+
+def test_g8_fails_on_schedule_xml(tmp_path: Path):
+    _streamlit(tmp_path)
+    (tmp_path / "export.xml").write_bytes(b"<APIBusinessObjects/>")
+    result = check_g8(tmp_path)
+    assert result.status == "fail"
+    assert "export.xml" in result.detail
+
+
+def test_g8_allows_plain_xml(tmp_path: Path):
+    _streamlit(tmp_path)
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "note.xml").write_bytes(b"<note/>")
+    assert check_g8(tmp_path).status == "pass"
 
 
 def test_g8_fails_on_a_network_import(tmp_path: Path):
@@ -266,6 +313,34 @@ def test_g5_passes_when_the_five_invariants_use_the_qa_profile(tmp_path: Path):
     assert check_g5(tmp_path).status == "pass"
 
 
+def test_g5_fails_when_the_qa_profile_has_too_few_examples(tmp_path: Path):
+    folder = tmp_path / "tests" / "property"
+    folder.mkdir(parents=True)
+    (folder / "test_props.py").write_text(
+        "\n".join(
+            [
+                "from hypothesis import settings",
+                "settings.register_profile('qa', max_examples=1)",
+                "def test_round_trip():",
+                "    assert 'round_trip'",
+                "def test_clean_unchanged():",
+                "    assert 'clean_unchanged'",
+                "def test_implicit_redundant():",
+                "    assert 'implicit_redundant'",
+                "def test_driving_not_redundant():",
+                "    assert 'driving_not_redundant'",
+                "def test_zero_variance():",
+                "    assert 'zero_variance'",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    result = check_g5(tmp_path)
+    assert result.status == "fail"
+    assert "500" in result.detail
+
+
 def test_g6_fails_without_perf_tests(tmp_path: Path):
     assert check_g6(tmp_path).status == "fail"
 
@@ -354,6 +429,40 @@ def test_g12_fails_when_the_count_drops(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr("scripts.qa_gate._run", fake)
     assert check_g12(tmp_path, "E1").status == "fail"
+
+
+def test_g12_fails_when_coverage_drops(tmp_path: Path, monkeypatch):
+    folder = tmp_path / "docs" / "qa" / "E0"
+    folder.mkdir(parents=True)
+    (folder / "gate.json").write_text(
+        '{"test_count": 3, "coverage_percent": 90.0, "benchmarks": {}}\n',
+        encoding="utf-8",
+    )
+
+    def fake(command: list[str], root: Path) -> subprocess.CompletedProcess[str]:
+        return _completed(command, 0, "3 passed")
+
+    monkeypatch.setattr("scripts.qa_gate._run", fake)
+    result = check_g12(tmp_path, "E1", coverage=80.0)
+    assert result.status == "fail"
+    assert "cobertura" in result.detail
+
+
+def test_g12_fails_when_a_benchmark_slows_more_than_twenty_percent(tmp_path: Path, monkeypatch):
+    folder = tmp_path / "docs" / "qa" / "E0"
+    folder.mkdir(parents=True)
+    (folder / "gate.json").write_text(
+        '{"test_count": 3, "coverage_percent": 90.0, "benchmarks": {"read_30k": 10.0}}\n',
+        encoding="utf-8",
+    )
+
+    def fake(command: list[str], root: Path) -> subprocess.CompletedProcess[str]:
+        return _completed(command, 0, "3 passed")
+
+    monkeypatch.setattr("scripts.qa_gate._run", fake)
+    result = check_g12(tmp_path, "E1", coverage=90.0, benchmarks={"read_30k": 13.0})
+    assert result.status == "fail"
+    assert "benchmark" in result.detail
 
 
 def test_g12_passes_when_the_count_holds(tmp_path: Path, monkeypatch):

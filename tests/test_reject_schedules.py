@@ -43,6 +43,12 @@ def test_plain_xml_is_allowed(tmp_path: Path):
     assert hook.main([str(path)]) == 0
 
 
+def test_env_and_real_data_are_rejected():
+    assert hook.forbidden_reason(".env") is not None
+    assert hook.forbidden_reason("notes/.env.local") is not None
+    assert hook.forbidden_reason("data/real/plan.xer") is not None
+
+
 def test_mspdi_marker_is_rejected(tmp_path: Path):
     path = tmp_path / "plan.xml"
     path.write_bytes(b'<Project xmlns="http://schemas.microsoft.com/project">')
