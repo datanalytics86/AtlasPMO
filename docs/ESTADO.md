@@ -4,7 +4,7 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E6, ciclo 2, gate con salida 1. No es APROBADO. Siguiente control: revisor QC-6, rechazo 2 de 3. La nota está en `docs/qa/E6/ciclo2.md`. No se bajaron umbrales ni se copió un kill score. Abiertos I-35, I-36 e I-37. E5 quedó RECHAZADA-BLOQUEADA. Los resultados de E6 quedan condicionales a I-3 y a los bloqueos de E0 a E5. Monte Carlo 30 000 por 1 000 no se corrió. Un CPM de 30 000 midió 9.401 s.
+- Etapa actual: E6, ciclo 2 rechazado. El veredicto es RECHAZADO, rechazo 2 de 3. No es APROBADO y la etapa no queda bloqueada. Siguiente control: gate del ciclo 3. La nota está en `docs/qa/E6/ciclo3.md`. Abiertos I-35, I-36 e I-37. E5 quedó RECHAZADA-BLOQUEADA. Los resultados de E6 quedan condicionales a I-3 y a los bloqueos de E0 a E5. Monte Carlo 30 000 por 1 000 no se corrió. Un CPM de 30 000 midió 9.401 s.
 - Gate E6 ciclo 2: iguales cifras que el ciclo 1. test_count 216. cobertura_total 89.8. Fail G4 y G13. Nota en `docs/qa/E6/ciclo2.md`.
 - Gate E6 ciclo 1: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 216. cobertura_total 89.8. Calendars 85.2/70.9, engine 89.4/79.5, logic 88.6/75.3. G13 no medido. El 99,5 % no está medido.
 - Gate E5 ciclo 3: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 212. cobertura_total 89.8. Calendars 85.2/70.9, engine 89.4/79.5, logic 88.6/75.3. G13 no medido. Nota en `docs/qa/E5/ciclo3.md`.
