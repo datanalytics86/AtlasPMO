@@ -1,11 +1,11 @@
 # Trazabilidad
 
-Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo. Un test planificado que aún no existe no se declara en verde.
+Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo. Un test planificado que aún no existe no se declara en verde. Las filas de esta tabla cubren las secciones 2, 5, 6, 7 y 11. La etapa dueña es la que debe dejar ese test en verde.
 
 | ID | Etapa | Requisito | Test | Oráculo |
 |---|---|---|---|---|
 | R-001 | E0 | `pythonpath` permite importar `scripts` | tests/test_phase2.py::test_script_skips_missing_golden | colección de pytest |
-| R-002 | E0 | ruff check y format sin errores | tests/test_qa_gate.py | salida de ruff |
+| R-002 | E0 | ruff check y format sin errores | tests/test_qa_gate.py::test_g1_passes_a_clean_tree | ruff sobre un árbol temporal |
 | R-003 | E0 | G8 rechaza un XER fuera de fixtures | tests/test_qa_gate.py::test_g8_fails_on_a_schedule_outside_fixtures | árbol temporal |
 | R-004 | E0 | G7 rechaza un skip no listado | tests/test_qa_gate.py::test_g7_fails_when_a_skip_is_not_listed | AST del test |
 | R-005 | E0 | G9 rechaza una tabla ausente en XER_SPEC | tests/test_qa_gate.py::test_g9_fails_when_a_table_is_missing_from_the_spec | lista P6_TABLES |
@@ -37,4 +37,79 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-060 | E6 | criterios automatizables de la sección 11 evidenciados | tests/perf/test_scale.py | gate G6 |
 | R-061 | E2 | local, sin red en ejecución | tests/test_qa_gate.py | G8 |
 | R-062 | E1 | round-trip XER byte a byte | tests/test_e1_cp1252.py | bytes originales |
-| R-063 | E0 | instalación sin administrador | tests/test_gen_scale.py | uv sync --group dev |
+| R-063 | E0 | instalación sin administrador | tests/test_e0_install.py::test_dev_tools_import_and_the_install_was_recorded | docs/qa/E0/acciones.md |
+| R-100 | E0 | sección 2: sin imports de red en src | tests/test_qa_gate.py::test_g8_fails_on_a_network_import | árbol temporal |
+| R-101 | E0 | sección 2: la config niega data/real y .env | tests/test_qa_gate.py::test_project_config_denies_real_data_and_dotenv | .grok/config.toml |
+| R-102 | E5 | sección 2: la entrada no se reescribe y hay run_manifest | tests/test_e5_manifest.py | contrato de salida |
+| R-103 | E4 | sección 2: versión, hash, parámetros, semilla y aproximaciones | tests/test_e4_metadata.py | RunMetadata |
+| R-104 | E5 | sección 2: las aproximaciones se muestran | tests/test_e5_ui.py | ModuleResult.approximations |
+| R-105 | E1 | sección 2 y 5: cp1252, CRLF, ERMHDR y %E | tests/test_synthetic_xer.py::test_minimal_xer_is_cp1252_crlf | bytes del fixture |
+| R-110 | E1 | sección 5: bloques %T, %F, %R y %E | tests/test_synthetic_xer.py::test_minimal_xer_is_cp1252_crlf | XER_SPEC |
+| R-111 | E1 | sección 5: bytes 0x81, 0x8D, 0x8F, 0x90 y 0x9D | tests/test_e1_cp1252.py | bytes de entrada |
+| R-112 | E1 | sección 5: tablas mínimas, el resto genérico | tests/test_gen_scale.py::test_scale_tables_are_real_p6_names | XER_SPEC |
+| R-113 | E1 | sección 5: PR_FS, PR_SS, PR_FF y PR_SF | tests/test_cpm.py::test_ss_ff_sf_and_lead | caso a mano, [VALIDAR] |
+| R-114 | E1 | sección 5: TT_Task, TT_Rsrc, TT_Mile, TT_FinMile, TT_LOE, TT_WBS | tests/test_cpm.py::test_loe_and_wbs_follow_the_main_pass | caso a mano, [VALIDAR] |
+| R-115 | E1 | sección 5: TK_NotStart, TK_Active, TK_Complete | tests/test_cpm.py::test_retained_logic_waits_and_override_does_not | caso a mano, [VALIDAR] |
+| R-116 | E1 | sección 5: restricciones y cstr_type2 | tests/test_e1_constraints.py | [VALIDAR] |
+| R-117 | E1 | sección 5: duraciones en horas y días por calendario | tests/test_calendars.py::test_add_and_subtract_stay_on_the_eight_hour_day | jornada de 8 h |
+| R-118 | E1 | sección 5: fecha de corte desde PROJECT | tests/test_cpm.py::test_retained_logic_waits_and_override_does_not | XER_SPEC, [VALIDAR] |
+| R-119 | E1 | sección 5: vínculo de otro proyecto marcado externo | tests/test_phase1.py::test_external_relationship_is_marked | caso a mano |
+| R-120 | E5 | sección 5: el usuario asocia el baseline | tests/test_e5_ui.py | no implementado; no está en verde |
+| R-121 | E1 | sección 5: huérfanos, duplicados, calendarios y ciclos | tests/test_phase1.py::test_cycle_is_reported | casos a mano |
+| R-130 | E3 | DCMA 1 Logic | tests/test_e3_dcma.py | doble firma |
+| R-131 | E3 | DCMA 2 Leads | tests/test_e3_dcma.py | doble firma |
+| R-132 | E3 | DCMA 3 Lags | tests/test_e3_dcma.py | doble firma |
+| R-133 | E3 | DCMA 4 Relationship types | tests/test_e3_dcma.py | doble firma |
+| R-134 | E3 | DCMA 5 Hard constraints | tests/test_e3_dcma.py | doble firma |
+| R-135 | E3 | DCMA 6 High float | tests/test_e3_dcma.py | doble firma |
+| R-136 | E3 | DCMA 7 Negative float | tests/test_e3_dcma.py | doble firma |
+| R-137 | E3 | DCMA 8 High duration | tests/test_e3_dcma.py | doble firma |
+| R-138 | E3 | DCMA 9 Invalid dates | tests/test_e3_dcma.py | doble firma |
+| R-139 | E3 | DCMA 10 Resources | tests/test_e3_dcma.py | doble firma |
+| R-140 | E3 | DCMA 11 Missed tasks | tests/test_e3_dcma.py | doble firma, baseline |
+| R-141 | E3 | DCMA 12 Critical Path Test | tests/test_e3_dcma.py | motor CPM |
+| R-142 | E3 | DCMA 13 CPLI en tiempo laboral | tests/test_e3_cpli.py | doble firma, caso SS y feriado |
+| R-143 | E3 | DCMA 14 BEI con todas las completadas | tests/test_e3_bei.py | caso completado antes de tiempo |
+| R-150 | E3 | GAO 1 capturar actividades | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-151 | E3 | GAO 2 secuenciar | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-152 | E3 | GAO 3 asignar recursos | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-153 | E3 | GAO 4 establecer duraciones | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-154 | E3 | GAO 5 trazabilidad horizontal y vertical | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-155 | E3 | GAO 6 ruta crítica válida | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-156 | E3 | GAO 7 holgura razonable | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-157 | E3 | GAO 8 análisis de riesgo | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-158 | E3 | GAO 9 actualización con avance | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-159 | E3 | GAO 10 baseline | tests/test_e3_gao.py | REGLAS_CALIDAD |
+| R-160 | E1 | M0 parser de clndr_data, excepciones y herencia | tests/test_calendars.py::test_exception_serial_uses_1899_12_30_and_empty_means_no_work | [VALIDAR] base Excel 1900 |
+| R-161 | E1 | M0 índice laboral sin tope fijo | tests/test_e1_calendar.py | suma manual de jornadas |
+| R-162 | E1 | M0 opciones retained, override, actual, lag, holgura | tests/test_cpm.py::test_retained_logic_waits_and_override_does_not | caso a mano |
+| R-163 | E1 | M0 obligatorio impone fecha y reporta la violación | tests/test_e1_constraints.py | [VALIDAR] |
+| R-164 | E1 | M0 hito de inicio al cierre pasa al turno siguiente | tests/test_e1_milestone.py | [VALIDAR] |
+| R-165 | E1 | M0 crítico por holgura o longest path | tests/test_e1_longest.py | camino más largo a mano |
+| R-166 | E2 | M3 redundancia confirmada en conjunto, no por subconjuntos | tests/test_e2_joint.py | reprogramación del CPM |
+| R-167 | E2 | M4 solo se borran filas TASKPRED, o no se escribe | tests/test_e2_clean.py | comparación de bytes |
+| R-168 | E4 | M5 tornado por cono y Monte Carlo con semilla | tests/test_e4_tornado.py | conteo de recalculadas |
+| R-169 | E4 | M6 histogramas, curvas S, EVM y Earned Schedule | tests/test_e4_spreads.py | distribución lineal anotada |
+| R-180 | E6 | M7 diferencias de update | tests/test_phase4.py::test_compare_reports_the_hand_differences | caso a mano |
+| R-181 | E6 | M7 tendencias de varios updates | tests/test_e6_trends.py | biblioteca DuckDB |
+| R-190 | E1 | sección 7: lags positivos y negativos en los cuatro vínculos | tests/test_cpm.py::test_ss_ff_sf_and_lead | caso a mano |
+| R-191 | E1 | sección 7: feriado, media jornada, 24 h y 7 días | tests/test_e1_calendar.py | suma manual |
+| R-192 | E1 | sección 7: avance fuera de secuencia | tests/test_cpm.py::test_retained_logic_waits_and_override_does_not | caso a mano |
+| R-193 | E1 | sección 7: extremos abiertos | tests/test_phase1.py::test_hand_calculated_metrics | caso a mano |
+| R-194 | E2 | sección 7: par SS+FF protegido | tests/test_e2_guards.py | positivo y negativo |
+| R-195 | E2 | sección 7: vínculo no driver que no es redundante | tests/test_e2_guards.py | CPM |
+| R-196 | E6 | sección 7: p6_verified ausente se omite con motivo | tests/test_e6_skips.py | skips.toml |
+| R-197 | E3 | sección 7: esperado con doble firma | tests/test_e3_oracle.py | qa-oraculo, sin importar src |
+| R-198 | E0 | sección 7: la sesión no lee el golden real | tests/test_qa_gate.py::test_project_config_denies_real_data_and_dotenv | sección 14 |
+| R-300 | E1 | sección 11: lectura 30k bajo 15 s | tests/perf/test_scale.py | gen_scale.py, no medido hasta G6 |
+| R-301 | E3 | sección 11: DCMA bajo 10 s | tests/perf/test_quality.py | gen_scale.py, no medido hasta G6 |
+| R-302 | E2 | sección 11: redundancia bajo 3 min | tests/perf/test_redundancy.py | gen_scale.py, no medido hasta G6 |
+| R-303 | E4 | sección 11: Monte Carlo 30k por 1000 bajo 5 min | tests/perf/test_montecarlo.py | gen_scale.py, no medido hasta G6 |
+| R-304 | E6 | sección 11: conformidad 99,5 % y 100 % explicada | tests/test_e6_conformance.py | golden lo corre Nicolás; no medido aquí |
+| R-305 | E2 | sección 11: XER limpio con delta cero o sin escritura | tests/test_e2_clean.py | comparación de bytes |
+| R-306 | E1 | sección 11: round-trip idéntico | tests/test_e1_cp1252.py | bytes originales |
+| R-307 | E0 | sección 11: instalación sin administrador | tests/test_e0_install.py::test_dev_tools_import_and_the_install_was_recorded | acciones.md |
+| R-308 | E0 | sección 11: la suite corre | tests/test_qa_gate.py::test_g3_passes_when_pytest_passes_and_uv_is_unavailable | G3 |
+| R-309 | E0 | herramienta de mutación con un mutante muerto y uno vivo | tests/test_qa_sabotage.py::test_sample_kills_a_return_and_keeps_an_equivalent_comparison | muestra, no es G13 |
+| R-310 | E0 | pre-push solo acepta origin y refs/heads/v2 | tests/test_pre_push.py::test_pre_push_rejects_a_foreign_remote | sección 14.2 |
+| R-311 | E0 | cada control G1–G13 tiene caso que pasa y caso que falla | tests/test_qa_gate.py | árboles temporales |
