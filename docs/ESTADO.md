@@ -4,7 +4,8 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E3, ciclo 3. El gate sale 1. No es APROBADO. Siguiente control: revisor QC-6. Ciclos 1 y 2 RECHAZADOS (`0bd66bb`, `b46bfb9`). E2 quedó RECHAZADA-BLOQUEADA en el ciclo 3 (`21cfe63`). Los resultados de E3 son condicionales a I-3 y a los bloqueos de E0, E1 y E2. El filtro de 30k es 0.345 s. La confirmación de 30k no se midió y la proyección no cumple 3 minutos.
+- Etapa actual: E4. E3 quedó RECHAZADA-BLOQUEADA en el ciclo 3. No es APROBADO. Ciclos: 1 RECHAZADO (`0bd66bb`), 2 RECHAZADO (`b46bfb9`), 3 bloqueado. No hay cuarto ciclo. Los resultados de E4 quedan condicionales a I-3 y a los bloqueos de E0, E1, E2 y E3. El filtro de 30k es 0.345 s. La confirmación de 30k no se midió y la proyección no cumple 3 minutos.
+- Siguiente control de E4: QC-1, contrato antes del código.
 - Gate E1 ciclo 2: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 167. cobertura_total 87.9. Modelo líneas 100.0 y ramas 100.0. Siguen bajo 8.1: calendars líneas 81.6 y ramas 63.9, engine líneas 86.0 y ramas 74.8, logic líneas 87.3 y ramas 73.6. G13 sin reejecutar mutación: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. G3 es `python -m pytest`; `uv run pytest` no arranca (ADR-004).
 - E1 ciclos: 1 RECHAZADO (`797f559`), 2 RECHAZADO (`1773c0d`), 3 bloqueado. No hay cuarto ciclo.
 - Corrección del ciclo 2, ya en `734efc9`: oráculo de un caso de CPLI en `tests/oracle/span.py` (ADR-017) y ramas de `Schedule.calendar_for` y `select`. No cierra calendarios, motor, lógica ni G13. QC-2 sigue incompleto fuera de ese caso.
