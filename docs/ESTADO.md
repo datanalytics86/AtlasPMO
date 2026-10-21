@@ -4,7 +4,7 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E3. E2 quedó RECHAZADA-BLOQUEADA en el ciclo 3 (`21cfe63`). No es APROBADO. Condicional a I-3 y a los bloqueos de E0 y E1. El filtro de 30k es 0.345 s. La confirmación de 30k no se midió y la proyección no cumple 3 minutos.
+- Etapa actual: E3, ciclo 1. El gate sale 1. No es APROBADO. Siguiente control: revisor QC-6. E2 quedó RECHAZADA-BLOQUEADA en el ciclo 3 (`21cfe63`). Los resultados de E3 son condicionales a I-3 y a los bloqueos de E0, E1 y E2. El filtro de 30k es 0.345 s. La confirmación de 30k no se midió y la proyección no cumple 3 minutos.
 - Gate E1 ciclo 2: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 167. cobertura_total 87.9. Modelo líneas 100.0 y ramas 100.0. Siguen bajo 8.1: calendars líneas 81.6 y ramas 63.9, engine líneas 86.0 y ramas 74.8, logic líneas 87.3 y ramas 73.6. G13 sin reejecutar mutación: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. G3 es `python -m pytest`; `uv run pytest` no arranca (ADR-004).
 - E1 ciclos: 1 RECHAZADO (`797f559`), 2 RECHAZADO (`1773c0d`), 3 bloqueado. No hay cuarto ciclo.
 - Corrección del ciclo 2, ya en `734efc9`: oráculo de un caso de CPLI en `tests/oracle/span.py` (ADR-017) y ramas de `Schedule.calendar_for` y `select`. No cierra calendarios, motor, lógica ni G13. QC-2 sigue incompleto fuera de ese caso.
@@ -17,7 +17,10 @@ Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama
 - Ciclo 3, gate sobre `1e4c8bc`: salida 1. test_count 173. cobertura_total 88.8. Calendars líneas 85.2 y ramas 70.9. Engine líneas 89.4 y ramas 79.5. Logic líneas 87.3 y ramas 73.6. G13 sin reejecutar: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. Sigue en fail. No es APROBADO.
 - Filtro de 30 000: 0.345 s, 24 998 candidatos. Confirmación de 30 000: no corrida. En 400 actividades la confirmación tardó 58.1 s. La proyección no cumple 3 minutos. Evidencia: `docs/qa/E2/perf.md`.
 - E2 ciclos: 1 RECHAZADO (`e41a452`), 2 RECHAZADO (`339cafd`), 3 bloqueado. No hay cuarto ciclo.
-- Siguiente control de E3: bandas configurables, medición de DCMA 30k (una corrida dio 0.261 s; hay que dejarla en `docs/qa/E3/perf.md`) y el gate. Contrato en `docs/qa/E3/QC1_contrato.md`.
+- Gate E3 ciclo 1: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 200. cobertura_total 89.4. Calendars líneas 85.2 y ramas 70.9. Engine líneas 89.4 y ramas 79.5. Logic líneas 88.6 y ramas 75.3. Esas seis cifras no se movieron respecto del gate de E2. G13: no medido, falta el informe de qa-sabotaje. No se copia el kill score de E1.
+- DCMA `evaluate` en 30 000 actividades no serie: 0.261 s, en `docs/qa/E3/perf.md`. Está bajo 10 s. En esa red CPLI queda `no_evaluable`. El tiempo no es un pase de la definición.
+- Bandas de holgura configurables en modo A, con el corte por defecto 0, 10, 20 y 44. Cadena driving, multiple float paths y continuidad: no implementado. QC-2 sigue incompleto fuera del caso CPLI de ADR-017. No hay doble firma.
+- Contrato en `docs/qa/E3/QC1_contrato.md`. Pruebas a mano en `tests/test_e3_dcma.py`, `tests/test_e3_gao.py`, `tests/test_e3_extra.py` y `tests/test_e3_profiles.py`.
 
 ### Hecho de la v1
 
