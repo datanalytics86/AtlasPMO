@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,6 +48,18 @@ def rank_rows(rows: list[BatchRow]) -> list[BatchRow]:
         rows,
         key=lambda row: (row.quality_index is None, -(row.quality_index or 0.0), row.name),
     )
+
+
+def ranking_bytes(rows: list[BatchRow]) -> bytes:
+    """Write the ranking to memory. The caller does not keep the temp file."""
+    descriptor, name = tempfile.mkstemp(suffix=".xlsx")
+    os.close(descriptor)
+    path = Path(name)
+    try:
+        write_ranking(path, rows)
+        return path.read_bytes()
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def write_ranking(path: Path, rows: list[BatchRow]) -> None:

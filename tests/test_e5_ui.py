@@ -33,7 +33,10 @@ def test_load_run_and_show_approximations() -> None:
     assert app.exception == []
     assert app.subheader[0].value == "quality"
     assert len(app.caption) > 2
-    assert "no hay Gantt" in " ".join(item.value for item in app.caption)
+    joined = " ".join(item.value for item in app.caption)
+    assert "no hay Gantt" in joined
+    assert "No hay avance parcial" in joined
+    assert any(item.label == "Resultados" for item in app.tabs)
     labels = {item.label for item in app.download_button}
     assert labels == {
         "Exportar Excel",
@@ -53,6 +56,31 @@ def test_mode_b_shows_the_cpm_gantt(tmp_path: Path) -> None:
     assert app.exception == []
     assert app.get("plotly_chart")
     assert "No recalcula fechas" in " ".join(item.value for item in app.caption)
+
+
+def test_quality_profile_is_sent() -> None:
+    app = AppTest.from_file(APP)
+    app.run()
+    app.selectbox[0].set_value("contratista").run()
+    app.file_uploader[0].upload("minimal.xer", FIXTURE.read_bytes()).run()
+    app.multiselect[0].set_value(["Calidad (DCMA y GAO)"]).run()
+    app.button[0].click().run()
+    assert app.exception == []
+    joined = " ".join(item.value for item in app.caption)
+    assert "Perfil registrado: contratista" in joined
+
+
+def test_library_stores_the_quality_index(tmp_path: Path) -> None:
+    app = AppTest.from_file(APP)
+    app.run()
+    app.file_uploader[0].upload("minimal.xer", FIXTURE.read_bytes()).run()
+    app.multiselect[0].set_value(["Calidad (DCMA y GAO)"]).run()
+    app.button[0].click().run()
+    app.text_input[1].set_value(str(tmp_path / "lib.duckdb")).run()
+    app.button[2].click().run()
+    assert app.exception == []
+    joined = " ".join(item.value for item in app.caption)
+    assert "Puntos de quality_index: 1" in joined
 
 
 def test_batch_ranks_one_synthetic(tmp_path: Path) -> None:
