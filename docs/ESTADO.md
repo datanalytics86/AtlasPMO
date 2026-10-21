@@ -4,7 +4,7 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E2, ciclo 1, gate en rojo. Salida 1. test_count 174. cobertura_total 88.9. G4 fail (logic líneas 88.6 y ramas 75.3; calendarios y motor siguen bajo 8.1). G13 fail: no hay informe de sabotaje de E2. El de E1 no se reutiliza porque `redundant.py` cambió. Condicional a I-3 y al bloqueo de E1. E0 y E1 siguen RECHAZADA-BLOQUEADA. No es APROBADO.
+- Etapa actual: E3. E2 quedó RECHAZADA-BLOQUEADA en el ciclo 3 (`21cfe63`). No es APROBADO. Condicional a I-3 y a los bloqueos de E0 y E1. El filtro de 30k es 0.345 s. La confirmación de 30k no se midió y la proyección no cumple 3 minutos.
 - Gate E1 ciclo 2: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 167. cobertura_total 87.9. Modelo líneas 100.0 y ramas 100.0. Siguen bajo 8.1: calendars líneas 81.6 y ramas 63.9, engine líneas 86.0 y ramas 74.8, logic líneas 87.3 y ramas 73.6. G13 sin reejecutar mutación: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. G3 es `python -m pytest`; `uv run pytest` no arranca (ADR-004).
 - E1 ciclos: 1 RECHAZADO (`797f559`), 2 RECHAZADO (`1773c0d`), 3 bloqueado. No hay cuarto ciclo.
 - Corrección del ciclo 2, ya en `734efc9`: oráculo de un caso de CPLI en `tests/oracle/span.py` (ADR-017) y ramas de `Schedule.calendar_for` y `select`. No cierra calendarios, motor, lógica ni G13. QC-2 sigue incompleto fuera de ese caso.
@@ -16,7 +16,8 @@ Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama
 - B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
 - Ciclo 3, gate sobre `1e4c8bc`: salida 1. test_count 173. cobertura_total 88.8. Calendars líneas 85.2 y ramas 70.9. Engine líneas 89.4 y ramas 79.5. Logic líneas 87.3 y ramas 73.6. G13 sin reejecutar: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. Sigue en fail. No es APROBADO.
 - Filtro de 30 000: 0.345 s, 24 998 candidatos. Confirmación de 30 000: no corrida. En 400 actividades la confirmación tardó 58.1 s. La proyección no cumple 3 minutos. Evidencia: `docs/qa/E2/perf.md`.
-- E2 ciclo 3, gate en rojo con las mismas cifras: test_count 175, cobertura_total 88.9, G4 y G13 en fail. El intento de atajo está en `docs/qa/E2/ciclo3.md` y no se integró. Siguiente control: revisor del ciclo 3. Si rechaza, RECHAZADA-BLOQUEADA y push.
+- E2 ciclos: 1 RECHAZADO (`e41a452`), 2 RECHAZADO (`339cafd`), 3 bloqueado. No hay cuarto ciclo.
+- Siguiente control de E3: bandas configurables, medición de DCMA 30k (una corrida dio 0.261 s; hay que dejarla en `docs/qa/E3/perf.md`) y el gate. Contrato en `docs/qa/E3/QC1_contrato.md`.
 
 ### Hecho de la v1
 
