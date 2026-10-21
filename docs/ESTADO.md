@@ -16,7 +16,7 @@ Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama
 - B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
 - Ciclo 3, gate sobre `1e4c8bc`: salida 1. test_count 173. cobertura_total 88.8. Calendars líneas 85.2 y ramas 70.9. Engine líneas 89.4 y ramas 79.5. Logic líneas 87.3 y ramas 73.6. G13 sin reejecutar: kill_score 54.0, engine 60.2, calendars 45.5, logic 52.0. Sigue en fail. No es APROBADO.
 - Filtro de 30 000: 0.345 s, 24 998 candidatos. Confirmación de 30 000: no corrida. En 400 actividades la confirmación tardó 58.1 s. La proyección no cumple 3 minutos. Evidencia: `docs/qa/E2/perf.md`.
-- E2 ciclo 2, gate sobre `2182e71`: salida 1. test_count 175. cobertura_total 88.9. G4 y G13 siguen en fail, con las mismas cifras de paquetes. El oráculo de ADR-018 es un solo camino de 8 h + 8 h. QC-2 sigue incompleto. Siguiente control: revisor del ciclo 2.
+- E2 ciclo 3, gate en rojo con las mismas cifras: test_count 175, cobertura_total 88.9, G4 y G13 en fail. El intento de atajo está en `docs/qa/E2/ciclo3.md` y no se integró. Siguiente control: revisor del ciclo 3. Si rechaza, RECHAZADA-BLOQUEADA y push.
 
 ### Hecho de la v1
 
