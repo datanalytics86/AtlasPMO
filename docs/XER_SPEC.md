@@ -8,7 +8,7 @@ La evidencia pública de esta sesión es el lector PyP6Xer (`task.py`, `taskpred
 
 Texto delimitado por tabuladores. La primera línea empieza por `ERMHDR`. Cada tabla es `%T`, `%F`, `%R`. El archivo termina en una línea que empieza por `%E`.
 
-El lector guarda las líneas ya decodificadas y el salto de línea original. Si el modelo no cambia nada, el escritor devuelve los mismos bytes. Codificación cp1252. Se rechaza un BOM UTF-8 y los bytes que cp1252 no define (0x81, 0x8D, 0x8F, 0x90, 0x9D).
+El lector guarda las líneas ya decodificadas y el salto de línea original. Si el modelo no cambia nada, el escritor devuelve los mismos bytes. Codificación cp1252. Se rechaza un BOM UTF-8. Los bytes que cp1252 no define (0x81, 0x8D, 0x8F, 0x90, 0x9D) no rechazan el archivo: se preservan en el round-trip byte a byte y se anotan como aproximación en `parse_notes`.
 
 Los identificadores quedan como texto. Una celda vacía es `None` y no es una columna ausente. Una columna que no está en `%F` es `None` y se anota en `Schedule.absent_columns` como `TABLA.columna`. Una tabla ausente se anota en `absent_tables`. Una coma decimal sin punto se lee como punto y queda en `parse_notes`. Las duraciones no se dividen por 8 en silencio: `day_hr_cnt` vive en el calendario.
 
