@@ -1,10 +1,114 @@
 # Estado
 
-## v2 — en curso
+## v2 — reporte final
 
-Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
+Base `b131428` (fase 5) más el megaprompt en `108f11a`. Rama `v2`. E0 a E6 quedaron RECHAZADA-BLOQUEADA. Ninguna es APROBADO. No hay cuarto ciclo en ninguna. El reporte es condicional a I-3 y a esos bloqueos. Equipo de las mediciones: Intel Core Ultra 9 185H, 31.4 GB, Windows 11 Enterprise (`docs/qa/E1/perf.md`).
 
-- Etapa actual: E6, ciclo 3, gate con salida 1. No es APROBADO. Siguiente control: revisor QC-6. Es el tercer ciclo. Si rechaza, el orquestador deja RECHAZADA-BLOQUEADA y no hay cuarto ciclo. Mismas cifras: 216 tests, cobertura 89.8, G4 y G13 en fail. Abiertos I-35, I-36 e I-37. E5 quedó RECHAZADA-BLOQUEADA. Los resultados de E6 quedan condicionales a I-3 y a los bloqueos de E0 a E5. Monte Carlo 30 000 por 1 000 no se corrió. Un CPM de 30 000 midió 9.401 s.
+### Por etapa
+
+| Etapa | Veredicto | Ciclos | Gate final | Último commit del cierre |
+|---|---|---|---|---|
+| E0 | RECHAZADA-BLOQUEADA | 3 | salida 0. Pass G1, G2, G3, G7, G8, G9, G11, G12. linea_base: G4, G5, G6, G10, G13. 137 tests | `9bcf40a` |
+| E1 | RECHAZADA-BLOQUEADA | 3 | salida 1. 173 tests. Cobertura 88.8. Fail G4 y G13 (kill_score 54.0) | `19f34bd` |
+| E2 | RECHAZADA-BLOQUEADA | 3 | salida 1. 175 tests. Cobertura 88.9. Fail G4. G13 no medido | `8f8f2cf` |
+| E3 | RECHAZADA-BLOQUEADA | 3 | salida 1. 201 tests. Cobertura 89.4. Fail G4. G13 no medido | `2ff0eac` |
+| E4 | RECHAZADA-BLOQUEADA | 3 | salida 1. 205 tests. Cobertura 89.5. Fail G4. G13 no medido | `a8e5106` |
+| E5 | RECHAZADA-BLOQUEADA | 3 | salida 1. 212 tests. Cobertura 89.8. Fail G4. G13 no medido | `b1b3dea` |
+| E6 | RECHAZADA-BLOQUEADA | 3 | salida 1. 216 tests. Cobertura 89.8. Fail G4 y G13 | el commit de este reporte, sobre el gate `7de4564` |
+
+E0 a E4 ya estaban en `origin/v2` antes de este tramo. E5 se empujó en `0f8461d..b1b3dea`. E6 se empuja con este cierre.
+
+Gate G1–G13 del último gate, el de E6 ciclo 3 (`docs/qa/E6/gate.json`): pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 216. cobertura_total 89.8. Modelo 100.0 / 100.0. Calendars 85.2 / 70.9. Engine 89.4 / 79.5. Logic 88.6 / 75.3. Resto líneas 90.2. G13: no medido, falta el informe. G6: 4 passed. Ese verde no es la sección 11.
+
+### Brechas
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| B-01 | abierta | La pantalla carga, ejecuta, exporta, muestra el visor si hay tabla CPM, corre un lote y guarda métricas. No es el e2e de la fila E5. E5 bloqueada. I-32, I-33, I-34 |
+| B-02 | abierta | El filtro de 30 000 midió 0.345 s. La confirmación no se corrió. En 400 actividades tardó 58.1 s. E2 bloqueada |
+| B-03 | cerrada en la suite | `3ecec3c`. El conjunto se confirma y un delta distinto de cero no se entrega. G3 de E6 pasó |
+| B-04 | cerrada en la suite | El mismo corte. Sigue sin lista de usuario contrastada con un cronograma real |
+| B-05 | cerrada en la suite | Cadena de 60 000 en `tests/test_e1_cycles.py`. G3 pasó |
+| B-06 | cerrada en la suite | Horizonte de 20 años en `tests/test_e1_calendar.py`. G3 pasó |
+| B-07 | abierta | Un CPM de 30 000 midió 9.401 s. Monte Carlo 30 000 por 1 000 no se corrió. El tornado no recorta al cono. numba no está cargado |
+| B-08 | abierta, `[VALIDAR]` | El código impone la fecha obligatoria. P6 no lo confirmó. ADR-006 y el checklist |
+| B-09 | abierta, `[VALIDAR]` | Longest path existe. La comparación con P6 no |
+| B-10 | abierta | Hay un oráculo de un tramo (ADR-017). Faltan el solape SS y el feriado con otra firma |
+| B-11 | abierta | El numerador de BEI cuenta cierres tempranos en el corte `af56826`. No hay doble firma |
+| B-12 | abierta | Bandas configurables y cadena driving del motor. No hay multiple float paths ni continuidad desde la fecha de corte. El modo A no marca driving |
+| B-13 | abierta | `fact_timephased` guarda la duración remanente en el balde `corte`. No hay histograma, sobreasignación ni curva por periodo. El PV sigue lineal |
+| B-14 | abierta | Hay `gen_scale.py`. No están todos los bordes de la sección 7 ni esperados con doble firma |
+| B-15 | cerrada en G5 | Invariantes a–e con perfil qa. G5 de E6 en pass |
+| B-16 | abierta | G6 pasa y no sustituye la sección 11. I-37 |
+| B-17 | abierta | `python -m pytest` pasa. `uv run pytest` no arranca (ADR-004). M-31 |
+| B-18 | cerrada en G1 | ruff check y format en pass |
+| B-19 | cerrada en el árbol | Trazabilidad, 13 agentes y `MEGAPROMPT_v2.md`. E0 igual quedó bloqueada por I-3 |
+| B-20 | cerrada en la suite | Bytes cp1252 indefinidos se leen (`1ebebd5`). G3 pasó |
+| B-21 | abierta, `[VALIDAR]` | El hito de las 16:00 queda para P6 |
+| B-22 | abierta | v2 usa commits chicos y G11 y G12 pasan. La historia de fase-1 a fase-5 no se reescribió |
+| B-23 | abierta | Sigue en la historia de fase-1 a fase-5. No se reescribe. Lo decide Nicolás |
+
+### Pruebas
+
+Comando de G3: `py -3.12 -m uv run python -m pytest`. En el gate de E6: 216 passed, 4 deselected. `uv run pytest` no se usa (ADR-004).
+
+Cobertura del mismo gate: total 89.8. Modelo 100 / 100. Calendars 85.2 / 70.9. Engine 89.4 / 79.5. Logic 88.6 / 75.3. Resto, líneas 90.2. Esas tres parejas están bajo 8.1.
+
+Kill score: el único informe completo está en `docs/qa/E1/sabotaje.md` (54.0; engine 60.2; calendars 45.5; logic 52.0). `redundant.py` cambió después. E2 a E6 no lo reejecutaron. G13 de E6 es no medido. 54.0 no es el score de E6.
+
+Benchmarks contra la sección 11:
+
+| Criterio | Meta | Resultado |
+|---|---|---|
+| Lectura de 30 000 | < 15 s | medido, 0.197 s (`docs/qa/E1/perf.md`) |
+| DCMA y chequeos | < 10 s | `evaluate` midió 0.261 s (`docs/qa/E3/perf.md`). En esa red CPLI queda `no_evaluable`. El tiempo no incluye el CPM |
+| Redundancia con confirmación | < 3 min | no corrida en 30 000. Filtro 0.345 s. En 400 actividades, 58.1 s (`docs/qa/E2/perf.md`). La proyección no cumple |
+| Monte Carlo 30 000 por 1 000 | < 5 min | no corrido. Un CPM midió 9.401 s. La proyección de unas 2,6 h no es una medición y no cumple (`docs/qa/E4/perf.md`) |
+| Conformidad contra P6 | ≥ 99,5 % y 100 % explicado | no corrido. El script no abre la carpeta golden |
+| XER limpio en P6 | delta cero al reprogramar | no corrido en P6. La suite no entrega un archivo si el delta interno no es cero |
+| Round-trip | byte a byte | la suite lo cubre en sintéticos. Un real no se reimportó |
+| Instalación | sin administrador | no se pidió un instalador de administrador |
+| Pruebas en verde | unitarias, propiedades, conformidad, rendimiento | G3, G5 y G6 pasan. La conformidad de la sección 11 y parte del rendimiento no están medidos |
+
+### Hallazgos
+
+No hay críticos en el veredicto de E6. Importantes abiertos: I-3; I-11 a I-14 (E1); I-15 a I-18 (E2); I-19 a I-24 (E3); I-25 a I-29 (E4); I-30 a I-34 (E5); I-35 (G4), I-36 (G13 no medido) e I-37 (sección 11 no medida). Menores de E6: M-31 a M-36. M-36 decía que el checklist no estaba en los ciclos. Este reporte lo copia abajo. No convierte la etapa en APROBADO.
+
+### Supuestos `[VALIDAR]`
+
+- B-08, fecha obligatoria sobre la lógica: ADR-006, y el caso sigue para P6.
+- B-09, longest path frente a holgura: el mismo grupo de decisiones de motor.
+- B-21, hito que cae a las 16:00: ADR-006.
+- Un tramo de CPLI: ADR-017. No es la doble firma de B-10.
+- Un camino alterno de redundancia: ADR-018. No es la confirmación de 30 000.
+
+### Para Nicolás
+
+El checklist de `docs/VALIDACIONES_PENDIENTES.md`, en este orden:
+
+1. Denegar en `~/.grok/config.toml` la ruta absoluta de la carpeta golden. Esta sesión no la escribe.
+2. Mantener los golden cifrados y desmontados, y no definir `ATLASPMO_GOLDEN_DIR` en la terminal de Grok.
+3. Importar los sintéticos en P6, reprogramar, reexportar, sanear y dejarlos en `tests/fixtures/p6_verified/`.
+4. Confirmar `CS_MANDSTART` y `CS_MANDFIN`.
+5. Confirmar el hito de inicio que cae a las 16:00.
+6. Correr la conformidad con el golden y pegar solo la salida anonimizada.
+7. Reimportar un XER limpio, reprogramar y comprobar delta cero.
+8. Abrir `powerbi/AtlasPMO.pbip` en Power BI Desktop y refrescar.
+9. Para `.mpp`: Java en el PATH y `uv sync --extra mpp`.
+10. Decidir si se reescribe la historia de B-23. Esta rama no lo hace.
+
+### Para la v3 del megaprompt
+
+- La sección 0.3 pide detenerse al tercer rechazo. Esta corrida, por la regla explícita de Nicolás y ADR-013, continúa y marca RECHAZADA-BLOQUEADA. Conviene decir cuál de las dos manda.
+- G4 heredado impide cerrar E1 a E6 aunque el corte de la etapa no toque calendarios, motor ni lógica. Conviene un umbral por etapa, o decir que la cobertura heredada no se reabre.
+- G6 en verde no es la sección 11. G10 comprueba que el archivo citado existe. Conviene separar “el archivo está” de “el requisito se cumple”.
+- La doble firma no cabe en un solo autor. Conviene un estado `pendiente de segunda firma` que no sea ni pass ni un bloqueo de tres ciclos.
+- `uv run pytest` falla en este equipo (ADR-004). El gate ya usa `python -m pytest`. Conviene que el megaprompt nombre ese comando.
+- B-10 en el megaprompt es CPLI y B-11 es BEI. El contrato de E3 los rotuló al revés. Conviene no reusar el contrato viejo como fuente.
+
+### Bitácora
+
+- E6 quedó RECHAZADA-BLOQUEADA. No es APROBADO. No hay cuarto ciclo. Gate ciclo 3: 216 tests, cobertura 89.8, fail G4 y G13. Abiertos I-35, I-36 e I-37. Los resultados quedan condicionales a I-3 y a los bloqueos de E0 a E5. Monte Carlo 30 000 por 1 000 no se corrió. Un CPM de 30 000 midió 9.401 s.
 - Gate E6 ciclo 2: iguales cifras que el ciclo 1. test_count 216. cobertura_total 89.8. Fail G4 y G13. Nota en `docs/qa/E6/ciclo2.md`.
 - Gate E6 ciclo 1: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 216. cobertura_total 89.8. Calendars 85.2/70.9, engine 89.4/79.5, logic 88.6/75.3. G13 no medido. El 99,5 % no está medido.
 - Gate E5 ciclo 3: pass G1, G2, G3, G5, G6, G7, G8, G9, G10, G11, G12. Fail G4 y G13. test_count 212. cobertura_total 89.8. Calendars 85.2/70.9, engine 89.4/79.5, logic 88.6/75.3. G13 no medido. Nota en `docs/qa/E5/ciclo3.md`.
