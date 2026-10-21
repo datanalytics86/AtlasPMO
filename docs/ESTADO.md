@@ -4,16 +4,15 @@
 
 Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
 
-- Etapa actual: E0 cerrada como RECHAZADA-BLOQUEADA en el ciclo 3. No es APROBADO. Siguiente: E1, condicional a I-3.
-- Ciclos: 1 RECHAZADO (`0f26968`), 2 RECHAZADO (`ecc1e56`), 3 RECHAZADO y bloqueado (`cfdfbd2` más este registro). No hay cuarto ciclo (ADR-013).
-- Hallazgo abierto: I-3. R-198 no prueba que el script no abra `ATLASPMO_GOLDEN_DIR`; el test solo mira bytes y la palabra `secret`. El script actual no abre la carpeta. Evidencia: `docs/qa/E0/hallazgos.md`, `docs/qa/E0/VEREDICTO.md`, `docs/qa/E0/gate.json`.
-- Gate E0: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base, no cumplidos: G4, G5, G6, G13. test_count 137. G3 no corrió `uv run pytest` (ADR-004).
-- QC-1 escrito en `docs/qa/E0/QC1_contrato.md`.
-- QC-2 de E0 no tiene oráculo numérico: el gate se prueba con árboles temporales.
-- Gate del ciclo 3, evidencia en el commit que sigue a este párrafo si ya está: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base: G4, G5, G6, G13. G3 no corrió `uv run pytest` (ADR-004).
-- El ciclo 3 cierra, si el revisor lo acepta: trazabilidad que faltaba, G5 con 500 ejemplos, G7 una fila por skip, G8 sobre XML de cronograma, G12 con cobertura y benchmarks, pre-commit con G8.
-- Bloqueos: ninguno. B-23 queda en la historia de fase-1 a fase-5; no se reescribe.
-- E1 en worktree, sin integrar: xer-io en `e1-xer-io` (`9437dd2`). motor-cpm sigue en curso.
+- Etapa actual: E1, ciclo 1, condicional a I-3. E0 sigue RECHAZADA-BLOQUEADA. No es APROBADO.
+- E0 ciclos: 1 RECHAZADO (`0f26968`), 2 RECHAZADO (`ecc1e56`), 3 bloqueado (`9bcf40a`). No hay cuarto ciclo (ADR-013).
+- Hallazgo abierto de E0: I-3. R-198 no prueba que el script no abra `ATLASPMO_GOLDEN_DIR`. El script no la abre. Evidencia: `docs/qa/E0/hallazgos.md`, `docs/qa/E0/VEREDICTO.md`.
+- Gate E0: salida 0. Pass: G1, G2, G3, G7, G8, G9, G10, G11, G12. linea_base, no cumplidos: G4, G5, G6, G13. test_count 137. G3 no corrió `uv run pytest` (ADR-004). Push en `f64ef03`.
+- E1 integrado en local, todavía sin push de cierre: `366209b` (xer-io) y `3ddbddd` (motor-cpm). QC-1 está en `docs/qa/E1/QC1_contrato.md` y es posterior al código.
+- Lectura 30k realista: 0.197 s en `docs/qa/E1/perf.md`. Por debajo de 15 s. El resto de la sección 11 no está medido.
+- Cobertura medida en el árbol integrado, todavía sin gate de E1: total de líneas 88.0. No llega a 8.1 en calendarios, motor, lógica ni ramas del modelo. No es un pass de G4.
+- B-23 queda en la historia de fase-1 a fase-5. No se reescribe.
+- Siguiente control: gate `--etapa E1` cuando termine la mutación completa. Si el gate falla, el revisor rechaza. Tras 3 rechazos, RECHAZADA-BLOQUEADA y se sigue.
 
 ### Hecho de la v1
 
