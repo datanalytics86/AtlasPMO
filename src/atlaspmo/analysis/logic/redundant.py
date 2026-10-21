@@ -32,6 +32,7 @@ def classify_links(
     chosen = options or EngineOptions()
     base = schedule_cpm(schedule, chosen)
     protected = _protected(schedule, contractual_codes or frozenset())
+    candidate_ids = _candidate_ids(schedule)
     classes: list[LinkClass] = []
     candidates: list[Relationship] = []
     for link in schedule.relationships:
@@ -39,7 +40,7 @@ def classify_links(
         if identity in protected:
             classes.append(LinkClass(identity, "protegido", protected[identity]))
             continue
-        if link.lag_hr_cnt is not None and _is_candidate(schedule, link):
+        if identity in candidate_ids:
             candidates.append(link)
         else:
             classes.append(
@@ -99,18 +100,104 @@ def _listed(activity: Activity | None, codes: frozenset[str]) -> bool:
     return activity is not None and activity.task_code in codes
 
 
-def _is_candidate(schedule: Schedule, link: Relationship) -> bool:
+def _candidate_ids(schedule: Schedule) -> set[str]:
     graph = _graph(schedule)
-    tail, head = _ends(link)
-    weight = int(round((link.lag_hr_cnt or 0) * 60))
-    if tail is None or head is None:
-        return False
-    reduced = {
-        node: [item for item in edges if item[2] != link.task_pred_id]
-        for node, edges in graph.items()
-    }
-    alternate = _longest(reduced, tail, head)
-    return alternate is not None and alternate >= weight
+    order = _event_topo(graph)
+    # A cycle makes the longest path undefined, so the whole graph yields no candidates.
+    if order is None:
+        return set()
+    index = {node: place for place, node in enumerate(order)}
+    grouped: dict[str, list[Relationship]] = {}
+    for link in schedule.relationships:
+        if link.lag_hr_cnt is None:
+            continue
+        tail, head = _ends(link)
+        if tail is None or head is None or tail not in index or head not in index:
+            continue
+        grouped.setdefault(tail, []).append(link)
+    found: set[str] = set()
+    for origin, links in grouped.items():
+        found.update(_origin_candidates(graph, order, index, origin, links))
+    return found
+
+
+def _origin_candidates(
+    graph: dict[str, list[tuple[str, int, str]]],
+    order: list[str],
+    index: dict[str, int],
+    origin: str,
+    links: list[Relationship],
+) -> set[str]:
+    """Longest paths from one origin, only up to its farthest destination."""
+    origin_at = index[origin]
+    heads: list[tuple[Relationship, int]] = []
+    farthest = origin_at
+    for link in links:
+        head = _ends(link)[1]
+        if head is None:
+            continue
+        place = index[head]
+        if place < origin_at:
+            continue
+        heads.append((link, place))
+        farthest = max(farthest, place)
+    if not heads:
+        return set()
+    span = farthest - origin_at + 1
+    best: list[int | None] = [None] * span
+    second: list[int | None] = [None] * span
+    winner: list[str | None] = [None] * span
+    best[0] = 0
+    for place in range(origin_at, farthest + 1):
+        local = place - origin_at
+        current = best[local]
+        if current is None:
+            continue
+        carried = None if local == 0 else winner[local]
+        if local != 0 and carried is None:
+            continue
+        for nxt, weight, identity in graph.get(order[place], ()):
+            nxt_at = index.get(nxt)
+            if nxt_at is None or nxt_at < origin_at or nxt_at > farthest:
+                continue
+            first = _stored_label(identity) if carried is None else carried
+            _consider(best, second, winner, nxt_at - origin_at, current + weight, first)
+    found: set[str] = set()
+    for link, place in heads:
+        local = place - origin_at
+        link_label = "rel:" + (link.task_pred_id or "")
+        marked = winner[local]
+        alternate = second[local] if marked == link_label else best[local]
+        if alternate is not None and alternate >= _lag_minutes(link):
+            found.add(link.task_pred_id or "")
+    return found
+
+
+def _consider(
+    best: list[int | None],
+    second: list[int | None],
+    winner: list[str | None],
+    node: int,
+    proposal: int,
+    first: str,
+) -> None:
+    current = best[node]
+    if current is None or proposal > current:
+        if current is not None and winner[node] != first:
+            previous = second[node]
+            if previous is None or current > previous:
+                second[node] = current
+        best[node] = proposal
+        winner[node] = first
+        return
+    if winner[node] != first:
+        previous = second[node]
+        if previous is None or proposal > previous:
+            second[node] = proposal
+
+
+def _stored_label(identity: str) -> str:
+    return "dur" if identity == "" else identity
 
 
 def _graph(
@@ -127,7 +214,8 @@ def _graph(
         tail, head = _ends(link)
         if tail is None or head is None or tail not in graph or head not in graph:
             continue
-        graph[tail].append((head, int(round((link.lag_hr_cnt or 0) * 60)), link.task_pred_id or ""))
+        label = "rel:" + (link.task_pred_id or "")
+        graph[tail].append((head, _lag_minutes(link), label))
     return graph
 
 
@@ -156,30 +244,8 @@ def _minutes(activity: Activity) -> int:
     return int(round(hours * 60))
 
 
-def _longest(
-    graph: dict[str, list[tuple[str, int, str]]],
-    source: str,
-    target: str,
-) -> int | None:
-    order = _event_topo(graph)
-    if order is None:
-        return None
-    best: dict[str, int | None] = {node: None for node in graph}
-    if source not in best:
-        return None
-    best[source] = 0
-    for node in order:
-        current = best.get(node)
-        if current is None:
-            continue
-        for nxt, weight, _identity in graph.get(node, []):
-            if nxt not in best:
-                continue
-            proposal = current + weight
-            stored = best[nxt]
-            if stored is None or proposal > stored:
-                best[nxt] = proposal
-    return best.get(target)
+def _lag_minutes(link: Relationship) -> int:
+    return int(round((link.lag_hr_cnt or 0) * 60))
 
 
 def _event_topo(graph: dict[str, list[tuple[str, int, str]]]) -> list[str] | None:
