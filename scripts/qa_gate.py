@@ -10,6 +10,7 @@ import argparse
 import ast
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -128,23 +129,40 @@ def check_g2(root: Path) -> Control:
     return Control("G2", "fail", (proc.stdout + proc.stderr)[-1500:])
 
 
+def _uv_pytest_commands() -> list[list[str]]:
+    commands: list[list[str]] = []
+    if shutil.which("uv"):
+        commands.append(["uv", "run", "pytest", "-q"])
+    commands.append(["py", "-3.12", "-m", "uv", "run", "pytest", "-q"])
+    return commands
+
+
+def _environment_gap(proc: subprocess.CompletedProcess[str]) -> bool:
+    blob = f"{proc.stdout}\n{proc.stderr}"
+    return (
+        _spawn_failed(proc)
+        or proc.returncode == 127
+        or "No module named uv" in blob
+        or "WinError 2" in blob
+    )
+
+
 def check_g3(root: Path) -> Control:
     module = _run([sys.executable, "-m", "pytest", "-q"], root)
-    direct = _run([sys.executable, "-m", "uv", "run", "pytest", "-q"], root)
     notes = [f"python -m pytest exit {module.returncode}"]
     if module.returncode != 0:
         notes.append((module.stdout + module.stderr)[-800:])
         return Control("G3", "fail", "\n".join(notes))
-    if direct.returncode == 0:
-        notes.append("uv run pytest exit 0")
-        return Control("G3", "pass", "\n".join(notes))
-    if _spawn_failed(direct):
-        notes.append(
-            "uv run pytest no arranca (os error 5, ADR-004); la suite corrio con python -m pytest"
-        )
-        return Control("G3", "pass", "\n".join(notes))
-    notes.append((direct.stdout + direct.stderr)[-800:])
-    return Control("G3", "fail", "\n".join(notes))
+    for command in _uv_pytest_commands():
+        direct = _run(command, root)
+        if direct.returncode == 0:
+            notes.append("uv run pytest exit 0")
+            return Control("G3", "pass", "\n".join(notes))
+        if not _environment_gap(direct):
+            notes.append((direct.stdout + direct.stderr)[-800:])
+            return Control("G3", "fail", "\n".join(notes))
+    notes.append("uv run pytest no arranca en este equipo (ADR-004); la suite corrio con python -m pytest")
+    return Control("G3", "pass", "\n".join(notes))
 
 
 def check_g4(root: Path) -> Control:
@@ -462,13 +480,20 @@ def run_gate(etapa: str, root: Path | None = None, base: str = "HEAD") -> tuple[
     return controls, (1 if blocking else 0)
 
 
+def _redact(text: str) -> str:
+    return USER_PROFILE_RE.sub("<perfil>", text)
+
+
 def write_report(etapa: str, controls: list[Control], code: int, root: Path) -> None:
     folder = root / "docs" / "qa" / etapa
     folder.mkdir(parents=True, exist_ok=True)
     payload = {
         "etapa": etapa,
         "exit_code": code,
-        "controls": [asdict(item) for item in controls],
+        "controls": [
+            {"id": item.id, "status": item.status, "detail": _redact(item.detail)}
+            for item in controls
+        ],
     }
     (folder / "gate.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),
@@ -476,7 +501,7 @@ def write_report(etapa: str, controls: list[Control], code: int, root: Path) -> 
     )
     lines = [f"# Gate {etapa}", "", f"Codigo de salida: {code}", ""]
     for item in controls:
-        lines.append(f"- **{item.id}** {item.status}: {item.detail.splitlines()[0][:240]}")
+        lines.append(f"- **{item.id}** {item.status}: {_redact(item.detail).splitlines()[0][:240]}")
     (folder / "gate.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
