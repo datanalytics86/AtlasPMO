@@ -11,6 +11,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.coverage
+.coverage.*
+coverage-gate.json
+htmlcov/
 *.egg-info/
 dist/
 build/

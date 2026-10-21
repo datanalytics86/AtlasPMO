@@ -7,4 +7,10 @@ deny = [
   "Read(**/data/real/**)",
   "Edit(**/data/real/**)",
   "Grep(**/data/real/**)",
+  "Read(**/.env)",
+  "Edit(**/.env)",
+  "Grep(**/.env)",
+  "Read(**/.env.*)",
+  "Edit(**/.env.*)",
+  "Grep(**/.env.*)",
 ]
