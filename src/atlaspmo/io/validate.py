@@ -159,7 +159,16 @@ def _is_external(link: Relationship, by_id: dict[str, Activity]) -> bool:
     return pred.proj_id is not None and succ.proj_id is not None and pred.proj_id != succ.proj_id
 
 
+_WHITE = 0
+_GRAY = 1
+_BLACK = 2
+
+
 def _cycles(schedule: Schedule) -> list[ValidationIssue]:
+    """Report cycles with an explicit stack.
+
+    A serial chain of tens of thousands of activities must not recurse in Python.
+    """
     graph: dict[str, list[str]] = {}
     for activity in schedule.activities:
         if activity.task_id is not None:
@@ -172,16 +181,29 @@ def _cycles(schedule: Schedule) -> list[ValidationIssue]:
     color: dict[str, int] = {}
     issues: list[ValidationIssue] = []
 
-    def walk(node: str, stack: list[str]) -> None:
-        color[node] = 1
-        stack.append(node)
-        for nxt in graph.get(node, []):
-            state = color.get(nxt, 0)
-            if state == 0:
-                walk(nxt, stack)
-            elif state == 1:
-                start = stack.index(nxt)
-                cycle = stack[start:] + [nxt]
+    def walk(start: str) -> None:
+        stack = [start]
+        frames: list[tuple[str, int]] = [(start, 0)]
+        color[start] = _GRAY
+        while frames:
+            node, index = frames[-1]
+            successors = graph[node]
+            if index >= len(successors):
+                frames.pop()
+                stack.pop()
+                color[node] = _BLACK
+                continue
+            frames[-1] = (node, index + 1)
+            nxt = successors[index]
+            state = color.get(nxt, _WHITE)
+            if state == _WHITE:
+                color[nxt] = _GRAY
+                stack.append(nxt)
+                frames.append((nxt, 0))
+            elif state == _GRAY:
+                start_at = stack.index(nxt)
+                cycle = stack[start_at:]
+                cycle.append(nxt)
                 codes = [_code(schedule, item) for item in cycle]
                 issues.append(
                     ValidationIssue(
@@ -191,12 +213,10 @@ def _cycles(schedule: Schedule) -> list[ValidationIssue]:
                         None,
                     )
                 )
-        stack.pop()
-        color[node] = 2
 
     for node in graph:
-        if color.get(node, 0) == 0:
-            walk(node, [])
+        if color.get(node, _WHITE) == _WHITE:
+            walk(node)
     return issues
 
 
