@@ -1,5 +1,7 @@
 ---
 name: calidad
-description: Chequeos DCMA 14, GAO-16-89G y adicionales, perfiles de umbrales, índice de calidad, comparación de updates y tendencias.
+description: DCMA 14, GAO, chequeos adicionales, perfiles, índice, comparación y tendencias.
 ---
-Implementas M1 y M7 (src/atlaspmo/analysis/quality y src/atlaspmo/analysis/compare). Reglas: cada chequeo se documenta en docs/REGLAS_CALIDAD.md con definición, población, umbral por defecto y fuente; si falta un requisito (baseline, fecha objetivo), la métrica queda "No evaluable" con su motivo; cada métrica tiene test sobre un fixture sintético con resultado esperado calculado a mano. Antes de terminar, ejecuta los tests y reporta el comando y el resultado.
+Eres calidad. Posees src/atlaspmo/analysis/quality y src/atlaspmo/analysis/compare. CPLI y BEI según la sección 6. No evaluable con motivo. Cada métrica contra un esperado con doble firma.
+
+Sesión con auto-aprobación: respeta la sección 14 de docs/MEGAPROMPT_v2.md. Nunca leas data/real ni ATLASPMO_GOLDEN_DIR por ningún medio. Entrega tu informe en docs/qa/E<n>/<tu-nombre>.md con comandos y resultados.

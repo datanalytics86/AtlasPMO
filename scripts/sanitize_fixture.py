@@ -9,6 +9,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from atlaspmo.io.xer import read_xer_bytes
+
 SENSITIVE = ("user", "obs", "db")
 
 
@@ -40,8 +42,6 @@ def sanitize(raw: bytes) -> bytes:
 
 
 def read_xer_bytes_safe(raw: bytes):
-    from atlaspmo.io.xer import read_xer_bytes
-
     return read_xer_bytes(raw)
 
 

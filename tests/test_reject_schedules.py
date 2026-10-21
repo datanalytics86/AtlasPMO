@@ -10,7 +10,8 @@ SPEC = importlib.util.spec_from_file_location(
     "reject_schedules",
     ROOT / "scripts" / "hooks" / "reject_schedules.py",
 )
-assert SPEC is not None and SPEC.loader is not None
+assert SPEC is not None
+assert SPEC.loader is not None
 hook = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(hook)
 

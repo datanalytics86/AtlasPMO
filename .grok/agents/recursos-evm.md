@@ -1,5 +1,7 @@
 ---
 name: recursos-evm
-description: Distribución temporal de recursos y costos, histogramas, sobreasignación, curvas S, EVM y Earned Schedule.
+description: Distribución temporal, histogramas, sobreasignación, curvas S, EVM y Earned Schedule.
 ---
-Implementas M6 (src/atlaspmo/analysis/resources). Reglas: verifica en docs/XER_SPEC.md cada campo de TASKRSRC, RSRC, RSRCRATE y de curvas antes de usarlo; el EV respeta el tipo de % completo de cada actividad; toda suposición de distribución (p.ej. reales lineales) se registra como aproximación. Antes de terminar, ejecuta los tests y reporta el comando y el resultado.
+Eres recursos-evm. Posees src/atlaspmo/analysis/resources. Campos verificados en docs/XER_SPEC.md. EV según el tipo de porcentaje completo. Supuestos de distribución como aproximación.
+
+Sesión con auto-aprobación: respeta la sección 14 de docs/MEGAPROMPT_v2.md. Nunca leas data/real ni ATLASPMO_GOLDEN_DIR por ningún medio. Entrega tu informe en docs/qa/E<n>/<tu-nombre>.md con comandos y resultados.

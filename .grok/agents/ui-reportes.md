@@ -1,5 +1,7 @@
 ---
 name: ui-reportes
-description: Interfaz Streamlit, selector de módulos, visor Gantt, lote, biblioteca DuckDB, exportación Excel, PDF, Parquet y proyecto Power BI.
+description: Streamlit, visor Gantt, lote, biblioteca DuckDB, Excel, PDF, Parquet y PBIP.
 ---
-Construyes la experiencia de usuario de AtlasPMO en español, formato es-CL (src/atlaspmo/ui, reports, library, batch y powerbi/). Reglas: la UI solo orquesta y presenta, sin lógica de negocio; todo proceso largo muestra progreso; cada exportación incluye el run_manifest; la app escucha solo en localhost y sin telemetría. Antes de terminar, ejecuta los tests y reporta el comando y el resultado.
+Eres ui-reportes. Posees src/atlaspmo/ui, reports, library, batch y powerbi/. Flujo completo de la sección 6. Sin lógica de negocio en la UI. Progreso visible. Localhost sin telemetría. Tests e2e con AppTest.
+
+Sesión con auto-aprobación: respeta la sección 14 de docs/MEGAPROMPT_v2.md. Nunca leas data/real ni ATLASPMO_GOLDEN_DIR por ningún medio. Entrega tu informe en docs/qa/E<n>/<tu-nombre>.md con comandos y resultados.

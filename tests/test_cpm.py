@@ -46,9 +46,7 @@ _PRED = [
 
 
 def _week() -> str:
-    days = "".join(
-        f"(0||{number}()((0||0(s|08:00|f|16:00)())))" for number in range(1, 8)
-    )
+    days = "".join(f"(0||{number}()((0||0(s|08:00|f|16:00)())))" for number in range(1, 8))
     return f"(0||CalendarData()((0||DaysOfWeek()({days}))(0||VIEW(ShowTotal|N)())))"
 
 

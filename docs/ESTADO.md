@@ -1,5 +1,16 @@
 # Estado
 
+## v2 — en curso
+
+Base de la iteración: `b131428` (fase 5), más el megaprompt en `108f11a`. Rama `v2`. Brechas B-01 a B-23. Etapas E0 a E6.
+
+- Etapa actual: E0, ciclo de QA 1, control QC-3 (implementación del gate).
+- QC-1 escrito en `docs/qa/E0/QC1_contrato.md`.
+- QC-2 de E0 no tiene oráculo numérico: el gate se prueba con árboles temporales.
+- Bloqueos: ninguno. B-23 queda en la historia de fase-1 a fase-5; no se reescribe.
+
+### Hecho de la v1
+
 Memoria de trabajo entre sesiones. La fase 0 quedó en su rama. Nicolás pidió seguir hasta terminar el producto y dejar las iteraciones con P6 para después. Esta sesión construye la fase 1 en `fase-1`. No hay push.
 
 ## Fase 0 — lista para el gate

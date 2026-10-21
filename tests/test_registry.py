@@ -5,11 +5,14 @@ from __future__ import annotations
 import pytest
 from pydantic import BaseModel
 
+from atlaspmo import __version__
 from atlaspmo.analysis.contract import (
     FINDING_COLUMNS,
     AnalysisContext,
+    Metric,
     ModuleResult,
     Requirement,
+    RunMetadata,
     empty_findings,
 )
 from atlaspmo.registry import clear_modules, get_module, register_module, registered_modules
@@ -28,9 +31,6 @@ class _Demo:
     config_model = _Config
 
     def run(self, ctx: AnalysisContext, config: BaseModel) -> ModuleResult:
-        from atlaspmo import __version__
-        from atlaspmo.analysis.contract import Metric, RunMetadata
-
         return ModuleResult(
             module_id=self.id,
             metrics={"n": Metric(value=1.0, threshold=None, status="info")},

@@ -41,8 +41,7 @@ class WorkCalendar:
         left = minutes
         for _step in range(3660):
             for begin, finish in self.shifts_on(day):
-                if minute < begin:
-                    minute = begin
+                minute = max(minute, begin)
                 if minute >= finish:
                     continue
                 room = finish - minute

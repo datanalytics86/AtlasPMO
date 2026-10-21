@@ -28,13 +28,13 @@ def test_minimal_xer_is_cp1252_crlf():
 
 
 def test_header_must_start_with_ermhdr():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="ERMHDR"):
         encode_xer("NOPE", TABLES)
 
 
 def test_row_width_is_checked():
     bad = [{"name": "SYNTH", "fields": ["col_a"], "rows": [["1", "2"]]}]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="row width"):
         encode_xer("ERMHDR", bad)
 
 

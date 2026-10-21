@@ -10,7 +10,8 @@ SPEC = importlib.util.spec_from_file_location(
     "run_conformance",
     ROOT / "scripts" / "run_conformance.py",
 )
-assert SPEC is not None and SPEC.loader is not None
+assert SPEC is not None
+assert SPEC.loader is not None
 stub = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(stub)
 

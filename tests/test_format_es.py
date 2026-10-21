@@ -22,5 +22,5 @@ def test_date_is_day_month_year():
 
 
 def test_negative_decimals_rejected():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="decimals"):
         format_number(1, decimals=-1)

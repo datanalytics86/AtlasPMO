@@ -3,6 +3,7 @@
 ## ADR-001 — Mecánica de Grok Build
 
 Verificado el 2026-10-20 con `grok inspect --json`. Grok Build 1.0.62 stable.
+Revalidado el 2026-10-21 al abrir E0: la rama de trabajo es `v2` y `spawn_subagent` sigue sin `subagent_type`. Los 13 agentes se lanzan con el rol escrito en el brief.
 El comando corrió con cwd en el home, antes de existir este checkout.
 La guía vigente manda cuando difiere del megaprompt.
 
@@ -114,6 +115,30 @@ La revisión de aproximaciones no reescribió el motor. Lo que calculaba sin not
 - EVM nombra que `scurve` es un solo punto en la fecha de corte.
 
 No hubo ajuste de rendimiento. No se midieron la redundancia bajo 3 minutos, el Monte Carlo de 30 000 por 1 000 bajo 5 minutos, ni el 99,5 % contra P6. Cambiar el motor sin esa medición sería un supuesto.
+
+## ADR-010 — Reglas de ruff de la sección 8.1
+
+En E0 se activan E, F, I, UP, B, BLE, S110, E722, SIM, PT, RET y PL.
+
+Se ignoran PLR2004, PLR0911, PLR0912, PLR0913, PLR0915 y PLR0917. Esas reglas chocan con el motor CPM y con DCMA: comparaciones con 0 y con 8 horas, y firmas con varias fechas. PT solo aplica a `tests/`. `docs/` y `powerbi/` quedan fuera de ruff: no son código Python y formatear el megaprompt reescribiría la spec.
+
+## ADR-011 — Gate y rutas protegidas de E0
+
+`scripts/qa_gate.py`, `docs/qa/skips.toml` y el patrón de perfiles de usuario nacen en E0. G11 exige que el commit que los toca cite este ADR.
+
+En E0, G4, G5, G6, G10 y G13 pueden quedar como línea base. No se declaran cumplidos.
+
+G3 acepta que `uv run pytest` no arranque con `os error 5` (ADR-004) si `uv run python -m pytest` pasa.
+
+G9 mira tablas P6 en todo `src/` y literales con forma de columna solo en `io/`, `model/` y `calendars/`. No trata códigos internos (`no_cumple`, `duplicate_task_id`) como campos XER.
+
+## ADR-012 — Benchmarks fuera de la suite por defecto
+
+Los tests marcados `perf` no entran en `addopts`. No son `skip` ni `xfail`: G6 los ejecuta con `pytest -m perf`. Deseleccionarlos no relaja un umbral. En E0 todavía no hay `tests/perf`; G6 queda en línea base, no medido.
+
+## ADR-013 — Esta corrida no se detiene en el tercer rechazo
+
+Nicolás pidió, el 2026-10-21, que una etapa que siga RECHAZADA tras 3 ciclos se registre como RECHAZADA-BLOQUEADA y que la corrida continúe. No se marca APROBADO. Las etapas que dependan de ella quedan condicionales. Esto precisa la sección 0.3 punto 4 para esta corrida.
 
 ## Nota local, fuera del repositorio
 

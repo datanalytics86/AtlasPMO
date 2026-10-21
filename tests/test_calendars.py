@@ -9,9 +9,7 @@ from atlaspmo.calendars.worktime import WorkCalendar
 
 
 def _week(start: str = "08:00", finish: str = "16:00") -> str:
-    days = "".join(
-        f"(0||{number}()((0||0(s|{start}|f|{finish})())))" for number in range(1, 8)
-    )
+    days = "".join(f"(0||{number}()((0||0(s|{start}|f|{finish})())))" for number in range(1, 8))
     return f"(0||CalendarData()((0||DaysOfWeek()({days}))(0||VIEW(ShowTotal|N)())))"
 
 

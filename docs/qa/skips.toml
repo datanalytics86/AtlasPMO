@@ -1,0 +1,3 @@
+# Omisiones aceptadas por G7.
+# motivo: dependencia_opcional | fixture_nicolas | plataforma
+# No hay skip, skipif ni xfail en la suite de E0.

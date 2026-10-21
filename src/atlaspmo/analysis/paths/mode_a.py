@@ -16,7 +16,7 @@ from atlaspmo.analysis.contract import (
     RunMetadata,
     empty_findings,
 )
-from atlaspmo.analysis.quality.profiles import load_profile
+from atlaspmo.analysis.quality.profiles import Profile, load_profile
 from atlaspmo.model.schedule import Activity, Schedule
 
 
@@ -81,8 +81,7 @@ class PathsModeA:
         metrics = {
             "critical_count": Metric(float(critical), profile.critical_float_days, "info"),
             **{
-                f"band_{name}": Metric(float(count), None, "info")
-                for name, count in counts.items()
+                f"band_{name}": Metric(float(count), None, "info") for name, count in counts.items()
             },
         }
         return ModuleResult(
@@ -104,8 +103,6 @@ def _classify(
     profile: object,
     approximations: list[str],
 ) -> tuple[pd.DataFrame, dict[str, int], int]:
-    from atlaspmo.analysis.quality.profiles import Profile
-
     if not isinstance(profile, Profile):
         raise TypeError("profile")
     counts = {name: 0 for name, _rule in _BANDS}

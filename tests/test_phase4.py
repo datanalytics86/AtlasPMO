@@ -6,6 +6,7 @@ from zipfile import ZipFile
 
 import duckdb
 import pandas as pd
+import pytest
 
 from atlaspmo.analysis.compare.diff import compare_schedules
 from atlaspmo.analysis.compare.module import CompareModule
@@ -70,12 +71,8 @@ def test_mspdi_lag_is_tenths_of_a_minute(tmp_path: Path):
 
 
 def test_mpp_is_skipped_without_the_extra():
-    try:
+    with pytest.raises(MppUnavailable, match="Java"):
         read_mpp(Path("missing.mpp"))
-    except MppUnavailable as exc:
-        assert "Java" in str(exc)
-    else:
-        raise AssertionError("la lectura mpp debía negarse")
 
 
 def test_compare_reports_the_hand_differences():
@@ -125,9 +122,7 @@ def test_changed_link_is_not_a_new_link():
 
 
 def test_ranking_puts_the_higher_index_first(tmp_path: Path):
-    ordered = rank_rows(
-        [BatchRow("b.xer", 10), BatchRow("c.xer", None), BatchRow("a.xer", 90)]
-    )
+    ordered = rank_rows([BatchRow("b.xer", 10), BatchRow("c.xer", None), BatchRow("a.xer", 90)])
     assert [item.name for item in ordered] == ["a.xer", "b.xer", "c.xer"]
     for name in ("a.xer", "b.xer"):
         _xer(tmp_path / name)

@@ -5,7 +5,13 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from atlaspmo import __version__
-from atlaspmo.analysis.contract import AnalysisContext, ModuleResult, Requirement, RunMetadata
+from atlaspmo.analysis.contract import (
+    AnalysisContext,
+    ModuleResult,
+    Requirement,
+    RunMetadata,
+    empty_findings,
+)
 from atlaspmo.analysis.quality.check import evaluate
 from atlaspmo.analysis.quality.profiles import load_profile
 
@@ -31,8 +37,6 @@ class QualityModule:
         if chosen.hours_per_day is not None:
             approximations.append("hours_per_day del llamado reemplaza el del perfil.")
         if ctx.schedule is None:
-            from atlaspmo.analysis.contract import empty_findings
-
             approximations.append("No hay cronograma cargado.")
             return ModuleResult(
                 module_id=self.id,
@@ -43,9 +47,7 @@ class QualityModule:
                 metadata=RunMetadata(app_version=__version__, input_sha256=ctx.input_sha256),
             )
         current = ctx.schedule.select(chosen.proj_id)
-        baseline = (
-            ctx.schedule.select(chosen.baseline_proj_id) if chosen.baseline_proj_id else None
-        )
+        baseline = ctx.schedule.select(chosen.baseline_proj_id) if chosen.baseline_proj_id else None
         metrics, findings, notes = evaluate(current, profile, baseline)
         approximations.extend(notes)
         return ModuleResult(

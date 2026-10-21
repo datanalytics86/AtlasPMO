@@ -138,8 +138,7 @@ def _parse_tables(lines: list[str]) -> tuple[XerTable, ...]:
         elif line.startswith("%R") and open_table:
             cells = _cells(line)
             values = {
-                fields[pos]: cells[pos] if pos < len(cells) else ""
-                for pos in range(len(fields))
+                fields[pos]: cells[pos] if pos < len(cells) else "" for pos in range(len(fields))
             }
             rows.append(XerRow(index, values))
         elif line.startswith("%E"):

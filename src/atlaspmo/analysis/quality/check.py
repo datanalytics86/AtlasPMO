@@ -17,7 +17,9 @@ from atlaspmo.model.schedule import Activity, Relationship, Schedule
 MILESTONES = frozenset({"TT_Mile", "TT_FinMile"})
 
 
-def evaluate(schedule: Schedule, profile: Profile, baseline: Schedule | None) -> tuple[
+def evaluate(
+    schedule: Schedule, profile: Profile, baseline: Schedule | None
+) -> tuple[
     dict[str, Metric],
     pd.DataFrame,
     list[str],
@@ -44,9 +46,7 @@ def evaluate(schedule: Schedule, profile: Profile, baseline: Schedule | None) ->
     metrics["missed_tasks"] = _baseline_ratio(
         schedule, baseline, data_date, profile, findings, missed=True
     )
-    metrics["bei"] = _baseline_ratio(
-        schedule, baseline, data_date, profile, findings, missed=False
-    )
+    metrics["bei"] = _baseline_ratio(schedule, baseline, data_date, profile, findings, missed=False)
     metrics["cpli"] = _cpli(schedule, profile, findings)
     _extras(schedule, population, profile, data_date, findings, metrics)
     _gao(schedule, metrics, findings)
@@ -56,20 +56,15 @@ def evaluate(schedule: Schedule, profile: Profile, baseline: Schedule | None) ->
 
 
 def _in_logic_population(activity: Activity, profile: Profile) -> bool:
-    if activity.status_code == "TK_Complete":
-        return False
-    if profile.exclude_loe and activity.task_type == "TT_LOE":
-        return False
-    if profile.exclude_wbs_summary and activity.task_type == "TT_WBS":
-        return False
-    return True
+    excluded = activity.status_code == "TK_Complete"
+    excluded = excluded or (profile.exclude_loe and activity.task_type == "TT_LOE")
+    excluded = excluded or (profile.exclude_wbs_summary and activity.task_type == "TT_WBS")
+    return not excluded
 
 
 def _data_date(schedule: Schedule, findings: list[dict[str, object]]) -> datetime | None:
     dates = [
-        item.last_recalc_date
-        for item in schedule.projects
-        if item.last_recalc_date is not None
+        item.last_recalc_date for item in schedule.projects if item.last_recalc_date is not None
     ]
     if not dates:
         _add(
@@ -118,9 +113,7 @@ def _logic(
         return _gap(findings, "logic", "Lógica", "DCMA", "La población de incompletas está vacía.")
     preds, succs = _ends(schedule.relationships)
     offenders = [
-        item
-        for item in population
-        if item.task_id not in preds or item.task_id not in succs
+        item for item in population if item.task_id not in preds or item.task_id not in succs
     ]
     value = len(offenders) / len(population)
     status = _max_status(value, profile.logic_max)
@@ -340,7 +333,8 @@ def _duration(
             hours = item.target_drtn_hr_cnt
         converted = _days(hours, item, schedule, profile)
         if converted is None and hours is not None:
-            return _gap(findings, 
+            return _gap(
+                findings,
                 "high_duration",
                 "Duración alta",
                 "DCMA",
@@ -534,12 +528,12 @@ def _baseline_ratio(
 def _cpli(schedule: Schedule, profile: Profile, findings: list[dict[str, object]]) -> Metric:
     column, order_column = _path_columns(schedule)
     if column is None:
-        return _gap(findings, 
+        return _gap(
+            findings,
             "cpli",
             "CPLI",
             "DCMA",
-            "No está TASK.float_path ni TASK.int_path. "
-            "El CPLI de la fase 1 no inventa la ruta.",
+            "No está TASK.float_path ni TASK.int_path. El CPLI de la fase 1 no inventa la ruta.",
         )
     group = [item for item in schedule.activities if _path_value(item, column) == "1"]
     if not group:
@@ -740,10 +734,7 @@ def _extras(
             "ATLASPMO",
             "El perfil no exige códigos.",
         )
-    if schedule.activities:
-        density = len(schedule.relationships) / len(schedule.activities)
-    else:
-        density = 0.0
+    density = len(schedule.relationships) / len(schedule.activities) if schedule.activities else 0.0
     metrics["logic_density"] = Metric(density, None, "info")
 
 
@@ -821,12 +812,7 @@ def _gao_from(metric: Metric | None) -> str:
 def _trace(metrics: dict[str, Metric]) -> str:
     starts = metrics.get("open_starts")
     finishes = metrics.get("open_finishes")
-    if (
-        starts is None
-        or finishes is None
-        or starts.value is None
-        or finishes.value is None
-    ):
+    if starts is None or finishes is None or starts.value is None or finishes.value is None:
         return "manual"
     if starts.value <= 1 and finishes.value <= 1:
         return "cumple"

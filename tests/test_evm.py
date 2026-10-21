@@ -124,9 +124,7 @@ def _schedule(
         phys_complete_pct=phys_complete_pct,
     )
     return Schedule(
-        projects=(
-            Project("1", "P", "P", "C1", TUE_8, None, None),
-        ),
+        projects=(Project("1", "P", "P", "C1", TUE_8, None, None),),
         calendars=(Calendar("C1", "C", "1", 8, None, clndr_data),),
         wbs=(),
         activities=(activity,),

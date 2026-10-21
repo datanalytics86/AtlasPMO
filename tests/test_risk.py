@@ -41,7 +41,8 @@ def test_perfect_correlation_matches_ranks():
     right = [rng.random() for _ in range(25)]
     perfect = iman_conover([left, right], [[1.0, 1.0], [1.0, 1.0]], random.Random(9))
     opposite = iman_conover([list(left), list(right)], [[1.0, -1.0], [-1.0, 1.0]], random.Random(9))
-    assert perfect is not None and opposite is not None
+    assert perfect is not None
+    assert opposite is not None
     assert _order(perfect[0]) == _order(perfect[1])
     assert _order(opposite[1]) == list(reversed(_order(opposite[0])))
     rejected = iman_conover(
@@ -168,9 +169,12 @@ def test_wide_ranges_publish_sensitivity(tmp_path):
     row = next(item for item in outcome.activities if item.task_code == "A")
     assert outcome.ssi_status == "info"
     assert outcome.sensitivity_status == "info"
-    assert row.ssi is not None and abs(row.ssi - 1) < 0.05
-    assert row.spearman is not None and row.spearman > 0.95
-    assert row.cruciality is not None and row.cruciality > 0.95
+    assert row.ssi is not None
+    assert abs(row.ssi - 1) < 0.05
+    assert row.spearman is not None
+    assert row.spearman > 0.95
+    assert row.cruciality is not None
+    assert row.cruciality > 0.95
 
 
 def test_invalid_correlation_is_skipped(tmp_path):

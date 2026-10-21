@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from scripts.run_conformance import main as conformance_main
+
 from atlaspmo.analysis.contract import AnalysisContext
 from atlaspmo.analysis.logic.clean import clean_document
 from atlaspmo.analysis.logic.redundant import classify_links
@@ -154,14 +156,10 @@ def test_conformance_is_exact_when_stored_dates_match(tmp_path: Path):
 
 
 def _week() -> str:
-    days = "".join(
-        f"(0||{number}()((0||0(s|08:00|f|16:00)())))" for number in range(1, 8)
-    )
+    days = "".join(f"(0||{number}()((0||0(s|08:00|f|16:00)())))" for number in range(1, 8))
     return f"(0||CalendarData()((0||DaysOfWeek()({days}))(0||VIEW(ShowTotal|N)())))"
 
 
 def test_script_skips_missing_golden(tmp_path: Path, monkeypatch):
-    from scripts.run_conformance import main
-
     monkeypatch.delenv("ATLASPMO_GOLDEN_DIR", raising=False)
-    assert main([str(tmp_path)]) == 0
+    assert conformance_main([str(tmp_path)]) == 0

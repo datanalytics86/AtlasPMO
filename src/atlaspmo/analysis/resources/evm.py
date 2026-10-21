@@ -252,9 +252,7 @@ def _clock_window(start: datetime, end: datetime, data_date: datetime) -> tuple[
 
 def _data_date(schedule: Schedule) -> tuple[datetime | None, str | None]:
     dates = {
-        item.last_recalc_date
-        for item in schedule.projects
-        if item.last_recalc_date is not None
+        item.last_recalc_date for item in schedule.projects if item.last_recalc_date is not None
     }
     if not dates:
         return None, "No hay fecha de corte (last_recalc_date)."

@@ -1,5 +1,7 @@
 ---
 name: logica-red
-description: Rutas crítica y subcrítica, vínculos driving, float paths, CP Test, detección de redundancia, protecciones y limpieza de XER.
+description: Rutas, driving, float paths, CP Test, redundancia, protecciones y limpieza XER.
 ---
-Implementas M2, M3 y M4 (src/atlaspmo/analysis/paths y src/atlaspmo/analysis/logic) según docs/MEGAPROMPT.md, sección 6. Reglas: redundancia = camino alternativo de igual o mayor longitud en el grafo de eventos + confirmación por reprogramación con delta cero; nunca marques como redundante un vínculo solo por no ser driver; las protecciones van como verificación final explícita; el cleaner elimina solo filas de TASKPRED. Cada regla con test positivo y negativo. Antes de terminar, ejecuta los tests y reporta el comando y el resultado.
+Eres logica-red. Posees src/atlaspmo/analysis/paths y src/atlaspmo/analysis/logic. Candidatos por rango topológico agrupados por origen. Confirmación con validación conjunta final. Protecciones a nivel de evento. El cleaner no escribe si el delta no es cero.
+
+Sesión con auto-aprobación: respeta la sección 14 de docs/MEGAPROMPT_v2.md. Nunca leas data/real ni ATLASPMO_GOLDEN_DIR por ningún medio. Entrega tu informe en docs/qa/E<n>/<tu-nombre>.md con comandos y resultados.

@@ -249,9 +249,7 @@ def _topo(nodes: dict[str, _Node]) -> list[str]:
     return order
 
 
-def _project_calendar(
-    schedule: Schedule, clocks: dict[str, WorkCalendar]
-) -> WorkCalendar | None:
+def _project_calendar(schedule: Schedule, clocks: dict[str, WorkCalendar]) -> WorkCalendar | None:
     if len(schedule.projects) != 1:
         return None
     return clocks.get(schedule.projects[0].clndr_id or "")
@@ -360,8 +358,7 @@ def _backward(
             if from_start < late_finish:
                 late_finish = from_start
                 late_start = node.calendar.subtract_work(late_finish, node.duration)
-            if capped < late_start:
-                late_start = capped
+            late_start = min(late_start, capped)
         node.late_start = late_start
         node.late_finish = late_finish
 
@@ -586,15 +583,14 @@ def _dates_for(node: _Node, codes: set[str]) -> list[datetime]:
 
 
 def _has(node: _Node, code: str) -> bool:
-    return node.activity.cstr_type == code or node.activity.cstr_type2 == code
+    return code in {node.activity.cstr_type, node.activity.cstr_type2}
 
 
 def _delay_start(node: _Node, start: datetime) -> datetime:
     chosen = start
     for raw in _dates_for(node, _START_ON | _START_AFTER):
         snapped = node.calendar.add_work(raw, 0)
-        if snapped > chosen:
-            chosen = snapped
+        chosen = max(chosen, snapped)
     return chosen
 
 
@@ -606,8 +602,7 @@ def _delay_finish(node: _Node) -> datetime:
         if snapped > finish:
             finish = snapped
             pushed = node.calendar.subtract_work(finish, node.duration)
-            if pushed > node.early_start:
-                node.early_start = pushed
+            node.early_start = max(node.early_start, pushed)
     return finish
 
 

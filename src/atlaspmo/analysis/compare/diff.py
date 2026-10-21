@@ -202,9 +202,7 @@ def _link_map(
     notes: list[str],
 ) -> dict[tuple[str, str], str]:
     ids = {
-        activity.task_id: activity.task_code
-        for activity in activities.values()
-        if activity.task_id
+        activity.task_id: activity.task_code for activity in activities.values() if activity.task_id
     }
     found: dict[tuple[str, str], str] = {}
     for link in schedule.relationships:
