@@ -19,3 +19,5 @@ class EngineOptions:
     float_kind: str = "minimum"
     critical_hours: float = 0.0
     critical_rule: str = "float"
+    # "fast" is the array engine. "reference" keeps the pure-Python passes.
+    engine: str = "fast"

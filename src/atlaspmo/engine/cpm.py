@@ -62,7 +62,21 @@ class _Node:
 
 
 def schedule_cpm(schedule: Schedule, options: EngineOptions | None = None) -> CpmResult:
-    """Forward and backward pass. A cycle returns no dates."""
+    """Forward and backward pass. A cycle returns no dates.
+
+    The default engine is the array implementation. ``engine="reference"``
+    keeps this module's pure-Python passes for the differential oracle.
+    """
+    chosen = options or EngineOptions()
+    if chosen.engine == "reference":
+        return schedule_cpm_reference(schedule, chosen)
+    from atlaspmo.engine.fast import schedule_cpm_fast  # noqa: PLC0415
+
+    return schedule_cpm_fast(schedule, chosen)
+
+
+def schedule_cpm_reference(schedule: Schedule, options: EngineOptions | None = None) -> CpmResult:
+    """Pure-Python CPM. Behavior is the differential oracle for the fast engine."""
     chosen = options or EngineOptions()
     notes: list[str] = []
     rule = chosen.critical_rule
@@ -77,6 +91,7 @@ def schedule_cpm(schedule: Schedule, options: EngineOptions | None = None) -> Cp
             chosen.float_kind,
             chosen.critical_hours,
             rule,
+            chosen.engine,
         )
     cycles = [item.message_es for item in validate_schedule(schedule) if item.code == "cycle"]
     if cycles:
