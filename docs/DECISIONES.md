@@ -190,6 +190,20 @@ Revisión externa del 2026-10-22 sobre `cc81a31`. En la v2, las siete etapas que
 
 Mediciones de la revisión en la red realista de `gen_scale.py` (30.000 actividades, Linux): lectura 1,8 s; CPM 15,8 s; DCMA con CPM 16,1 s. Con 300 actividades: redundancia con confirmación 52,5 s; Monte Carlo de 5 iteraciones 49,1 s.
 
+## ADR-020 — Motor CPM en arrays con numba
+
+Decisión de E7, sin pregunta (sección 0.2 del megaprompt v3).
+
+- Hay wheel de numba 0.68.0 para Windows y Python 3.12. Se usa `@njit(cache=True)`. numpy 2.5.4 es dependencia directa. ADR-007 describía la v2, cuando numba no se cargó: no impide usarlo en la v3.
+- `schedule_cpm` llama al motor rápido. `engine="reference"` deja `schedule_cpm_reference` como oráculo. El archivo del motor de referencia no se borra.
+- Un calendario con turnos solapados o fuera del día no entra en la tabla. El motor rápido delega en la referencia y no agrega una nota: el resultado es el de la referencia.
+- La caché guarda los arrays compilados, no las fechas. La clave es la identidad de las tuplas del cronograma. El tope es 4. La llamada medida vuelve a ejecutar el pase.
+- El fin de proyecto que se publica es el máximo de los fin temprano de antes de ALAP.
+- La holgura se calcula después de aplicar todos los ALAP. Si no, la holgura libre de la predecesora ve el inicio viejo de una sucesora ALAP.
+- Si el horizonte se agota, se levanta `CalendarLimitError` con el texto "horizonte de calendario agotado". No hay tope fijo de días.
+
+La comparación con P6 sigue en `[VALIDAR]`. Este ADR no la da por hecha.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

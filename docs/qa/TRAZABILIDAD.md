@@ -139,3 +139,8 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-350 | E1 | gen_synthetic.py sin tablas inventadas | tests/test_e1_synthetic.py | XER_SPEC; hoy SYNTH sigue en el generador viejo y no está en verde |
 | R-351 | E1 | red de escala con WBS, feriados, mezcla de vínculos y avance | tests/test_e1_scale_shape.py | gen_scale.py |
 | R-352 | E1 | sanitize_fixture anonimiza ERMHDR antes de versionar | tests/test_phase1.py::test_sanitize_clears_header_and_user_column | encabezado anónimo |
+| R-360 | E7 | ES, EF, LS, LF, TF, FF y aproximaciones idénticos al minuto frente a la referencia | tests/property/test_e7_differential.py | schedule_cpm_reference, hypothesis 500, perfil qa |
+| R-361 | E7 | tablas de intervalos iguales a WorkCalendar | tests/test_e7_intervals.py | add_work, subtract_work y work_between |
+| R-362 | E7 | camino rápido, ALAP antes de la holgura libre, restricciones, avance, hitos, LOE, WBS, horizonte y turno solapado | tests/test_e7_match.py | schedule_cpm_reference |
+| R-363 | E7 | los tests de mano del motor siguen pasando con el motor rápido por defecto | tests/test_cpm.py | casos a mano de CPM |
+| R-364 | E7 | cpm_30k y dcma_30k medidos a 30 000; se activan solo si cumplen | tests/perf/test_seccion11.py | gen_scale.py en este equipo |

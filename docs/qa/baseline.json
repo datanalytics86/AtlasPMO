@@ -1,14 +1,14 @@
 {
-  "nota": "Linea base de cobertura de la v3 (ADR-019), medida sobre la integracion de v2. G4 falla si un paquete cae mas de 0,5 puntos bajo este valor; las metas de la seccion 8.1 siguen como objetivo. Solo se sube, nunca se baja.",
+  "nota": "Linea base de cobertura de la v3 (ADR-019). E7 subio calendars, engine y las ramas de resto; no bajo ningun valor. G4 falla si un paquete cae mas de 0,5 puntos bajo este valor; las metas de la seccion 8.1 siguen como objetivo. Solo se sube, nunca se baja.",
   "commit_base": "cc81a31",
   "buckets": {
     "calendars": {
-      "lineas": 85.2,
-      "ramas": 70.9
+      "lineas": 91.5,
+      "ramas": 81.6
     },
     "engine": {
-      "lineas": 89.4,
-      "ramas": 79.5
+      "lineas": 95.0,
+      "ramas": 89.8
     },
     "logic": {
       "lineas": 88.6,
@@ -20,7 +20,7 @@
     },
     "resto": {
       "lineas": 90.2,
-      "ramas": 78.5
+      "ramas": 78.8
     }
   }
 }

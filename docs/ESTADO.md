@@ -1,5 +1,20 @@
 # Estado
 
+## v3 — en curso
+
+Base `8a268ca0c4f626df84ae6992c7bee5bab7597577` (`8a268ca`), rama `v3` desde `origin/claude/beautiful-goodall-m0q2zj`. Árbol limpio en ese commit al arrancar. La especificación que manda es `docs/MEGAPROMPT_v3.md`.
+
+Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Family 6 Model 170 Stepping 4, 31,4 GB, Windows-11-10.0.26200-SP0.
+
+| Etapa | Estado |
+|---|---|
+| E7 | Ciclo 1. Diferencial hypothesis de 500 ejemplos en verde contra la referencia, después de corregir la holgura libre (se calculaba en el mismo recorrido que ALAP). Pytest de la sección 11: CPM 0,237 s y DCMA 1,494 s. `cpm_30k` y `dcma_30k` activas. Evidencia en `docs/qa/E7/perf.md`. Gate de cierre pendiente del revisor. |
+| E8 | pendiente |
+| E9 | pendiente |
+| E10 | pendiente |
+
+Línea base de referencia en este equipo: lectura 0,655 s; CPM 9,892 s; DCMA 10,127 s; redundancia y Monte Carlo más de 30 min.
+
 ## v2 — reporte final
 
 Base `b131428` (fase 5) más el megaprompt en `108f11a`. Rama `v2`. E0 a E6 quedaron RECHAZADA-BLOQUEADA. Ninguna es APROBADO. No hay cuarto ciclo en ninguna. El reporte es condicional a I-3 y a esos bloqueos. Equipo de las mediciones: Intel Core Ultra 9 185H, 31.4 GB, Windows 11 Enterprise (`docs/qa/E1/perf.md`).
