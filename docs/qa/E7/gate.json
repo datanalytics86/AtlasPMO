@@ -1,8 +1,8 @@
 {
   "etapa": "E7",
   "exit_code": 0,
-  "test_count": 237,
-  "coverage_percent": 91.3,
+  "test_count": 239,
+  "coverage_percent": 91.2,
   "benchmarks": {},
   "controls": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "G4",
       "status": "pass",
-      "detail": "cobertura_total: 91.3; calendars lineas 91.5% ramas 81.6%; engine lineas 95.1% ramas 90.1%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.0% ramas 78.9% | meta pendiente: calendars ramas 81.6 bajo la meta 85; logic lineas 88.6 bajo la meta 90; logic ramas 75.3 bajo la meta 85 | 3      6     42      5    93%   53, 95->97, 111-112, 156-157, 163\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          5368    469   2172    378    88%\nCoverage JSON written to file coverage-gate.json\n237 passed, 9 deselected in 47.77s\n"
+      "detail": "cobertura_total: 91.2; calendars lineas 91.5% ramas 81.6%; engine lineas 94.9% ramas 89.5%; logic lineas 88.6% ramas 75.3%; model lineas 100.0% ramas 100.0%; resto lineas 90.0% ramas 78.9% | meta pendiente: calendars ramas 81.6 bajo la meta 85; logic lineas 88.6 bajo la meta 90; logic ramas 75.3 bajo la meta 85 | 3      6     42      5    93%   53, 95->97, 111-112, 156-157, 163\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          5391    473   2186    382    88%\nCoverage JSON written to file coverage-gate.json\n239 passed, 9 deselected in 43.40s\n"
     },
     {
       "id": "G5",
@@ -33,7 +33,7 @@
     {
       "id": "G6",
       "status": "pass",
-      "detail": "....                                                                     [100%]\n4 passed, 5 deselected in 5.48s\n\nseccion11 activas ['lectura_30k', 'cpm_30k', 'dcma_30k']: ...                                                                      [100%]\n3 passed, 2 deselected in 7.97s\n"
+      "detail": "....                                                                     [100%]\n4 passed, 5 deselected in 4.97s\n\nseccion11 activas ['lectura_30k', 'cpm_30k', 'dcma_30k']: ...                                                                      [100%]\n3 passed, 2 deselected in 10.38s\n"
     },
     {
       "id": "G7",
@@ -63,7 +63,7 @@
     {
       "id": "G12",
       "status": "pass",
-      "detail": "tests 237 frente a 216"
+      "detail": "tests 239 frente a 216"
     },
     {
       "id": "G13",

@@ -8,7 +8,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 
 | Etapa | Estado |
 |---|---|
-| E7 | Ciclo 2, gate en verde (237 tests, cobertura 91,3, G1–G12 pass, G13 info). El empaquetado ya no ensancha el crítico ni las conductoras cuando el real trae segundos; el rechazo del ciclo 1 está en `docs/qa/E7/hallazgos.md`. Veredicto del revisor pendiente. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s siguen activas (tiempos del ciclo 1; el gate del ciclo 2 volvió a pasarlas). |
+| E7 | Ciclo 3, gate en verde (239 tests, cobertura 91,2, G1–G12 pass, G13 info). El ciclo 2 quedó RECHAZADO: un real con segundos en una actividad no iniciada borraba conductoras (H-4, H-5). El empaquetado ahora ignora ese real, como la referencia, y conserva los segundos del fin de proyecto cuando la restricción no mueve el fin (H-6, H-7). Veredicto del revisor pendiente. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s siguen activas (tiempos del ciclo 1; los gates posteriores volvieron a pasarlas). |
 | E8 | pendiente |
 | E9 | pendiente |
 | E10 | pendiente |

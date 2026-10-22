@@ -77,6 +77,9 @@ def _activity(index: int, draw) -> Activity:
     )
     act_start = None
     act_end = None
+    if status == "TK_NotStart" and draw(st.booleans()):
+        second = draw(st.sampled_from((0, 45)))
+        act_start = datetime(2026, 1, draw(st.integers(5, 12)), 8, 0, second)
     if status == "TK_Active":
         second = draw(st.sampled_from((0, 45)))
         act_start = datetime(2026, 1, draw(st.integers(5, 12)), 8, 0, second)

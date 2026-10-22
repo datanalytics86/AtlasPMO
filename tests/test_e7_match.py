@@ -163,6 +163,85 @@ def test_actual_seconds_do_not_widen_the_longest_path_or_driving():
     _same(started)
 
 
+def test_not_started_actual_does_not_erase_driving():
+    task = _schedule(
+        [
+            _activity("P", "P", hours=8),
+            _activity(
+                "B",
+                "B",
+                hours=8,
+                act_start=datetime(2026, 1, 6, 8, 0, 45),
+            ),
+        ],
+        [_link("10", "P", "B", "PR_FS", 0)],
+    )
+    _same(task, EngineOptions(critical_rule="longest"))
+    _same(task)
+    milestone = _schedule(
+        [
+            _activity("P", "P", hours=8),
+            _activity(
+                "B",
+                "B",
+                hours=0,
+                kind="TT_Mile",
+                act_start=datetime(2026, 1, 6, 8, 0, 45),
+            ),
+        ],
+        [_link("10", "P", "B", "PR_FS", 0)],
+    )
+    _same(milestone, EngineOptions(critical_rule="longest"))
+
+
+def test_project_finish_seconds_survive_a_constraint_that_does_not_bind():
+    done = _activity(
+        "1",
+        "A",
+        hours=8,
+        status="TK_Complete",
+        act_start=datetime(2026, 1, 5, 8, 0),
+        act_end=datetime(2026, 1, 5, 16, 0, 45),
+    )
+    later = _activity("2", "B", hours=8, cstr="CS_MEOB", cstr_date=datetime(2026, 1, 8, 16, 0))
+    _same(_schedule([done, later], []))
+    early = _activity("2", "B", hours=8, cstr="CS_MSOA", cstr_date=datetime(2026, 1, 5, 8, 0))
+    _same(_schedule([done, early], []))
+    _same(_schedule([done, _activity("2", "B", hours=8, cstr="CS_MSO")], []))
+    _same(
+        _schedule(
+            [
+                done,
+                _activity(
+                    "2",
+                    "B",
+                    hours=8,
+                    cstr="CS_ALAP",
+                    cstr2="CS_MSOA",
+                    cstr_date2=datetime(2026, 1, 5, 8, 0),
+                ),
+            ],
+            [],
+        )
+    )
+    _same(
+        _schedule(
+            [
+                _activity(
+                    "1",
+                    "A",
+                    hours=8,
+                    status="TK_Complete",
+                    act_start=datetime(2026, 1, 5, 8, 0),
+                    act_end=datetime(2026, 1, 5, 15, 30, 45),
+                ),
+                _activity("2", "M", hours=0, kind="TT_Mile"),
+            ],
+            [],
+        )
+    )
+
+
 def test_free_float_sees_the_successor_after_alap():
     schedule = _schedule(
         [

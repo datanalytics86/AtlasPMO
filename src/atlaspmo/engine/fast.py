@@ -722,13 +722,12 @@ def _pre_finish(compiled: Compiled, index: int) -> datetime:
 
 def _driving(compiled: Compiled, index: int) -> tuple[str, ...]:
     raw = compiled.raw_start[index]
+    # Only a started activity publishes the actual. A calendar bound has no seconds,
+    # so that actual is not a driving match. A not-started actual is ignored.
     if compiled.started[index] == 1:
         anchor = int(compiled.logic_es[index])
-    else:
-        anchor = int(compiled.es[index])
-    # A calendar bound has no seconds. An actual start with seconds is not that bound.
-    if raw is not None and (raw.second or raw.microsecond) and to_minute(raw) == anchor:
-        return ()
+        if raw is not None and (raw.second or raw.microsecond) and to_minute(raw) == anchor:
+            return ()
     found: list[str] = []
     for edge in range(int(compiled.pred_ptr[index]), int(compiled.pred_ptr[index + 1])):
         if compiled.drive[edge] == 1:
@@ -742,16 +741,51 @@ def _open_alap(compiled: Compiled, index: int) -> bool:
     return int(compiled.cstr_a[index]) == 9 or int(compiled.cstr_b[index]) == 9
 
 
+# These codes do not enter the backward constraint pass, so they leave the project finish.
+_LATE_NEUTRAL = {None, "CS_ALAP", "CS_MSOA", "CS_MEOA"}
+
+
 def _finish_anchor(compiled: Compiled, index: int, project_finish: datetime | None) -> bool:
     if project_finish is None or compiled.done[index] == 1:
         return False
     if int(compiled.succ_ptr[index + 1]) != int(compiled.succ_ptr[index]):
         return False
+    if int(compiled.lf[index]) != to_minute(project_finish):
+        return False
     activity = compiled.activities[index]
-    for code in (activity.cstr_type, activity.cstr_type2):
-        if code not in {None, "CS_ALAP"}:
-            return False
-    return int(compiled.lf[index]) == to_minute(project_finish)
+    # A not-started start milestone snaps the late dates onto the calendar, dropping seconds.
+    if activity.task_type == "TT_Mile" and compiled.started[index] == 0:
+        return False
+    return _constraints_leave_project_finish(compiled, index, project_finish)
+
+
+def _constraints_leave_project_finish(
+    compiled: Compiled,
+    index: int,
+    project_finish: datetime,
+) -> bool:
+    activity = compiled.activities[index]
+    clock = compiled.node_clocks[index]
+    duration = int(compiled.duration[index])
+    pairs = (
+        (activity.cstr_type, activity.cstr_date),
+        (activity.cstr_type2, activity.cstr_date2),
+    )
+    for code, raw in pairs:
+        if code in _LATE_NEUTRAL or raw is None:
+            continue
+        if code in {"CS_MEO", "CS_MEOB"}:
+            if clock.subtract_work(raw, 0) < project_finish:
+                return False
+            continue
+        if code in {"CS_MSO", "CS_MSOB"}:
+            capped = clock.subtract_work(raw, 0)
+            from_start = capped if duration == 0 else clock.add_work(capped, duration)
+            if from_start < project_finish:
+                return False
+            continue
+        return False
+    return True
 
 
 def _restore_finish_seconds(
@@ -815,7 +849,10 @@ def _dates(compiled: Compiled, index: int) -> tuple[datetime, datetime, datetime
         early_s = compiled.raw_start[index] or from_minute(int(compiled.es[index]))
         early_f = compiled.raw_end[index] or from_minute(int(compiled.ef[index]))
         return early_s, early_f, early_s, early_f
-    early_s = _keep(int(compiled.es[index]), compiled.raw_start[index])
+    if compiled.started[index] == 1:
+        early_s = _keep(int(compiled.es[index]), compiled.raw_start[index])
+    else:
+        early_s = from_minute(int(compiled.es[index]))
     return (
         early_s,
         from_minute(int(compiled.ef[index])),
