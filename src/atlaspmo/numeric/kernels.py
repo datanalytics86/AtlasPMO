@@ -509,6 +509,9 @@ def run_passes(  # noqa: PLR0913
                 top += 1
 
     for index in range(n):
+        if started[index] == 1:
+            logic_es[index] = es[index]
+    for index in range(n):
         if cstr_a[index] == 9 or cstr_b[index] == 9:
             if succ_ptr[index + 1] > succ_ptr[index]:
                 alap_blocked[index] = 1

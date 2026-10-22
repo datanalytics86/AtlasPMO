@@ -124,6 +124,45 @@ def _same(schedule: Schedule, options: EngineOptions | None = None) -> None:
         assert right.driving_pred_ids == left.driving_pred_ids
 
 
+def test_actual_seconds_do_not_widen_the_longest_path_or_driving():
+    done = _schedule(
+        [
+            _activity(
+                "1",
+                "A",
+                hours=8,
+                status="TK_Complete",
+                act_start=datetime(2026, 1, 5, 8, 0),
+                act_end=datetime(2026, 1, 5, 16, 0, 45),
+            ),
+            _activity("2", "B", hours=8),
+        ],
+        [],
+    )
+    _same(done, EngineOptions(critical_rule="longest"))
+    started = _schedule(
+        [
+            _activity(
+                "1",
+                "M",
+                hours=0,
+                kind="TT_Mile",
+                cstr="CS_MSO",
+                cstr_date=datetime(2026, 1, 5, 16, 0),
+            ),
+            _activity(
+                "2",
+                "S",
+                hours=8,
+                status="TK_Active",
+                act_start=datetime(2026, 1, 6, 8, 0, 45),
+            ),
+        ],
+        [_link("10", "1", "2", "PR_SS", 0)],
+    )
+    _same(started)
+
+
 def test_free_float_sees_the_successor_after_alap():
     schedule = _schedule(
         [

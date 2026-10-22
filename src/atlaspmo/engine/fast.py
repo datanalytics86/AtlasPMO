@@ -667,21 +667,12 @@ def _result(compiled: Compiled) -> CpmResult:
     notes = list(compiled.notes)
     by_id: dict[str, ScheduledActivity] = {}
     finishes: list[datetime] = []
-    on_longest: set[str] = set()
+    driving_by_index: list[tuple[str, ...]] = []
     for index, task_id in enumerate(compiled.task_ids):
-        if compiled.on_long[index] == 1:
-            on_longest.add(task_id)
         early_s, early_f, late_s, late_f = _dates(compiled, index)
-        pre = int(compiled.ef_pre[index])
-        raw_end = compiled.raw_end[index]
-        if compiled.done[index] == 1 and raw_end is not None and to_minute(raw_end) == pre:
-            finishes.append(raw_end)
-        else:
-            finishes.append(from_minute(pre))
-        driving: list[str] = []
-        for edge in range(int(compiled.pred_ptr[index]), int(compiled.pred_ptr[index + 1])):
-            if compiled.drive[edge] == 1:
-                driving.append(compiled.pred_ids[edge])
+        finishes.append(_pre_finish(compiled, index))
+        driving = _driving(compiled, index)
+        driving_by_index.append(driving)
         by_id[task_id] = ScheduledActivity(
             task_id=task_id,
             early_start=early_s,
@@ -691,7 +682,7 @@ def _result(compiled: Compiled) -> CpmResult:
             total_float_hours=int(compiled.total_f[index]) / 60,
             free_float_hours=int(compiled.free_f[index]) / 60,
             critical=bool(compiled.critical[index]),
-            driving_pred_ids=tuple(driving),
+            driving_pred_ids=driving,
         )
         if compiled.viol_ms_f[index] == 1:
             notes.append(_forward_note(compiled.labels[index], compiled, index, start=True))
@@ -706,10 +697,117 @@ def _result(compiled: Compiled) -> CpmResult:
         if compiled.alap_blocked[index] == 1:
             code = compiled.activities[index].task_code
             notes.append(f"{code}: ALAP con sucesoras no se reprograma en esta fase.")
+    project_finish = max(finishes) if finishes else None
+    _restore_finish_seconds(compiled, by_id, project_finish)
+    on_longest = _longest(compiled, finishes, driving_by_index, project_finish)
+    if compiled.rule == 1:
+        for task_id, item in list(by_id.items()):
+            by_id[task_id] = replace(
+                item,
+                critical=task_id in on_longest,
+            )
     if compiled.has_rollup:
         _attach_rollup(compiled, by_id, notes, on_longest)
-    project_finish = max(finishes) if finishes else None
     return CpmResult(by_id, project_finish, tuple(dict.fromkeys(notes)), compiled.skipped)
+
+
+def _pre_finish(compiled: Compiled, index: int) -> datetime:
+    """Early finish from before ALAP. An actual keeps its seconds."""
+    pre = int(compiled.ef_pre[index])
+    raw_end = compiled.raw_end[index]
+    if compiled.done[index] == 1 and raw_end is not None and to_minute(raw_end) == pre:
+        return raw_end
+    return from_minute(pre)
+
+
+def _driving(compiled: Compiled, index: int) -> tuple[str, ...]:
+    raw = compiled.raw_start[index]
+    if compiled.started[index] == 1:
+        anchor = int(compiled.logic_es[index])
+    else:
+        anchor = int(compiled.es[index])
+    # A calendar bound has no seconds. An actual start with seconds is not that bound.
+    if raw is not None and (raw.second or raw.microsecond) and to_minute(raw) == anchor:
+        return ()
+    found: list[str] = []
+    for edge in range(int(compiled.pred_ptr[index]), int(compiled.pred_ptr[index + 1])):
+        if compiled.drive[edge] == 1:
+            found.append(compiled.pred_ids[edge])
+    return tuple(found)
+
+
+def _open_alap(compiled: Compiled, index: int) -> bool:
+    if int(compiled.succ_ptr[index + 1]) != int(compiled.succ_ptr[index]):
+        return False
+    return int(compiled.cstr_a[index]) == 9 or int(compiled.cstr_b[index]) == 9
+
+
+def _finish_anchor(compiled: Compiled, index: int, project_finish: datetime | None) -> bool:
+    if project_finish is None or compiled.done[index] == 1:
+        return False
+    if int(compiled.succ_ptr[index + 1]) != int(compiled.succ_ptr[index]):
+        return False
+    activity = compiled.activities[index]
+    for code in (activity.cstr_type, activity.cstr_type2):
+        if code not in {None, "CS_ALAP"}:
+            return False
+    return int(compiled.lf[index]) == to_minute(project_finish)
+
+
+def _restore_finish_seconds(
+    compiled: Compiled,
+    by_id: dict[str, ScheduledActivity],
+    project_finish: datetime | None,
+) -> None:
+    for index, task_id in enumerate(compiled.task_ids):
+        item = by_id[task_id]
+        late_f = item.late_finish
+        early_s = item.early_start
+        early_f = item.early_finish
+        if _finish_anchor(compiled, index, project_finish) and project_finish is not None:
+            late_f = project_finish
+        if _open_alap(compiled, index):
+            early_s = item.late_start
+            early_f = late_f
+        unchanged = (
+            late_f is item.late_finish
+            and early_s is item.early_start
+            and early_f is item.early_finish
+        )
+        if unchanged:
+            continue
+        by_id[task_id] = replace(
+            item,
+            early_start=early_s,
+            early_finish=early_f,
+            late_finish=late_f,
+        )
+
+
+def _longest(
+    compiled: Compiled,
+    finishes: list[datetime],
+    driving: list[tuple[str, ...]],
+    project_finish: datetime | None,
+) -> set[str]:
+    if project_finish is None or compiled.rule != 1:
+        return set()
+    by_id = {task_id: index for index, task_id in enumerate(compiled.task_ids)}
+    stack = [
+        compiled.task_ids[index]
+        for index, finish in enumerate(finishes)
+        if finish == project_finish
+    ]
+    on: set[str] = set()
+    while stack:
+        current = stack.pop()
+        if current in on:
+            continue
+        on.add(current)
+        for pred_id in driving[by_id[current]]:
+            if pred_id in by_id and pred_id not in on:
+                stack.append(pred_id)
+    return on
 
 
 def _dates(compiled: Compiled, index: int) -> tuple[datetime, datetime, datetime, datetime]:

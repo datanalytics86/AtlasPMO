@@ -8,7 +8,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 
 | Etapa | Estado |
 |---|---|
-| E7 | Ciclo 1. Diferencial hypothesis de 500 ejemplos en verde contra la referencia, después de corregir la holgura libre (se calculaba en el mismo recorrido que ALAP). Pytest de la sección 11: CPM 0,237 s y DCMA 1,494 s. `cpm_30k` y `dcma_30k` activas. Evidencia en `docs/qa/E7/perf.md`. Gate de cierre pendiente del revisor. |
+| E7 | Ciclo 2, gate en verde (237 tests, cobertura 91,3, G1–G12 pass, G13 info). El empaquetado ya no ensancha el crítico ni las conductoras cuando el real trae segundos; el rechazo del ciclo 1 está en `docs/qa/E7/hallazgos.md`. Veredicto del revisor pendiente. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s siguen activas (tiempos del ciclo 1; el gate del ciclo 2 volvió a pasarlas). |
 | E8 | pendiente |
 | E9 | pendiente |
 | E10 | pendiente |
