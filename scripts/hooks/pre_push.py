@@ -1,4 +1,4 @@
-"""pre-push: G8, and only origin/v2 is a legal destination."""
+"""pre-push: G8, and only origin/v2 or origin/v3 is a legal destination (ADR-019)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from scripts.qa_gate import check_g8  # noqa: E402
 
-_ALLOWED_REFS = {"refs/heads/v2", "v2"}
+_ALLOWED_REFS = {"refs/heads/v2", "v2", "refs/heads/v3", "v3"}
 
 
 def _remote_name(argv: list[str]) -> str:
@@ -51,7 +51,10 @@ def main(argv: list[str] | None = None, stdin: str | None = None) -> int:
     refs = _remote_refs(stdin)
     if not refs or any(ref not in _ALLOWED_REFS for ref in refs):
         shown = ", ".join(refs) or "(sin ref)"
-        print(f"push rechazado: destino {shown}, solo refs/heads/v2", file=sys.stderr)
+        print(
+            f"push rechazado: destino {shown}, solo refs/heads/v2 o refs/heads/v3",
+            file=sys.stderr,
+        )
         return 1
     result = check_g8(ROOT)
     if result.status != "pass":

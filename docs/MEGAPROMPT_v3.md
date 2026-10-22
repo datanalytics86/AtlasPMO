@@ -1,73 +1,67 @@
-# MEGAPROMPT v2 — AtlasPMO
+# MEGAPROMPT v3 — AtlasPMO
 ## Plataforma personal de análisis de cronogramas P6 / MS Project — Tier 1
-### Grok 4.7 en Grok Build · modo autónomo multiagente · auto-aprobación · QA/QC estricto por etapa
+### Grok 4.7 en Grok Build · modo autónomo multiagente · auto-aprobación · foco en rendimiento
 
 > **Para Nicolás — cómo iniciar**
-> 1. En la raíz de tu clon local del repositorio:
+> 1. En la raíz de tu clon local, en una terminal nueva:
 >    ```
 >    git fetch origin
->    git checkout -b v2 origin/claude/beautiful-goodall-m0q2zj
+>    git checkout -b v3 origin/claude/beautiful-goodall-m0q2zj
 >    ```
->    Esa rama contiene todo lo de `fase-5` más este documento.
-> 2. Desmonta o desconecta la ubicación de tus cronogramas reales y no definas `ATLASPMO_GOLDEN_DIR` en esa terminal (sección 14).
-> 3. Abre Grok Build (`grok`) en la raíz del repositorio, con tu `permission_mode = "always-approve"` (ADR-003). No uses plan mode.
-> 4. Escribe: `Lee docs/MEGAPROMPT_v2.md completo y ejecuta la sección 15 (Arranque) en modo autónomo.`
-> 5. Para retomar una sesión cortada: `Lee docs/MEGAPROMPT_v2.md y docs/ESTADO.md y continúa desde la siguiente tarea pendiente.`
-> 6. Grok sube la rama `v2` al cerrar cada etapa aprobada por QA. Los veredictos quedan en `docs/qa/E<n>/VEREDICTO.md`.
+>    Esa rama contiene todo lo de `v2` más el gate ajustado y este documento.
+> 2. Antes de abrir Grok: carpeta de cronogramas reales desmontada, `ATLASPMO_GOLDEN_DIR` sin definir y `ATLASPMO_GIT` definida (sección 14).
+> 3. Abre `grok` en la raíz con tu `permission_mode = "always-approve"` y pega el prompt de arranque que te entregó Claude, o escribe: `Lee docs/MEGAPROMPT_v3.md completo y ejecuta la sección 15 (Arranque) en modo autónomo hasta terminar E10.`
+> 4. Para retomar: `Lee docs/MEGAPROMPT_v3.md y docs/ESTADO.md y continúa desde la siguiente tarea pendiente de la v3.`
 
-> **Instrucción para Grok:** lee este documento completo y ejecútalo en **modo autónomo** (sección 0.1), **multiagente** (sección 9) y con **QA/QC estricto en cada etapa** (sección 8). La sesión corre con **auto-aprobación**: nadie revisa tus comandos antes de que se ejecuten, así que las reglas de la sección 14 son límites duros. Tu trabajo es cerrar las brechas de la v1 (sección 10) por etapas E0 a E6, sin preguntar. Una etapa se cierra solo con veredicto **APROBADO** de QA. Te detienes solo en los casos de la sección 0.3.
+> **Instrucción para Grok:** lee este documento completo y ejecútalo en **modo autónomo** (0.1), **multiagente** (9) y con **QA/QC** (8). La sesión corre con **auto-aprobación**: los límites de la sección 14 son duros. La v2 cerró las brechas de robustez pero no las de rendimiento: **la prioridad absoluta de la v3 es que el motor sea rápido** (etapas E7 a E9) sin cambiar un solo resultado. Después viene la funcionalidad pendiente (E10). Trabajas sin preguntar y sin detenerte hasta terminar E10, salvo los casos de 0.3.
 
 ---
 
 ## 0. Tu rol y cómo trabajamos
 
 - Eres **Grok 4.7 operando en Grok Build** como **ingeniero líder y orquestador**. La sesión principal planifica, define contratos, delega, integra y verifica. **No te autoapruebas:** el cierre de una etapa lo decide el veredicto de `qa-revisor`, apoyado en el gate automático.
-- El usuario es **Nicolás**, Líder de Planificación, experto en Primavera P6, EVM y Power BI. No está disponible durante la ejecución: revisa después, sobre lo entregado. Escribe tus reportes para él como para un par técnico: concisos, en español, con evidencia, sin relleno.
-- Idioma: comunicación, documentación, UI y reportes en **español**; identificadores, docstrings y comentarios de código en **inglés**.
-- Formato regional de UI y reportes: es-CL (coma decimal, punto de miles, fechas dd-mm-aaaa), configurable.
-- **Mantén la honestidad de la v1.** El `ESTADO.md` de la v1 decía con precisión qué no se midió y qué no se hizo. Sigue así: "no medido" o "no implementado" es aceptable; afirmar sin evidencia es un hallazgo crítico.
+- El usuario es **Nicolás**, Líder de Planificación, experto en Primavera P6, EVM y Power BI. No está disponible durante la ejecución: revisa después. Reportes concisos, en español, con evidencia.
+- Idioma: comunicación, documentación, UI y reportes en **español**; identificadores, docstrings y comentarios de código en **inglés**. Formato es-CL configurable.
+- **Mantén la honestidad de la v2:** "no medido" o "no implementado" es aceptable; afirmar sin evidencia es un hallazgo crítico.
 
 ### 0.1 Modo autónomo
 
-- **No preguntes.** No presentes preguntas bloqueantes ni esperes aprobación de planes o etapas.
-- **Decide y registra.** Ante una ambigüedad, aplica 0.2 o, si no está cubierta, la opción más conservadora y reversible. Regístrala como ADR o supuesto en `docs/DECISIONES.md`, con `[VALIDAR]` si Nicolás debe confirmarla.
-- **P6 y XER: no inventes.** Busca evidencia (fixtures, documentación oficial). Sin evidencia, implementa la interpretación más conservadora, regístrala `[VALIDAR]` y como aproximación en `ModuleResult.approximations` cuando afecte resultados.
+- **No preguntes** ni esperes aprobaciones.
+- **Decide y registra** en `docs/DECISIONES.md` (con `[VALIDAR]` si Nicolás debe confirmarlo) y sigue.
+- **P6 y XER: no inventes.** Sin evidencia, la interpretación más conservadora, registrada como `[VALIDAR]` y como aproximación cuando afecte resultados.
 - **Las validaciones manuales nunca te detienen:** van a `docs/VALIDACIONES_PENDIENTES.md`.
-- **Memoria de trabajo:** `docs/ESTADO.md` siempre al día (hecho, en curso, siguiente, bloqueado, ciclo de QA actual), para que una sesión nueva retome sin perder nada.
+- **Memoria de trabajo:** `docs/ESTADO.md` al día (etapa, control QC, ciclo, bloqueos), para retomar sin perder nada.
 
 ### 0.2 Decisiones por defecto
 
+Rigen las de la v2, con estos cambios:
+
 | Tema | Decisión por defecto |
 |---|---|
-| Versión de P6 / XER | La que muestren los fixtures. Sin fixtures reales: XER de P6 moderna (v8 en adelante), como supuesto `[VALIDAR]` |
-| Horas por día | Las del calendario de cada actividad. Si faltan: 8 h, registrado como aproximación |
-| Base de seriales de fecha en `clndr_data` | La que confirmen los fixtures; sin evidencia, sistema Excel 1900, como `[VALIDAR]` |
-| Poblaciones DCMA | Excluir completadas, LOE y WBS summary; hitos fuera de las métricas de duración. Configurable por perfil |
-| Restricciones duras (DCMA 5) | `CS_MSO, CS_MEO, CS_MANDSTART, CS_MANDFIN` (configurable) |
-| Criterio de crítico | Holgura total ≤ 0, con longest path disponible y seleccionable |
-| Hitos contractuales (protección M3) | Lista vacía por defecto; configurable por código de actividad, UDF o lista. Los demás hitos **no** se protegen solo por ser hitos |
-| Java / MPXJ ausentes | Extra `[mpp]` opcional; sus tests se omiten con motivo listado en `docs/qa/skips.toml` |
-| `p6_verified` y golden reales ausentes | Tests omitidos con motivo listado en `skips.toml`; validación en `VALIDACIONES_PENDIENTES.md` |
-| numba | Se usa en CPM vectorizado y Monte Carlo si hay wheel para Windows y Python 3.12. Si no la hay, se registra y se busca otra vía que cumpla la sección 11 |
-| Herramienta de mutación | Una que funcione en Windows sin administrador; si ninguna sirve, `scripts/qa_sabotage.py` propio (sección 8.3, G13) |
+| numba | **Obligatorio** en el motor rápido (E7) y en Monte Carlo (E9). Verifica primero que hay wheel para Windows y Python 3.12 (`uv add numba` en el equipo de Nicolás). Usa `cache=True`. Si no hay wheel, numpy vectorizado y regístralo |
+| Motor de referencia | El motor actual en Python puro (`engine/cpm.py`) se conserva como **referencia** para pruebas diferenciales. No se borra ni se "optimiza" |
+| Doble firma de esperados | Un esperado con una sola firma queda `pendiente_segunda_firma`: se usa en los tests, se informa y **no bloquea** el cierre |
+| Comando de tests | `uv run python -m pytest` (funciona en todos los equipos; `uv run pytest` falla en el de Nicolás por ADR-004) |
 
 ### 0.3 Cuándo sí te detienes
 
-Te detienes, actualizas `ESTADO.md` y reportas solo si:
+Solo si:
 1. continuar exigiría leer archivos reales (`data/real/`, `ATLASPMO_GOLDEN_DIR`) o cualquier dato confidencial;
-2. continuar exigiría permisos de administrador, cambios al sistema o red en tiempo de ejecución de la app;
-3. continuar exigiría una acción prohibida de la sección 14 (push a `main`, `--force`, reescribir historia publicada, borrar ramas remotas);
-4. una etapa sigue **RECHAZADA** tras **3 ciclos de corrección** (sección 8.4). No se construye encima de una base rechazada;
-5. terminaste E6 (reporte final, sección 16).
+2. continuar exigiría administrador, cambios al sistema o red en tiempo de ejecución de la app;
+3. continuar exigiría una acción prohibida de la sección 14;
+4. terminaste E10 (reporte final, sección 16).
+
+**Una etapa que sigue RECHAZADA tras 3 ciclos no te detiene** (así resuelve la v3 la contradicción que señaló el reporte de la v2). Queda **RECHAZADA-BLOQUEADA** en `docs/qa/E<n>/VEREDICTO.md` y en `ESTADO.md`, con los hallazgos abiertos y el diagnóstico, y continúas. Nunca la marcas como aprobada.
 
 ### Reglas de trabajo específicas para Grok 4.7
 
-1. **Verifica antes de afirmar.** Nada se declara terminado sin ejecutar sus tests y dejar la evidencia en `docs/qa/E<n>/`.
-2. **Test primero.** Para cada brecha, el test de aceptación se escribe y se ejecuta **antes** del arreglo, y debe fallar. La salida en rojo queda como evidencia. Un test que nunca estuvo en rojo no prueba el arreglo.
-3. **Esfuerzo de razonamiento.** Por defecto `high`; `xhigh` para calendarios, motor CPM, redundancia y Monte Carlo, si el harness lo permite. Si no, anótalo y sigue.
-4. **Gestión de contexto.** Mantén la sesión principal bajo unos 200K tokens de entrada (sobre ese umbral la tarifa sube para toda la solicitud). Delega lecturas masivas, compacta al cerrar cada entrega después de actualizar `ESTADO.md`.
-5. **Git.** Commits pequeños y atómicos, uno por entrega o corrección, con mensaje convencional que cite los IDs de brecha (p.ej. `fix(engine): B-08 restricciones obligatorias`). La v1 hizo un commit por fase: no se repite.
-6. **Trata el repositorio como público.** Nada confidencial se commitea jamás.
+1. **Verifica antes de afirmar.** Evidencia en `docs/qa/E<n>/`.
+2. **Test primero.** El test de aceptación se escribe y se ejecuta en rojo antes del arreglo; la salida en rojo queda como evidencia.
+3. **El producto primero.** Un ciclo de corrección tiene que cambiar código o tests del producto. Un ciclo que solo documenta un rechazo **no cuenta** como ciclo. En la v2, unos 72 de 94 commits fueron de QA y solo unos 17 cambiaron el producto: eso no se repite.
+4. **Esfuerzo de razonamiento:** `xhigh` en E7, E8 y E9 si el harness lo permite.
+5. **Gestión de contexto:** sesión principal bajo unos 200K tokens; compacta al cerrar cada entrega después de actualizar `ESTADO.md`.
+6. **Git:** commits atómicos que citen los IDs de brecha. Solo rama `v3`.
+7. **Repositorio público.** Nada confidencial se commitea.
 
 ---
 
@@ -185,7 +179,7 @@ AtlasPMO/
 ├── .grok/config.toml                (solo claves que Grok Build admita a nivel de proyecto)
 ├── .grok/agents/                    (subagentes; sección 9)
 ├── docs/
-│   ├── MEGAPROMPT_v2.md             (este documento)
+│   ├── MEGAPROMPT_v3.md             (este documento)
 │   ├── ALCANCE.md · ARQUITECTURA.md
 │   ├── DECISIONES.md                (ADR numerados + supuestos [VALIDAR])
 │   ├── ESTADO.md                    (avance por fase y checkpoint; memoria de trabajo)
@@ -518,70 +512,79 @@ Las partes no automatizables se listan en el reporte como "Requiere revisión ma
 
 ## 8. Calidad de ingeniería y sistema QA/QC
 
+Cambios respecto de la v2 en ADR-019: cobertura como trinquete, metas reales de la sección 11 que se activan por etapa, y mutación informativa.
+
 ### 8.1 Estándares de código
 
-- **Cobertura** (pytest-cov con `--cov-branch`): ≥ 90 % de líneas y ≥ 85 % de ramas en `model`, `calendars`, `engine` y `analysis/logic`; ≥ 80 % de líneas en el resto.
-- `ruff check`, `ruff format --check` y `mypy` sin errores. mypy estricto en `model`, `calendars`, `engine` y `analysis/logic`.
-- Reglas de ruff, como mínimo: `E, F, I, UP, B, BLE, S110, E722, SIM, PT, RET, PL` (ajustadas por ADR si alguna choca con el estilo). Esto prohíbe por máquina `except: pass` y capturas genéricas silenciosas.
-- `uv run pytest` **funciona tal cual**: configura `pythonpath` en `pyproject.toml`. En el equipo de Nicolás se acepta `uv run python -m pytest` por el `os error 5` (ADR-004), y el gate prueba ambos cuando el entorno lo permite.
-- Benchmarks con `pytest-benchmark` sobre los generadores de escala (sección 11).
-- La lógica de negocio nunca vive en la UI. Errores en español y accionables; log local estructurado.
+- **Cobertura:** las metas siguen siendo ≥ 90 % de líneas y ≥ 85 % de ramas en `model`, `calendars`, `engine` y `analysis/logic`, y ≥ 80 % de líneas en el resto. Funcionan como **trinquete** sobre `docs/qa/baseline.json`: ningún paquete puede caer más de 0,5 puntos bajo su línea base, y la distancia a la meta se informa sin bloquear. **El código nuevo de la v3 sí debe cumplir la meta:** el motor rápido, la redundancia y Monte Carlo se escriben con sus tests. Cuando un paquete supera su línea base, súbela con un commit que cite ADR-019.
+- `ruff check`, `ruff format --check` y `mypy` sin errores (mypy estricto en `model`, `calendars`, `engine` y `analysis/logic`). Los núcleos numba van en módulos aparte, con firmas tipadas en el envoltorio Python.
+- Tests: `uv run python -m pytest`.
+- La lógica de negocio nunca vive en la UI. Errores en español y accionables.
 
 ### 8.2 Principios QA/QC
 
-1. **Separación de funciones.** Quien implementa no escribe su oráculo, no edita esperados ni umbrales y no aprueba su entrega.
-2. **Rechazo por defecto.** QA parte de RECHAZADO; la entrega debe demostrar que cumple, con evidencia.
-3. **Evidencia o no existe.** Toda afirmación de estado apunta a un archivo en `docs/qa/E<n>/` (salida de comandos, gate.json, informe).
-4. **Gate automático primero, revisión después.** QA no revisa una entrega cuyo gate esté en rojo.
-5. **Sin regresión.** Un test, un umbral o un benchmark que pasó no se elimina ni se relaja sin ADR firmado por `qa-revisor`. El gate compara contra la etapa anterior.
-6. **Severidad sin negociación** (8.5). Un hallazgo crítico o importante abierto impide el cierre.
+1. **Separación de funciones.** Quien implementa no edita oráculos, esperados, umbrales, `baseline.json`, `seccion11.toml` ni el gate (los cambios en `baseline.json` y `seccion11.toml` los hace el orquestador al cerrar una etapa aprobada, citando ADR-019).
+2. **Rechazo por defecto.** La entrega demuestra que cumple, con evidencia.
+3. **El producto primero** (regla 3 de la sección 0).
+4. **Sin regresión.** Un test, una meta activa o un benchmark que pasó no se elimina ni se relaja.
+5. **Severidad sin negociación** (8.5).
 
 ### 8.3 Gate automático — `scripts/qa_gate.py`
 
-Comando: `uv run python scripts/qa_gate.py --etapa E<n>`. Escribe `docs/qa/E<n>/gate.json` y `gate.md`, y sale con código ≠ 0 si falla cualquier control. El script tiene sus propios tests: cada control se prueba con un caso que debe pasar y uno que debe fallar.
+Comando: `uv run python scripts/qa_gate.py --etapa E<n> --base <commit base de la v3>`. El commit base se registra en `ESTADO.md` al arrancar (sección 15).
 
-| ID | Control | Falla si |
-|---|---|---|
-| G1 | Lint y formato | `ruff check` o `ruff format --check` reportan algo |
-| G2 | Tipos | `mypy` reporta errores |
-| G3 | Suite completa | cualquier test falla o hay errores de colección (con `uv run pytest` y con `uv run python -m pytest`) |
-| G4 | Cobertura | se incumple 8.1 en cualquier paquete |
-| G5 | Propiedades | falta alguno de los invariantes a–e de la sección 7, o corre con menos de 500 ejemplos en el perfil `qa` |
-| G6 | Rendimiento | un criterio de la sección 11 medible en la etapa supera su meta con el generador de escala; se registra el equipo (CPU, RAM, SO) |
-| G7 | Omisiones | un `skip`, `skipif` o `xfail` no figura en `docs/qa/skips.toml` con motivo, o su motivo no es uno de los aceptados (dependencia opcional ausente, fixture pendiente de Nicolás, plataforma) |
-| G8 | Privacidad y red | `.xer`, `.mpp` o XML de cronograma fuera de `tests/fixtures/`; algo bajo `data/real/`; `.env`; rutas absolutas a perfiles de usuario o nombres de usuario del equipo en archivos versionados (el patrón vive solo en `qa_gate.py` y sus tests, excluidos de ese control); un `ERMHDR` de fixture con valores fuera de la lista anónima; imports de red en `src/` (`socket`, `requests`, `urllib.request`, `http.client`, `httpx`, `aiohttp`); Streamlit sin `localhost` o con estadísticas activas |
-| G9 | Campos XER | una tabla o campo XER literal usado en `src/` no aparece en `docs/XER_SPEC.md` |
-| G10 | Trazabilidad | un requisito R-xxx de la etapa en `docs/qa/TRAZABILIDAD.md` no tiene un test existente y en verde |
-| G11 | Rutas protegidas | cambiaron esperados, oráculos, `skips.toml`, umbrales o `qa_gate.py` sin un ADR que lo justifique, citado en el commit |
-| G12 | Regresión | bajó la cantidad de tests, la cobertura cayó más de 0,5 puntos o un benchmark empeoró más de 20 % respecto de la etapa anterior |
-| G13 | Mutación | en los módulos tocados por la etapa, el kill score es menor que 85 % en `engine`, `calendars` y `analysis/logic`, o menor que 70 % en el resto |
+| ID | Control | Falla si | Cambio v3 |
+|---|---|---|---|
+| G1 | Lint y formato | `ruff check` o `ruff format --check` reportan algo | — |
+| G2 | Tipos | `mypy` reporta errores | — |
+| G3 | Suite completa | algún test falla o hay errores de colección | — |
+| G4 | Cobertura | un paquete cae más de 0,5 puntos bajo `baseline.json` | trinquete |
+| G5 | Propiedades | faltan los invariantes a–e con el perfil `qa` (≥ 500 ejemplos) | — |
+| G6 | Rendimiento | falla `tests/perf` o una meta activa de `docs/qa/seccion11.toml` | metas reales a 30k |
+| G7 | Omisiones | hay un skip o xfail fuera de `skips.toml` | — |
+| G8 | Privacidad y red | cronogramas fuera de fixtures, `data/real/`, `.env`, rutas de perfil, imports de red, Streamlit expuesto | — |
+| G9 | Campos XER | un campo o tabla usados no están en `XER_SPEC.md` | — |
+| G10 | Trazabilidad | un R-xxx de la etapa no cita un test existente | — |
+| G11 | Rutas protegidas | cambió una ruta protegida sin un commit que cite un ADR | `baseline.json` y `seccion11.toml` son rutas protegidas |
+| G12 | Regresión | bajan los tests, la cobertura total cae más de 0,5 o un benchmark empeora más de 20 % | — |
+| G13 | Mutación | — (informativo: se mide y se reporta, no bloquea) | informativo |
 
-### 8.4 Controles QC por etapa (secuencia obligatoria)
+**Metas de la sección 11** (`tests/perf/test_seccion11.py`, marca `seccion11`; todas sobre la red realista de `gen_scale.py` con 30.000 actividades):
 
-Cada etapa E<n> pasa por estos seis controles, en orden. Ninguno se salta.
+| Meta | Límite | Medido en la revisión (`cc81a31`, Linux) | Se activa en |
+|---|---|---|---|
+| `lectura_30k` | 15 s | 1,8 s | ya activa |
+| `cpm_30k` (después del calentamiento) | 0,5 s | 15,8 s | E7 |
+| `dcma_30k` (CPM + DCMA) | 10 s | 16,1 s | E7 |
+| `redundancia_30k` (filtro + confirmación) | 180 s | 52,5 s **con solo 300 actividades** | E8 |
+| `montecarlo_30k` (1.000 iteraciones) | 300 s | 49,1 s **con 300 actividades y 5 iteraciones** | E9 |
+
+Para correrlas todas: `uv run python -m pytest -m seccion11 tests/perf/test_seccion11.py -s`. Para una prueba rápida con otra escala: `ATLASPMO_S11_SIZE=300`. Fuera de 30.000 actividades se imprime el tiempo, pero no se exige la meta. Una meta se agrega a `activas` solo cuando pasa a 30.000 actividades en el equipo de Nicolás, y no se quita nunca.
+
+### 8.4 Controles QC por etapa
 
 | QC | Control | Responsable | Sale con |
 |---|---|---|---|
-| QC-1 | **Contrato y trazabilidad.** Cada brecha de la etapa tiene requisitos R-xxx, criterio de aceptación ejecutable, test planificado y fuente del oráculo. Antes de escribir código | `qa-spec` | `docs/qa/E<n>/QC1_contrato.md`, aprobado |
-| QC-2 | **Oráculo independiente.** Casos y esperados escritos por `fixtures` y recalculados por `qa-oraculo` por otro método (sección 7, punto 3). Discrepancias resueltas con evidencia | `fixtures` + `qa-oraculo` | esperados con doble firma |
-| QC-3 | **Implementación con test primero.** Los tests de la etapa en rojo antes del arreglo (evidencia guardada); el agente que implementa trabaja en su worktree y entrega con su subconjunto del gate en verde | agentes que implementan | diff + evidencia rojo→verde |
-| QC-4 | **Revisión adversarial,** en paralelo: revisión de código contra la spec, mutación dirigida y auditoría de privacidad | `qa-revisor`, `qa-sabotaje`, `qa-privacidad` | `docs/qa/E<n>/hallazgos.md` |
-| QC-5 | **Integración.** El orquestador integra, corre el gate completo sobre la rama integrada y lo compara con la etapa anterior (G12) | orquestador | `gate.json` en verde |
-| QC-6 | **Veredicto.** `qa-revisor` revisa el gate, los hallazgos y la evidencia, y emite APROBADO o RECHAZADO | `qa-revisor` | `docs/qa/E<n>/VEREDICTO.md` |
+| QC-1 | Contrato: requisitos R-xxx en `TRAZABILIDAD.md`, criterio ejecutable y oráculo, **antes** del código | orquestador, revisado por `qa-spec` | `docs/qa/E<n>/QC1_contrato.md` |
+| QC-2 | Oráculo: esperados de `fixtures`; segunda firma de `qa-oraculo` cuando sea posible (si falta, queda `pendiente_segunda_firma`). **En E7–E9 el oráculo principal es el motor de referencia** (prueba diferencial, sección 10.3) | `fixtures`, `qa-oraculo` | esperados y tests diferenciales |
+| QC-3 | Implementación con test primero, en worktree | agentes que implementan | diff + evidencia de rojo a verde |
+| QC-4 | Revisión adversarial y privacidad. `qa-sabotaje` es opcional en la v3 (G13 informativo) | `qa-revisor`, `qa-privacidad` | `docs/qa/E<n>/hallazgos.md` |
+| QC-5 | Integración y gate completo | orquestador | `gate.json` |
+| QC-6 | Veredicto APROBADO, o RECHAZADO con la lista de hallazgos | `qa-revisor` | `docs/qa/E<n>/VEREDICTO.md` |
 
-**Regla de cierre:** APROBADO exige gate en verde, 0 hallazgos críticos y 0 importantes abiertos. Los menores quedan registrados con su decisión.
+**Regla de cierre:** APROBADO exige el gate en verde y 0 hallazgos críticos o importantes abiertos. Tras 3 ciclos sin aprobar (y cada ciclo con cambios de producto, regla 3): RECHAZADA-BLOQUEADA, y se sigue (0.3).
 
-**Ciclo de corrección:** un RECHAZADO devuelve a QC-3 con la lista de hallazgos. Cada ciclo se numera en `ESTADO.md` y en el veredicto. Tras el tercer RECHAZADO consecutivo de la misma etapa, te detienes (0.3, punto 4).
+**Control técnico de solo lectura:** al terminar `qa-spec`, `qa-revisor` y `qa-privacidad`, `git status --porcelain` de su worktree debe quedar limpio. Si no, se descartan sus cambios y se registra un hallazgo.
 
-**Control técnico de solo lectura:** `qa-spec`, `qa-revisor` y `qa-privacidad` no editan archivos. Al terminar cada uno, el orquestador verifica con `git status --porcelain` que su worktree quedó limpio. Si no, descarta los cambios y registra un hallazgo de proceso. `qa-sabotaje` sí modifica código, pero solo en un worktree desechable que nunca se integra y que se elimina al terminar.
+**Documentación QA mínima:** por etapa, `QC1_contrato.md`, `hallazgos.md`, `VEREDICTO.md`, `gate.json` y `gate.md`, y `perf.md` si hay mediciones. Nada más, salvo evidencia que un hallazgo exija.
 
 ### 8.5 Severidad
 
 | Severidad | Incluye | Efecto |
 |---|---|---|
-| Crítico | resultado numérico incorrecto; pérdida o corrupción de datos; XER escrito con cambios fuera de `TASKPRED`; violación de privacidad; caída con una entrada válida; un criterio de la sección 11 incumplido; afirmar algo sin evidencia | bloquea el cierre |
-| Importante | desviación de la spec; aproximación silenciosa; test que no prueba lo que dice; caso borde de la sección 7 sin cubrir; campo XER sin evidencia | bloquea el cierre |
-| Menor | estilo, nombres, documentación incompleta que no cambia resultados | se registra |
+| Crítico | resultado numérico distinto del motor de referencia o de un esperado; pérdida o corrupción de datos; XER escrito con cambios fuera de `TASKPRED`; violación de privacidad; caída con una entrada válida; una meta activa de la sección 11 incumplida; afirmar algo sin evidencia | bloquea el cierre |
+| Importante | desviación de la spec; aproximación silenciosa; test que no prueba lo que dice; caso borde sin cubrir; código nuevo bajo la meta de cobertura | bloquea el cierre |
+| Menor | estilo, nombres, documentación que no cambia resultados | se registra |
 
 ---
 
@@ -611,7 +614,7 @@ Revalídala al inicio de E0 con `grok --trust-folder inspect --json` dentro del 
   - Integra cada worktree solo después de revisar su diff y de que pase su subconjunto del gate.
   - Si dos entregas tocan los mismos archivos, van en secuencia.
 - **Prohibido autoaprobarse:** el orquestador no escribe `VEREDICTO.md` ni cambia un hallazgo a cerrado sin la verificación de `qa-revisor`.
-- **Cierre de etapa:** con APROBADO, actualizas `ESTADO.md`, haces commit y push de `v2` (sección 9.5) y sigues con la etapa siguiente.
+- **Cierre de etapa:** con APROBADO, actualizas `ESTADO.md`, haces commit y push de `v3` (sección 9.5) y sigues con la etapa siguiente.
 
 ### 9.3 Brief de delegación (obligatorio en cada `spawn_subagent`)
 
@@ -623,7 +626,7 @@ CONTRATO: <interfaces/firmas que debes cumplir o consumir>
 REQUISITOS: <R-xxx de docs/qa/TRAZABILIDAD.md>
 ACEPTACIÓN: <tests que deben pasar + comando exacto> · TEST PRIMERO: guarda la salida en rojo antes del arreglo
 ORÁCULO: <de dónde salen los esperados; nunca de tu propio código>
-CONTEXTO: <secciones de docs/MEGAPROMPT_v2.md y docs/XER_SPEC.md a leer>
+CONTEXTO: <secciones de docs/MEGAPROMPT_v3.md y docs/XER_SPEC.md a leer>
 REGLAS CRÍTICAS:
 - Sesión con auto-aprobación: respeta los límites duros de la sección 14.
 - Nunca leer data/real/ ni ATLASPMO_GOLDEN_DIR, por ningún medio (incluido el shell).
@@ -636,7 +639,7 @@ ENTREGA (en docs/qa/E<n>/<agente>.md): archivos cambiados · comandos ejecutados
 
 ### 9.4 Agentes en `.grok/agents/`
 
-Actualiza los 9 agentes existentes a v2 y crea los 4 nuevos de QA (13 en total). Las descripciones van cortas y el detalle en el cuerpo. Todos los cuerpos terminan con: *"Sesión con auto-aprobación: respeta la sección 14 de docs/MEGAPROMPT_v2.md. Nunca leas data/real ni ATLASPMO_GOLDEN_DIR por ningún medio. Entrega tu informe en docs/qa/E<n>/<tu-nombre>.md con comandos y resultados."*
+Los 13 agentes ya existen en `.grok/agents/` y apuntan a este documento. Mantenlos así; ajusta sus cuerpos solo si esta versión lo exige. Las descripciones van cortas y el detalle en el cuerpo. Todos los cuerpos terminan con: *"Sesión con auto-aprobación: respeta la sección 14 de docs/MEGAPROMPT_v3.md. Nunca leas data/real ni ATLASPMO_GOLDEN_DIR por ningún medio. Entrega tu informe en docs/qa/E<n>/<tu-nombre>.md con comandos y resultados."*
 
 **Implementación**
 
@@ -666,68 +669,101 @@ Actualiza los 9 agentes existentes a v2 y crea los 4 nuevos de QA (13 en total).
 | `qa-sabotaje` | Mutación dirigida sobre los módulos tocados (G13). | Trabaja en un worktree desechable; introduce fallos plausibles (operadores, off-by-one en lags, mapeo FS/SS/FF/SF, calendarios, signos de holgura); reporta los mutantes sobrevivientes con el test que faltaría. Nunca integra cambios. |
 | `qa-privacidad` | Auditoría de privacidad, red y seguridad de cada etapa. No edita archivos. | Revisa el diff contra G8 y la sección 14; revisa `ERMHDR` de fixtures, logs y mensajes que podrían filtrar nombres reales, y los comandos de red registrados en `docs/qa/E<n>/acciones.md`. |
 
+
 ### 9.5 Ciclo por etapa
 
 1. Plan de la etapa en `ESTADO.md`.
 2. QC-1 → QC-2 → QC-3 → QC-4 → QC-5 → QC-6 (sección 8.4).
-3. Si es RECHAZADO: correcciones y nuevo ciclo (máximo 3).
-4. Si es APROBADO:
+3. Si es RECHAZADO: corrección con cambios de producto y nuevo ciclo, hasta 3. Después: RECHAZADA-BLOQUEADA, y se sigue.
+4. Al cierre (aprobada o bloqueada):
+   - si fue aprobada y la etapa cumple sus metas, agrega esas metas a `docs/qa/seccion11.toml` y sube `baseline.json` si corresponde (commit que cite ADR-019);
    - actualiza `ESTADO.md`, `DECISIONES.md` y `VALIDACIONES_PENDIENTES.md`;
-   - corre G8 por última vez;
-   - haz `git push -u origin v2`;
-   - continúa con la etapa siguiente sin esperar.
+   - corre G8;
+   - haz `git push -u origin v3`, con hasta 4 reintentos y espera creciente si falla la red; si sigue fallando, continúa en local y repórtalo;
+   - continúa con la etapa siguiente.
 
-**Rama:** todo el trabajo de la v2 va en `v2`, creada desde `origin/claude/beautiful-goodall-m0q2zj`. Nunca se mergea a `main`: eso lo hace Nicolás después de revisar.
+**Rama:** `v3`, creada desde `origin/claude/beautiful-goodall-m0q2zj`. Nunca se mergea a `main`.
 
 ---
 
-## 10. Brechas de la v1 y etapas de la v2
+## 10. Estado tras la v2 y etapas de la v3
 
-### 10.1 Brechas encontradas en la revisión de `fase-5` (`b131428`)
+### 10.1 Qué dejó la v2 (revisión externa del 2026-10-22 sobre `cc81a31`)
 
-Revisión independiente del 2026-10-20. Ejecuté la suite, lint y tipos, leí el código del motor, la redundancia, la limpieza, la calidad y la UI, y medí rendimiento con redes sintéticas. La evidencia de cada brecha es reproducible. Cada una se convierte en requisitos R-xxx en QC-1.
+Verificado de forma independiente: 216 tests en verde; el gate reproduce el mismo resultado (solo fallan G4 y G13).
 
-| ID | Sev. | Brecha | Evidencia | Aceptación |
-|---|---|---|---|---|
-| B-01 | Crítico | La UI no es usable: solo muestra un `multiselect`. No carga archivos, no ejecuta, no muestra resultados ni exporta | `src/atlaspmo/ui/app.py` (25 líneas) | Test e2e con `AppTest`: cargar un sintético → resumen y validación → elegir módulos → configurar con perfil → ejecutar con progreso → pestañas de resultados → exportar Excel, PDF, Parquet y manifiesto; más el visor Gantt y el modo lote |
-| B-02 | Crítico | La detección de redundancia no escala: rearma el grafo y lo ordena por cada vínculo (O(E·(V+E))) | 500 act.: 1,9 s; 2.000 act.: 33,7 s; proyección a 30k > 2 h (meta < 3 min) | Benchmark de 30k realista < 3 min incluida la confirmación; algoritmo por rango topológico y agrupado por origen (sección 6, M3) |
-| B-03 | Crítico | La bisección une subconjuntos confirmados por separado sin validarlos juntos, y el cleaner escribe el XER aunque `dates_unchanged = 0` | `redundant.py::_confirm` (ramas `kept.extend`); `clean.py::clean_document` | Test con dos vínculos mutuamente redundantes y uno no confirmable en el mismo lote: el conjunto final da delta cero. Si el delta del limpio no es cero, no se escribe el archivo |
-| B-04 | Importante | Protecciones incompletas: no se verifican los extremos abiertos a nivel de evento; se protegen **todos** los hitos y no solo los contractuales; no hay listas de usuario | `redundant.py::_protected` | Tests positivo y negativo por regla de protección; hitos contractuales por código, UDF o lista |
-| B-05 | Crítico | La detección de ciclos es recursiva y se cae con cadenas largas | `RecursionError` en `io/validate.py::_cycles` con 30k act. en serie | Validación y CPM corren sobre una cadena de 60k en serie sin error |
-| B-06 | Crítico | El reloj laboral recorre día por día, con un tope fijo de 3.660 días | `CalendarLimitError` con 5k act. y ~15 años; no hay índice O(log n) | Índice acumulado con horizonte dinámico; proyecto de 20 años sin error; microbenchmarks de `add_work` y `work_between` independientes del largo del intervalo |
-| B-07 | Crítico | Monte Carlo y tornado corren un CPM completo y reconstruyen el cronograma en cada iteración o actividad; no hay numba | CPM de 30k: 8,2 s → MC de 1.000 iteraciones ≈ 2,3 h; tornado de 30k en días | MC 30k × 1.000 < 5 min; tornado recalcula solo el cono afectado; invariante e) intacta |
-| B-08 | Crítico | `CS_MANDSTART` y `CS_MANDFIN` se tratan como "start on": no imponen su fecha sobre la lógica | `CS_MANDSTART` al lunes 08:00 tras una predecesora: ES quedó el martes 08:00 | La fecha obligatoria se impone en ambos pases y la violación de lógica se reporta; caso para `p6_verified` |
-| B-09 | Importante | No existe la opción de longest path; crítico solo por holgura ≤ X | `engine/options.py` | Longest path seleccionable y comparado con holgura ≤ X en M2 |
-| B-10 | Crítico | CPLI mal definido: el largo de ruta es la suma de duraciones remanentes de la ruta 1 y la holgura es la guardada de la última actividad, no la del término objetivo | `quality/check.py::_cpli` | Definición de la sección 6 (DCMA 13) con esperados de doble firma, incluidos un caso con SS solapado y uno con feriado |
-| B-11 | Importante | BEI: el numerador cuenta solo las completadas dentro de las vencidas | `quality/check.py::_baseline_ratio` | Numerador = todas las completadas (sección 6, DCMA 14); caso con una completada antes de tiempo |
-| B-12 | Importante | M2 incompleto: no hay trazado de cadena driving hacia un hito, ni multiple float paths propios, ni verificación de continuidad; las bandas de holgura están fijas en código | `analysis/paths/` | Cada función con tests y documentación del algoritmo; bandas configurables por perfil |
-| B-13 | Importante | M6 incompleto: no hay distribución temporal por periodo, histogramas, sobreasignación ni curvas S; `fact_timephased` se escribe vacío; el PV es lineal | `analysis/resources/evm.py`; ADR-007 y ADR-008 | Funciones de la sección 6 (M6) con esperados; `fact_timephased` poblado; supuestos como aproximación |
-| B-14 | Importante | Datos de prueba insuficientes: `gen_synthetic.py` sigue escribiendo la tabla inventada `SYNTH`; no hay generador de escala; 8 casos no cubren la lista de la sección 7; los esperados los generó el mismo autor del motor | `tests/fixtures/synthetic/minimal.xer`; `scripts/build_cases.py` | Generador con tablas reales, `gen_scale.py`, todos los casos borde de la sección 7 y esperados con doble firma |
-| B-15 | Importante | No hay tests de propiedades: `hypothesis` no está en las dependencias; los invariantes a–e no existen | `pyproject.toml` | G5 en verde |
-| B-16 | Crítico | No hay medición de rendimiento: ningún criterio de la sección 11 está medido salvo la lectura de 30k, y esa prueba usa un XER de 2 columnas | `tests/test_phase1.py::test_read_30k...`; `ESTADO.md`, fase 5 | G6 en verde con `gen_scale.py` |
-| B-17 | Importante | `uv run pytest` falla en la colección (`No module named 'scripts'`) en cualquier equipo, no solo por el `os error 5` | ejecución en Linux | `pythonpath` configurado; G3 con ambos comandos |
-| B-18 | Menor | 14 archivos sin `ruff format` | `ruff format --check` | G1 |
-| B-19 | Importante | El repositorio sigue apuntando a `docs/MEGAPROMPT.md`, que ya no existe; `AGENTS.md` y los agentes no reflejan ni la v1 ni la v2 | `AGENTS.md`, `.grok/agents/*.md` | Referencias a `MEGAPROMPT_v2.md`; los 13 agentes de 9.4 |
-| B-20 | Importante | Un XER con bytes indefinidos en cp1252 (p.ej. `0x81`) se rechaza entero | `read_xer_bytes` → "no decodifica como cp1252" | Se lee, se registra la aproximación y el round-trip sigue siendo byte a byte |
-| B-21 | Menor | Un hito de inicio que sigue a una FS que termina a las 16:00 queda en el mismo instante (16:00) y no en el inicio laboral siguiente | caso de 3 actividades en un calendario de 08:00 a 16:00 | Regla de la sección 6 (M0), marcada `[VALIDAR]` con caso para `p6_verified` |
-| B-22 | Importante | Proceso: un commit por fase, sin evidencia de test primero, y `fase-1` se creó antes del gate de la Fase 0 | historial de `fase-0` a `fase-5` | Reglas de trabajo 2 y 5 de la sección 0; G11 y G12 |
-| B-23 | Importante | Ruta absoluta con el usuario de Windows de Nicolás en código publicado (`reports/export.py::_git_executable`) y en `ESTADO.md`; detectada por G8 el 2026-10-21 | `git grep` sobre `fase-1` a `fase-5` | **Corregido en `claude/beautiful-goodall-m0q2zj`**: el código usa `git` del PATH o la variable `ATLASPMO_GIT`. Queda en la historia de `fase-1` a `fase-5`; limpiarla exige reescribir historia publicada y lo decide Nicolás (sección 14) |
+| Cerradas y comprobadas | Abiertas |
+|---|---|
+| B-03 confirmación conjunta y XER bloqueado con delta ≠ 0 · B-05 ciclos iterativos (cadena de 30k en serie y 87 años sin error) · B-06 horizonte dinámico · B-08 obligatorias imponen su fecha · B-09 longest path · B-15 invariantes a–e · B-18 formato · B-19 referencias · B-20 bytes cp1252 · B-21 hito al inicio laboral siguiente. B-08, B-09 y B-21 siguen `[VALIDAR]` con P6 | **B-07 y B-16, rendimiento** (crítico) · **B-02, redundancia a escala** (crítico) · B-01 UI incompleta · B-10 y B-11 sin segunda firma · B-12 sin multiple float paths ni continuidad · B-13 sin curvas por periodo ni histogramas · B-14 bordes de la sección 7 incompletos · B-22 y B-23 (historia, los decide Nicolás) |
 
-Lo que la v1 hizo bien y se conserva: el lector y escritor XER con reposición de bytes; la estructura de contrato, registro y módulos; la honestidad del `ESTADO.md` y los ADR; la semilla en el manifiesto; el hook de privacidad; los imports sin red; y el PBIP con TMDL basado en la documentación vigente.
+### 10.2 Diagnóstico de rendimiento (perfil de la revisión)
 
-### 10.2 Etapas
+Red de `gen_scale.py` con 300 actividades, bajo cProfile:
+- **Reloj laboral.** `WorkCalendar._earliest` resuelve cada `add_work` y `subtract_work` con una búsqueda binaria de ~30 iteraciones sobre minutos absolutos, y cada iteración llama a `_cumulative`, que recorre en Python los turnos del día. El "O(log n)" de B-06 tiene una constante enorme: el 85–90 % del tiempo del CPM se va ahí. 30k actividades: CPM de 15,8 s.
+- **Monte Carlo.** `_tornado` corre un CPM completo por actividad aunque `tornado_hours` sea 0. Con 300 actividades: 148 de 151 s son tornado. Las iteraciones también recalculan el cronograma completo, reconstruyendo el modelo (`_with_hours`).
+- **Redundancia.** 336 CPM completos para 300 actividades: bisección (`_confirm`) más validación conjunta (`_join`), cada uno un CPM completo.
 
-| Etapa | Alcance | Criterios propios (además del gate G1–G13 en verde) |
-|---|---|---|
-| **E0 · Base QA** | B-17, B-18, B-19, B-22 (proceso). `qa_gate.py` con G1–G13 y sus tests; dependencias `hypothesis`, `pytest-benchmark`, `pytest-cov` y la herramienta de mutación; reglas de ruff de 8.1; `docs/qa/` con `TRAZABILIDAD.md` de **toda** la spec (cada requisito de las secciones 2, 5, 6, 7 y 11 con su R-xxx); `skips.toml`; hook pre-push; los 13 agentes; `AGENTS.md` v2; `gen_scale.py` | El gate corre y reporta con veracidad. **Excepción solo para E0:** G4, G5, G6, G10 y G13 pueden fallar sobre el código heredado; ese resultado queda como **línea base** en `docs/qa/E0/gate.json` y no bloquea el cierre de E0. G1, G2, G3, G7, G8, G9 y G11 sí deben quedar en verde |
-| **E1 · Núcleo robusto** | B-05, B-06, B-08, B-09, B-20, B-21; parte de B-14 (calendarios con feriados, medias jornadas, 24 h y 7 días; restricciones; avance; hitos); invariante a) | Cadena de 60k en serie sin error; proyecto de 20 años; lectura de un XER realista de 30k < 15 s |
-| **E2 · Lógica y limpieza** | B-02, B-03, B-04; casos de redundancia de la sección 7; invariantes b), c) y d) | Redundancia 30k < 3 min; el XER limpio difiere solo en filas de `TASKPRED` y el delta es cero, o no se escribe |
-| **E3 · Calidad y rutas** | B-10, B-11, B-12; DCMA 12 con el motor corregido; GAO | DCMA y chequeos de calidad sobre 30k < 10 s; todas las métricas contra esperados con doble firma |
-| **E4 · Riesgo y recursos** | B-07, B-13; invariante e) | Monte Carlo 30k × 1.000 < 5 min; EVM y curvas S contra esperados con doble firma |
-| **E5 · UI y reportes** | B-01; exportaciones con manifiesto; lote y biblioteca desde la UI | e2e completo en verde; la app solo escucha en localhost (test) |
-| **E6 · Endurecimiento** | Regresión total; auditoría integral de `qa-revisor`, `qa-privacidad` y `qa-sabotaje` sobre todo el repo; `MANUAL_USUARIO.md` actualizado; instalación en un paso | Todos los criterios automatizables de la sección 11 en verde y evidenciados; G13 sobre todo `src/`; checklist final de `VALIDACIONES_PENDIENTES.md` |
+### 10.3 Etapas
 
-Las validaciones manuales de cada etapa (P6, golden reales, Power BI Desktop, `.mpp` con Java) van a `VALIDACIONES_PENDIENTES.md` con instrucciones exactas y nunca detienen la ejecución.
+Las etapas siguen la numeración de la v2 para que G12 compare contra la etapa anterior (E6 → E7).
+
+**E7 · Motor rápido** (B-16, base de B-07 y B-02). La etapa más importante: si E7 no queda bien, E8 y E9 no tienen base.
+
+- **Diseño obligatorio:**
+  1. **Compilar el cronograma a arrays** una sola vez:
+     - índices 0..n-1 en orden topológico;
+     - predecesoras y sucesoras en CSR (`indptr`, `indices`, tipo de vínculo como entero, lag en minutos laborales);
+     - duración remanente en minutos;
+     - calendario como índice;
+     - estado, fechas reales y restricciones como arrays.
+  2. **Tiempo en una sola unidad:** instantes como minutos absolutos desde una época (int64), y cada calendario como una tabla de intervalos laborales `[inicio, fin)` sobre todo el horizonte, con el trabajo acumulado al inicio de cada intervalo (arrays numpy concatenados, con offsets por calendario).
+     - `add_work`, `subtract_work` y `work_between` = **una** `searchsorted` más aritmética;
+     - la tabla crece si el horizonte no alcanza (sin tope fijo, como exige B-06).
+  3. **Pases en numba** (`@njit(cache=True)`) sobre esos arrays: forward, backward, holgura total, holgura libre y libre por vínculo, crítico por holgura y longest path.
+     - Restricciones, avance (retained, progress override, actual dates), calendario del lag, hitos y LOE/WBS **exactamente** con la semántica del motor actual.
+     - Lo que no quepa en numba se resuelve antes o después en numpy, nunca por actividad en Python.
+  4. **El motor actual queda como referencia:** `engine/cpm.py` no se borra.
+     - El motor rápido se expone con la misma firma (`schedule_cpm` decide cuál usar con una opción y, por defecto, usa el rápido).
+     - La referencia se llama de forma explícita en los tests.
+- **Oráculo de E7 = prueba diferencial obligatoria:**
+  - hypothesis genera redes aleatorias con varios calendarios (feriados, medias jornadas, 24 h, 7 días), los 4 tipos de vínculo, lags positivos y negativos, cada restricción, avance fuera de secuencia, hitos, LOE y WBS;
+  - el motor rápido y la referencia deben dar **ES, EF, LS, LF, TF y FF idénticos al minuto** y la misma lista de aproximaciones;
+  - además, todos los tests existentes del motor pasan con el rápido.
+- **Metas a activar:** `cpm_30k` (< 0,5 s después del calentamiento) y `dcma_30k` (< 10 s).
+- Que el orden topológico y la compilación a arrays no dominen el tiempo: mídelos aparte en `perf.md`.
+
+**E8 · Redundancia a escala** (B-02).
+
+- El filtro de candidatos por origen ya está en 0,3 s para 30k; no lo toques salvo para el diferencial.
+- **Confirmación:** usa el motor rápido sobre los arrays ya compilados.
+  - Quitar vínculos = enmascarar aristas del CSR, sin reconstruir el modelo.
+  - Bisección y validación conjunta igual que hoy (ADR-016), pero cada reprogramación es un pase rápido.
+  - Si hace falta, recalcula solo el cono afectado y verifica que el resultado sea idéntico al de un pase completo.
+- **Diferencial:** la clasificación del motor rápido es idéntica a la del motor de referencia en redes chicas aleatorias (hypothesis) y en los casos de la sección 7.
+- **Meta a activar:** `redundancia_30k` (< 180 s).
+
+**E9 · Monte Carlo y tornado** (B-07).
+
+- Muestreo vectorizado: matriz `iteraciones × actividades` en numpy, con la semilla registrada; Iman-Conover sobre esa matriz; eventos de riesgo vectorizados.
+- Pases en numba con `prange` sobre las iteraciones, con los arrays de E7. Sin reconstruir `Schedule` por iteración.
+- **Tornado:**
+  - corre solo si `tornado_hours > 0`;
+  - recalcula solo el cono de sucesoras de la actividad atrasada, como exige la spec;
+  - diferencial contra el cálculo completo en redes chicas.
+- Invariante e) (varianza cero = CPM determinístico) con el motor rápido.
+- **Meta a activar:** `montecarlo_30k` (< 300 s con 1.000 iteraciones).
+
+**E10 · Funcionalidad pendiente**, en este orden y sin metas de tiempo nuevas:
+
+1. B-01: e2e completo de la UI (sección 6, Transversales), incluido el baseline asociado, configuración por perfil, visor Gantt con filtros y trazado N niveles, lote y biblioteca.
+2. B-12: multiple float paths propios, continuidad desde la fecha de corte y driving en modo A cuando P6 trae los campos.
+3. B-13: distribución por periodo (día, semana, mes), histogramas, sobreasignación contra `RSRCRATE` (solo con campos con evidencia) y curvas S.
+4. B-14: los bordes de la sección 7 que falten, con esperados.
+5. B-10 y B-11: segunda firma de los esperados de CPLI (con solape SS y feriado) y de BEI.
+
+Cada punto de E10 es una entrega con su test e2e o con esperado; E10 puede cerrar con puntos abiertos si están registrados.
+
+**Validaciones de Nicolás** (nunca te detienen; mantenlas en `VALIDACIONES_PENDIENTES.md`): `p6_verified`, B-08, B-09 y B-21 en P6, conformidad con golden, XER limpio en P6, PBIP en Power BI Desktop, `.mpp` con Java, decisión sobre la historia de B-23.
 
 ---
 
@@ -768,38 +804,17 @@ Los criterios se miden con `scripts/gen_scale.py` (redes realistas, sección 7) 
 - Un commit por fase o etapa en vez de commits atómicos.
 - Detenerse a preguntar fuera de los casos de 0.3.
 - Cualquier acción prohibida de la sección 14.
+- Optimizar el motor cambiando resultados, o sin prueba diferencial contra la referencia.
+- Borrar o "acelerar" el motor de referencia.
+- Reconstruir el modelo o recalcular el cronograma completo dentro de un bucle de Monte Carlo, de la redundancia o del tornado.
+- Ciclos de corrección que solo documentan.
+- Activar una meta de la sección 11 que no pasa a 30.000 actividades, o quitar una meta activa.
 
 ---
 
-## 13. Contenido de `AGENTS.md`
+## 13. `AGENTS.md`
 
-Ya existe: reemplázalo por este contenido en E0.
-
-```markdown
-# AtlasPMO — plataforma personal de análisis de cronogramas (P6 / MS Project)
-
-Especificación: docs/MEGAPROMPT_v2.md · Estado: docs/ESTADO.md · Decisiones: docs/DECISIONES.md · QA: docs/qa/ · Pendientes de Nicolás: docs/VALIDACIONES_PENDIENTES.md
-
-## Reglas críticas
-- Sesiones con auto-aprobación: los límites duros de la sección 14 del megaprompt son absolutos.
-- Nunca leer data/real/ ni ATLASPMO_GOLDEN_DIR, por ningún medio (incluido el shell). El repositorio se trata como público.
-- App 100 % local: sin red, sin telemetría.
-- XER: cp1252, CRLF, tablas no modificadas idénticas byte a byte. Solo campos con evidencia en docs/XER_SPEC.md.
-- Sin aproximaciones silenciosas: registrarlas en ModuleResult.approximations.
-- Redundancia = camino alternativo ≥ lag en el grafo de eventos + confirmación conjunta con delta cero. Nunca "no es driver".
-- Test primero; nada se declara terminado sin evidencia en docs/qa/E<n>/.
-- Quien implementa no edita oráculos, esperados, umbrales ni el gate. Nadie se autoaprueba.
-- Una etapa se cierra solo con VEREDICTO APROBADO de qa-revisor y gate en verde.
-- Código e identificadores en inglés; UI, docs y mensajes al usuario en español (es-CL).
-- Rama v2; nunca push a main ni --force.
-
-## Comandos
-- Gate: uv run python scripts/qa_gate.py --etapa E<n>
-- Tests: uv run pytest  (en el equipo de Nicolás: uv run python -m pytest)
-- Lint, formato y tipos: uv run ruff check . && uv run ruff format --check . && uv run mypy src
-- App: atlaspmo.bat (uv run python -m streamlit run src/atlaspmo/ui/app.py)
-- Conformidad (solo Nicolás, en su equipo): uv run python scripts/run_conformance.py
-```
+Ya está actualizado a la v3 en la raíz del repositorio. Mantenlo corto y consistente con este documento.
 
 ---
 
@@ -819,7 +834,7 @@ Especificación: docs/MEGAPROMPT_v2.md · Estado: docs/ESTADO.md · Decisiones: 
 3. **Red.** Solo para:
    - instalar dependencias con `uv` desde PyPI;
    - leer documentación oficial (Microsoft Learn, Oracle Primavera, MPXJ, documentación de las librerías);
-   - `git fetch` y `git push` de la rama `v2` a `origin`.
+   - `git fetch` y `git push` de la rama `v3` a `origin`.
 
    Nunca subas contenido a otros servicios (gists, pastebins, APIs, issues), ni siquiera fragmentos de código.
 4. **Git.** Prohibido:
@@ -836,7 +851,7 @@ Especificación: docs/MEGAPROMPT_v2.md · Estado: docs/ESTADO.md · Decisiones: 
 ### 14.2 Controles técnicos
 
 - `.grok/config.toml` del proyecto niega `Read`, `Edit` y `Grep` sobre `**/data/real/**` (ya existe; consérvalo). Agrega `**/.env` y cualquier otra regla de denegación que Grok Build admita a nivel de proyecto.
-- Hooks pre-commit y pre-push con G8. El pre-push además rechaza cualquier destino distinto de `origin/v2`.
+- Hooks pre-commit y pre-push con G8. El pre-push además rechaza cualquier destino distinto de `origin/v2` u `origin/v3`; en la v3 solo se empuja `v3`.
 - **Recomendaciones para Nicolás** (escríbelas con el texto exacto en `VALIDACIONES_PENDIENTES.md`; no las apliques tú):
   - una regla de denegación con la ruta absoluta de su carpeta golden en `~/.grok/config.toml`;
   - mantener los golden en una unidad o contenedor cifrado desmontado durante las sesiones de Grok.
@@ -847,33 +862,31 @@ Si Nicolás usa Grok 4.7 desde Cursor o GitHub Copilot, `AGENTS.md` y esta secci
 
 ---
 
+
 ## 15. Arranque
 
-**Estado de partida.** La rama `v2` nace de `origin/claude/beautiful-goodall-m0q2zj`, que contiene `fase-5` (`b131428`) más este documento. `docs/MEGAPROMPT.md` y `docs/MEGAPROMPT_v1.md` ya no existen: este documento los reemplaza.
+**Estado de partida:** la rama `v3` nace de `origin/claude/beautiful-goodall-m0q2zj`, que contiene `v2` (`cc81a31`), el gate ajustado (ADR-019), las metas de la sección 11 y este documento. `docs/MEGAPROMPT_v2.md` ya no existe: este documento lo reemplaza.
 
-1. Verifica que estás en la rama `v2` y que el árbol está limpio. Si no existe, créala: `git checkout -b v2 origin/claude/beautiful-goodall-m0q2zj`.
-2. Lee este documento completo y `docs/ESTADO.md`. Si `ESTADO.md` indica una etapa v2 en curso, retómala desde el control QC pendiente.
-3. Registra en `ESTADO.md` el inicio de la v2: base `b131428`, brechas B-01 a B-23, etapas E0 a E6.
-4. Ejecuta E0 a E6 con el ciclo de 9.5, sin pausas, cada una con QC-1 a QC-6.
-5. Al terminar E6, escribe el reporte final (sección 16) y detente.
+1. Verifica que estás en `v3` con el árbol limpio. Si no existe: `git checkout -b v3 origin/claude/beautiful-goodall-m0q2zj`.
+2. Registra en `ESTADO.md` el inicio de la v3 y el **commit base** (`git rev-parse HEAD`). Ese hash va en `--base` de todos los gates de la v3.
+3. Lee este documento completo, `ESTADO.md` (reporte final de la v2) y `DECISIONES.md` (ADR-001 a ADR-019). Si `ESTADO.md` indica una etapa v3 en curso, retómala desde el control pendiente.
+4. **Comprobación inicial**, con la evidencia en `docs/qa/E7/inicio.md`:
+   - `uv run python -m pytest` en verde;
+   - el gate con `--etapa E7` (G10 puede fallar porque E7 aún no tiene requisitos: es esperado; QC-1 lo resuelve);
+   - todas las metas de la sección 11 a 30k, para registrar la línea base en el equipo de Nicolás. Si `redundancia_30k` o `montecarlo_30k` superan 30 minutos, córtalas, registra "más de 30 min" y sigue.
+5. Ejecuta E7, E8, E9 y E10 con el ciclo de 9.5.
+6. Al terminar E10, escribe el reporte final (sección 16), haz el último push de `v3` y detente.
 
 ---
 
 ## 16. Reporte final
 
-Escríbelo en `docs/ESTADO.md` y muéstralo en la sesión. Incluye:
-- **Por etapa:**
-  - brechas cerradas;
-  - veredicto y número de ciclos de QA;
-  - gate (G1–G13: estado y valores);
-  - último commit.
-- **Brechas:** tabla B-01 a B-23 con estado final (cerrada / abierta) y evidencia.
-- **Pruebas:**
-  - suite completa con su comando y resultado;
-  - cobertura por paquete;
-  - kill score de mutación por paquete;
-  - benchmarks contra la sección 11, con los datos del equipo.
-- **Hallazgos QA:** abiertos por severidad (debería haber 0 críticos y 0 importantes) y menores registrados.
-- **Supuestos `[VALIDAR]`:** lista con enlace a su ADR.
+Escríbelo al principio de `docs/ESTADO.md` (sección "v3 — reporte final") y muéstralo en la sesión:
+- **Por etapa:** veredicto, ciclos, gate (G1–G13), último commit.
+- **Metas de la sección 11:** tabla con la línea base de la v3, el valor final en el equipo de Nicolás (CPU, RAM, SO) y si está activa en `seccion11.toml`.
+- **Prueba diferencial:** cantidad de ejemplos por propiedad, diferencias encontradas y corregidas.
+- **Brechas:** B-01 a B-23 con su estado y evidencia.
+- **Cobertura:** por paquete frente a `baseline.json` y frente a la meta; G13 informativo, si se midió.
+- **Hallazgos QA** abiertos por severidad.
 - **Para Nicolás:** checklist priorizado de `VALIDACIONES_PENDIENTES.md`.
-- **Para la v3 del megaprompt:** qué fue ambiguo, contradictorio o insuficiente en este documento, con propuesta de redacción.
+- **Para la v4:** qué fue ambiguo o insuficiente en este documento.

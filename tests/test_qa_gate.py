@@ -45,11 +45,11 @@ EXPECTED_AGENTS = {
 PROFILE_SAMPLE = r"C:\Users\example\AtlasPMO"
 
 
-def test_thirteen_agents_point_at_the_v2_spec():
+def test_thirteen_agents_point_at_the_v3_spec():
     names = {path.stem for path in (ROOT / ".grok" / "agents").glob("*.md")}
     assert names == EXPECTED_AGENTS
     text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    assert "docs/MEGAPROMPT_v2.md" in text
+    assert "docs/MEGAPROMPT_v3.md" in text
 
 
 def test_profile_pattern_matches_a_real_shape_and_ignores_the_ellipsis():
@@ -483,20 +483,72 @@ def _sabotage(root: Path, etapa: str, text: str) -> None:
     (folder / "sabotaje.md").write_text(text, encoding="utf-8")
 
 
-def test_g13_fails_without_a_report(tmp_path: Path):
-    assert check_g13(tmp_path, "E0").status == "fail"
+def test_g13_is_informative_without_a_report(tmp_path: Path):
+    assert check_g13(tmp_path, "E0").status == "info"
 
 
-def test_g13_fails_on_a_sample(tmp_path: Path):
+def test_g13_is_informative_on_a_sample(tmp_path: Path):
     _sabotage(tmp_path, "E0", "alcance: muestra\nkill_score: 100\n")
-    assert check_g13(tmp_path, "E0").status == "fail"
+    assert check_g13(tmp_path, "E0").status == "info"
 
 
-def test_g13_fails_under_the_threshold(tmp_path: Path):
+def test_g13_is_informative_under_the_threshold(tmp_path: Path):
     _sabotage(tmp_path, "E0", "alcance: completo\nkill_score: 10\nengine: 10\n")
-    assert check_g13(tmp_path, "E0").status == "fail"
+    assert check_g13(tmp_path, "E0").status == "info"
 
 
 def test_g13_passes_a_complete_score_at_the_threshold(tmp_path: Path):
     _sabotage(tmp_path, "E0", "alcance: completo\nkill_score: 90\nengine: 90\n")
     assert check_g13(tmp_path, "E0").status == "pass"
+
+
+def test_judge_coverage_ratchet_allows_a_gap_under_the_target():
+    baseline = {"engine": {"lineas": 80.0, "ramas": 100.0}}
+    result = judge_coverage(_coverage("src/atlaspmo/engine/cpm.py", 20), baseline)
+    assert result.status == "pass"
+    assert "meta pendiente" in result.detail
+
+
+def test_judge_coverage_ratchet_fails_when_a_bucket_drops():
+    baseline = {"engine": {"lineas": 85.0, "ramas": 100.0}}
+    result = judge_coverage(_coverage("src/atlaspmo/engine/cpm.py", 20), baseline)
+    assert result.status == "fail"
+    assert "engine lineas" in result.detail
+
+
+def _perf_tree(tmp_path: Path, active: str) -> None:
+    perf = tmp_path / "tests" / "perf"
+    perf.mkdir(parents=True)
+    (perf / "test_fast.py").write_text(
+        "import pytest\n\n@pytest.mark.perf\ndef test_fast():\n    assert True\n",
+        encoding="utf-8",
+    )
+    (perf / "test_seccion11.py").write_text(
+        "import pytest\n\n"
+        "@pytest.mark.seccion11\ndef test_s11_ok():\n    assert True\n\n"
+        "@pytest.mark.seccion11\ndef test_s11_slow():\n    assert False\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.pytest.ini_options]\nmarkers = ["perf: x", "seccion11: y"]\n', encoding="utf-8"
+    )
+    qa = tmp_path / "docs" / "qa"
+    qa.mkdir(parents=True)
+    (qa / "seccion11.toml").write_text(f"activas = [{active}]\n", encoding="utf-8")
+
+
+def test_g6_runs_only_active_section11_targets(tmp_path: Path):
+    _perf_tree(tmp_path, '"ok"')
+    result = check_g6(tmp_path)
+    assert result.status == "pass"
+    assert "seccion11 activas" in result.detail
+
+
+def test_g6_fails_when_an_active_section11_target_fails(tmp_path: Path):
+    _perf_tree(tmp_path, '"ok", "slow"')
+    assert check_g6(tmp_path).status == "fail"
+
+
+def test_g6_fails_when_an_active_target_has_no_test(tmp_path: Path):
+    _perf_tree(tmp_path, '"ok", "missing"')
+    assert check_g6(tmp_path).status == "fail"

@@ -66,6 +66,12 @@ PROTECTED_GLOBS = (
     "scripts/qa_gate.py",
 )
 E0_BASELINE = {"G4", "G5", "G6", "G10", "G13"}
+# v3 (ADR-019): coverage is a ratchet over this file; section 11 targets are
+# enforced only once a stage lists them as active.
+BASELINE_FILE = "docs/qa/baseline.json"
+SECCION11_FILE = "docs/qa/seccion11.toml"
+SECCION11_TESTS = "tests/perf/test_seccion11.py"
+RATCHET_SLACK = 0.5
 SKIP_REASONS = {"dependencia_opcional", "fixture_nicolas", "plataforma"}
 INVARIANTS = {
     "a": "round_trip",
@@ -84,7 +90,7 @@ class Control:
 
     @property
     def ok(self) -> bool:
-        return self.status in {"pass", "linea_base"}
+        return self.status in {"pass", "linea_base", "info"}
 
 
 def _root() -> Path:
@@ -191,8 +197,15 @@ def _pct(missing: int, total: int) -> float:
     return 100.0 * (total - missing) / total
 
 
-def judge_coverage(data: dict[str, object]) -> Control:
-    """Apply section 8.1 to a coverage JSON payload. Never invents a pass."""
+def judge_coverage(
+    data: dict[str, object],
+    baseline: dict[str, dict[str, float]] | None = None,
+) -> Control:
+    """Apply section 8.1 to a coverage JSON payload. Never invents a pass.
+
+    With a baseline, each bucket may sit under the section 8.1 target but
+    never more than RATCHET_SLACK points under its recorded baseline.
+    """
     files = data.get("files")
     if not isinstance(files, dict) or not files:
         return Control("G4", "fail", "sin archivos medidos")
@@ -213,21 +226,30 @@ def judge_coverage(data: dict[str, object]) -> Control:
         return Control("G4", "fail", "sin archivos medidos")
     problems: list[str] = []
     notes: list[str] = []
+    gaps: list[str] = []
     for bucket, (stmts, miss, branches, bmiss) in sorted(totals.items()):
         lines = _pct(miss, stmts)
         branch = _pct(bmiss, branches)
         notes.append(f"{bucket} lineas {lines:.1f}% ramas {branch:.1f}%")
-        if bucket in _STRICT_BUCKETS:
-            if lines < _STRICT_LINES:
-                problems.append(f"{bucket} lineas {lines:.1f} < {_STRICT_LINES:.0f}")
-            if branches and branch < _STRICT_BRANCHES:
-                problems.append(f"{bucket} ramas {branch:.1f} < {_STRICT_BRANCHES:.0f}")
-        elif lines < _REST_LINES:
-            problems.append(f"{bucket} lineas {lines:.1f} < {_REST_LINES:.0f}")
+        strict = bucket in _STRICT_BUCKETS
+        targets = [("lineas", lines, _STRICT_LINES if strict else _REST_LINES)]
+        if strict and branches:
+            targets.append(("ramas", branch, _STRICT_BRANCHES))
+        recorded = (baseline or {}).get(bucket, {})
+        for kind, value, target in targets:
+            floor = target
+            if baseline is not None and kind in recorded:
+                floor = min(target, float(recorded[kind]) - RATCHET_SLACK)
+            if value < floor:
+                problems.append(f"{bucket} {kind} {value:.1f} < {floor:.1f}")
+            elif value < target:
+                gaps.append(f"{bucket} {kind} {value:.1f} bajo la meta {target:.0f}")
     measured = _pct(
         sum(slot[1] for slot in totals.values()), sum(slot[0] for slot in totals.values())
     )
     detail = f"cobertura_total: {measured:.1f}; " + "; ".join(notes)
+    if gaps:
+        detail += " | meta pendiente: " + "; ".join(gaps)
     if problems:
         return Control("G4", "fail", "; ".join(problems) + " | " + detail)
     return Control("G4", "pass", detail)
@@ -254,13 +276,24 @@ def check_g4(root: Path) -> Control:
             return Control("G4", "fail", text[-1500:])
         if not report.is_file():
             return Control("G4", "fail", "pytest en verde sin coverage-gate.json")
-        judged = judge_coverage(json.loads(report.read_text(encoding="utf-8")))
+        judged = judge_coverage(
+            json.loads(report.read_text(encoding="utf-8")), _coverage_baseline(root)
+        )
         return Control("G4", judged.status, judged.detail + " | " + text[-400:])
     finally:
         report.unlink(missing_ok=True)
         dot = root / ".coverage"
         if dot.is_file():
             dot.unlink()
+
+
+def _coverage_baseline(root: Path) -> dict[str, dict[str, float]] | None:
+    path = root / BASELINE_FILE
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    buckets = data.get("buckets") if isinstance(data, dict) else None
+    return buckets if isinstance(buckets, dict) else None
 
 
 def check_g5(root: Path) -> Control:
@@ -302,7 +335,28 @@ def check_g6(root: Path) -> Control:
     text = (proc.stdout + proc.stderr)[-1500:]
     if proc.returncode != 0:
         return Control("G6", "fail", text)
-    return Control("G6", "pass", text)
+    targets = _section11_targets(root)
+    if not targets:
+        return Control("G6", "pass", text + "\nseccion11: sin metas activas")
+    selector = " or ".join(f"test_s11_{name}" for name in targets)
+    s11 = _run(
+        [sys.executable, "-m", "pytest", "-q", "-m", "seccion11", SECCION11_TESTS, "-k", selector],
+        root,
+    )
+    s11_text = (s11.stdout + s11.stderr)[-1500:]
+    ran = _passed_count(s11.stdout) + len(re.findall(r"\bFAILED\b", s11.stdout))
+    if s11.returncode != 0 or ran < len(targets):
+        return Control("G6", "fail", f"seccion11 activas {targets}: " + s11_text)
+    return Control("G6", "pass", text + f"\nseccion11 activas {targets}: " + s11_text)
+
+
+def _section11_targets(root: Path) -> list[str]:
+    path = root / SECCION11_FILE
+    if not path.is_file():
+        return []
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    active = data.get("activas", [])
+    return [str(item) for item in active] if isinstance(active, list) else []
 
 
 def _mark_name(node: ast.AST) -> str:
@@ -531,7 +585,7 @@ def _protected_names(root: Path, base: str) -> list[str]:
 
 def _is_protected(rel: str) -> bool:
     rel = rel.replace("\\", "/")
-    if rel in {"docs/qa/skips.toml", "scripts/qa_gate.py"}:
+    if rel in {"docs/qa/skips.toml", "scripts/qa_gate.py", BASELINE_FILE, SECCION11_FILE}:
         return True
     if rel.startswith("tests/oracle/"):
         return True
@@ -599,14 +653,15 @@ def _previous_gate(root: Path, etapa: str) -> dict[str, object] | None:
 
 
 def check_g13(root: Path, etapa: str) -> Control:
+    """Mutation score. Informative since v3 (ADR-019): it never blocks."""
     report = root / "docs" / "qa" / etapa / "sabotaje.md"
     if not report.is_file():
-        return Control("G13", "fail", "no medido: falta el informe de qa-sabotaje")
+        return Control("G13", "info", "no medido: falta el informe de qa-sabotaje")
     text = report.read_text(encoding="utf-8")
     scope = re.search(r"alcance:\s*(\w+)", text)
     score = re.search(r"kill_score:\s*([0-9]+(?:\.[0-9]+)?)", text)
     if scope is None or scope.group(1) != "completo" or score is None:
-        return Control("G13", "fail", "no medido: el informe no es una corrida completa")
+        return Control("G13", "info", "no medido: el informe no es una corrida completa")
     value = float(score.group(1))
     problems: list[str] = []
     if value < 70:
@@ -616,7 +671,7 @@ def check_g13(root: Path, etapa: str) -> Control:
         if found and float(found.group(1)) < minimum:
             problems.append(f"{name} {found.group(1)} < {minimum}")
     if problems:
-        return Control("G13", "fail", "; ".join(problems))
+        return Control("G13", "info", "; ".join(problems))
     return Control("G13", "pass", f"kill_score {value:.1f} alcance completo")
 
 

@@ -13,7 +13,7 @@ repos:
         stages: [pre-commit]
         pass_filenames: false
       - id: push-v2-g8
-        name: Push only origin/v2 after G8
+        name: Push only origin/v2 or origin/v3 after G8
         entry: python scripts/hooks/pre_push.py
         language: system
         stages: [pre-push]

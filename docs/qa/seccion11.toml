@@ -1,0 +1,4 @@
+# Metas de la sección 11 que G6 exige (ADR-019).
+# Una meta se agrega cuando su etapa la cumple a 30.000 actividades y nunca se quita.
+# Metas disponibles: lectura_30k, cpm_30k, dcma_30k, redundancia_30k, montecarlo_30k.
+activas = ["lectura_30k"]

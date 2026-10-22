@@ -39,9 +39,10 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "src"]
-addopts = "-m 'not perf'"
+addopts = "-m 'not perf and not seccion11'"
 markers = [
   "perf: criterios de la seccion 11; los corre el gate G6, no la suite por defecto",
+  "seccion11: metas de la seccion 11 a escala real; G6 corre solo las activas en docs/qa/seccion11.toml",
 ]
 
 [tool.ruff]

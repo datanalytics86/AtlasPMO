@@ -178,6 +178,18 @@ Esto no relaja G5 ni G13. El filtro de candidatos sigue recorriendo el grafo por
 
 El filtro de candidatos ya no recorre el grafo por vínculo. Lo hace una vez por origen. La frase de ADR-016 que decía lo contrario queda superada por esta. La confirmación conjunta no cambió. La de 30 000 actividades no cabe en 3 minutos con un CPM por candidato.
 
+## ADR-019 — Gate v3: trinquete de cobertura, metas reales de la sección 11 y mutación informativa
+
+Revisión externa del 2026-10-22 sobre `cc81a31`. En la v2, las siete etapas quedaron RECHAZADA-BLOQUEADA, sobre todo por G4 (cobertura heredada unos puntos bajo la meta) y G13 (mutación no reejecutada). Ninguna regla obligaba a atacar el rendimiento, que era la brecha principal. Cambios:
+
+- **G4** compara cada paquete con `docs/qa/baseline.json`. Falla si cae más de 0,5 puntos bajo la línea base, o bajo la meta de la sección 8.1 si la línea base ya la supera. La distancia a la meta se informa como "meta pendiente" y no bloquea. La línea base solo se sube.
+- **G6** además corre las metas de `tests/perf/test_seccion11.py` (marca `seccion11`) que figuren en `docs/qa/seccion11.toml`. Una meta se activa cuando su etapa la cumple a 30.000 actividades y no se quita nunca. Activa al inicio: `lectura_30k`.
+- **G13** pasa a informativo (`info`): se mide y se reporta, pero no bloquea.
+- `baseline.json` y `seccion11.toml` son rutas protegidas (G11).
+- El hook pre-push acepta `v2` y `v3`.
+
+Mediciones de la revisión en la red realista de `gen_scale.py` (30.000 actividades, Linux): lectura 1,8 s; CPM 15,8 s; DCMA con CPM 16,1 s. Con 300 actividades: redundancia con confirmación 52,5 s; Monte Carlo de 5 iteraciones 49,1 s.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

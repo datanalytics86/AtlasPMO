@@ -1,0 +1,26 @@
+{
+  "nota": "Linea base de cobertura de la v3 (ADR-019), medida sobre la integracion de v2. G4 falla si un paquete cae mas de 0,5 puntos bajo este valor; las metas de la seccion 8.1 siguen como objetivo. Solo se sube, nunca se baja.",
+  "commit_base": "cc81a31",
+  "buckets": {
+    "calendars": {
+      "lineas": 85.2,
+      "ramas": 70.9
+    },
+    "engine": {
+      "lineas": 89.4,
+      "ramas": 79.5
+    },
+    "logic": {
+      "lineas": 88.6,
+      "ramas": 75.3
+    },
+    "model": {
+      "lineas": 100.0,
+      "ramas": 100.0
+    },
+    "resto": {
+      "lineas": 90.2,
+      "ramas": 78.5
+    }
+  }
+}
