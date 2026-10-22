@@ -1,64 +1,43 @@
-# Hallazgos E7 ciclo 2
+# Hallazgos E7 ciclo 3
 
-El gate de `docs/qa/E7/gate.json` (commit `de37f8a`, el mismo archivo en HEAD `6052e9b`) sale 0: G1–G12 en pass, G13 en info («no medido»). 237 tests, cobertura 91,3. La meta pendiente de cobertura no bloquea (ADR-019). No reejecuté `cpm_30k` ni `dcma_30k`; el pass de G6 es el del gate. Reejecuté `tests/test_e7_match.py::test_actual_seconds_do_not_widen_the_longest_path_or_driving` y `tests/property/test_e7_differential.py`: 2 passed en 3,68 s. Además comparé el motor rápido contra `schedule_cpm_reference` con datetime completo, crítico, conductoras, holguras y aproximaciones. Calendario 08:00–16:00 los siete días y fecha de corte `2026-01-05 08:00`, salvo que se diga otra cosa.
+HEAD `577c6ba`. El gate de `docs/qa/E7/gate.json` sale 0: G1–G12 en pass, G13 en info. 239 tests, cobertura 91,2. La meta pendiente de cobertura no bloquea (ADR-019). No reejecuté el gate ni la red de 30 000; G6 queda como está en ese archivo (`cpm_30k` y `dcma_30k` en pass).
 
-## H-1 — cerrado
+Reejecuté `tests/test_e7_match.py::test_not_started_actual_does_not_erase_driving`, `test_project_finish_seconds_survive_a_constraint_that_does_not_bind`, `test_actual_seconds_do_not_widen_the_longest_path_or_driving` y `tests/property/test_e7_differential.py`: 4 passed en 4,08 s. Además comparé el motor rápido contra `schedule_cpm_reference` en 458 redes (58 armadas y 400 al azar, semilla 7): tarea, hito de inicio, hito de fin, ALAP, MEO, rollup WBS y LOE, retained, progress override y actual dates, longest y float. Calendario 08:00–16:00 los siete días, salvo las redes al azar, que también usan semana, media jornada y 24 h. Cero diferencias de minuto, holgura, crítico, conductoras o aproximaciones.
 
-Los dos casos del ciclo 1 quedan iguales a la referencia, segundos incluidos.
+## H-4 — cerrado
 
-1. A `TK_Complete`, fin real `2026-01-05 16:00:45`, y B de 8 h sin vínculos. Igualdad con `critical_rule="longest"` y con `float`. El test nuevo cubre longest mediante `_same`.
-2. Hito `TT_Mile` con `CS_MSO` a las `2026-01-05 16:00` y sucesora `TK_Active` con inicio `2026-01-06 08:00:45`, `PR_SS` lag 0. Igualdad con el defecto (`float`, retained) y con `longest`.
+Una actividad no iniciada con `act_start_date` en el mismo minuto que el inicio por red ya no publica ese real ni vacía las conductoras. `_dates` usa `_keep` del real solo si `started==1`; si no, publica `from_minute(es)`. `_driving` descarta conductoras por segundos solo si `started==1` y el minuto del real coincide con `logic_es` (`src/atlaspmo/engine/fast.py`).
 
-En una actividad iniciada, el mecanismo del commit no ensancha el crítico. `_pre_finish` conserva los segundos del fin real en el fin previo al ALAP, `_longest` siembra con ese datetime, y `src/atlaspmo/numeric/kernels.py` copia `es` en `logic_es` cuando `started==1` antes del ALAP. `_driving` devuelve `()` si el inicio real tiene segundos o microsegundos y ese minuto es el ancla. También coincidieron: FS además de SS, solo microsegundos, `actual_dates` con las dos fechas, una terminada que no arrastra a su predecesora, una terminada que sí conduce a la sucesora, dos completas en el mismo minuto (`16:00:30` y `16:00:45`), ALAP de una iniciada, y un `CS_MEO` que empuja el inicio de una en curso hasta el fin real de otra.
+P de 8 h. B de 8 h, `TK_NotStart`, `act_start_date=2026-01-06 08:00:45`. Vínculo P→B `PR_FS` lag 0. Fecha de corte `2026-01-05 08:00`.
 
-## H-2 — cerrado
+- Longest y float: inicio temprano de B `2026-01-06 08:00:00` en los dos motores. Conductoras `('P',)`. Con longest, P queda crítica en los dos. Holguras 0.
+- El mismo real en un hito de inicio (`TT_Mile`): fin de proyecto `2026-01-06 08:00:00`, conductoras `('P',)`, P crítica con longest y con float.
+- Hito de fin (`TT_FinMile`) con real `2026-01-05 16:00:45`: fechas `16:00:00` y conductoras `('P',)` en los dos.
 
-`tests/property/test_e7_differential.py` sortea segundos 0 o 45 en el `act_start` de `TK_Active`. El test fija 500 ejemplos y `derandomize=True`; `tests/property/conftest.py` carga el perfil `qa` con los mismos tres valores. Pasó. No afirmo que esa semilla haya sorteado un empate: el caso fijo de H-1 sí corre siempre y exige datetime, crítico y orden de conductoras.
+El arreglo de una iniciada no se deshizo. B `TK_Active` con real `2026-01-06 08:00:45`, predecesora P en ese minuto y otra más tarde: conductoras `()` y P no crítica, en los dos. Sin segundos en el real: conductoras `('P',)` y P crítica, en los dos. Un `CS_MEO` que empuja el inicio más allá del real deja las conductoras vacías en los dos, porque el arranque ya no cae en el vínculo.
 
-## H-3 — cerrado en el caso informado
+## H-5 — cerrado
 
-En el caso 1 el fin tarde de B quedó igual al de la referencia: el fin de proyecto `2026-01-05 16:00:45`. ALAP sin otra restricción también: inicio temprano `2026-01-05 08:00:00`, fin temprano y fin tarde `2026-01-05 16:00:45` en los dos motores, y B no crítica por longest. Los segundos que todavía se pierden o se agregan están en H-6 y H-7. No son este caso.
+`test_not_started_actual_does_not_erase_driving` arma la tarea y el hito de inicio, y `_same` exige datetime, holgura, crítico y orden de conductoras contra `schedule_cpm_reference`. La tarea corre con longest y con float; el hito, con longest. El float del hito lo corrí aparte y coincide. `tests/property/test_e7_differential.py` sortea `act_start` con segundos 0 o 45 también en `TK_NotStart`. Pasó, con 500 ejemplos y `derandomize=True`.
 
-## H-4 — crítico
+## H-6 — cerrado
 
-`_driving` borra todas las conductoras cuando hay un `act_start_date` con segundos, aunque la actividad no esté iniciada y la referencia ignore ese real. Con longest path la predecesora sale de la ruta. Cambia el resultado. Lo prohíbe la sección 12 de `docs/MEGAPROMPT_v3.md` (optimizar el motor cambiando resultados) y el contrato de E7 en `docs/qa/E7/QC1_contrato.md` (mismo crítico y el mismo orden de predecesoras conductoras).
+Los casos del ciclo 2 quedan iguales a la referencia, segundos incluidos. Lo cubre `test_project_finish_seconds_survive_a_constraint_that_does_not_bind`: `CS_MEOB` al `2026-01-08 16:00`, `CS_MSOA` al `2026-01-05 08:00`, `CS_MSO` sin fecha y `CS_ALAP` más `CS_MSOA`. `CS_ALAP` más `CS_MSO` sin fecha, que el test no nombra, también coincide: fin temprano y fin tarde `2026-01-05 16:00:45` en los dos. Una tarea de 8 h con `CS_MSOB` al `2026-01-05 18:30` y fin de proyecto `18:00:45` conserva esos segundos. Donde la restricción sí mueve el minuto, los dos motores coinciden enteros.
 
-P de 8 h, sin real. B de 8 h, `TK_NotStart`, `act_start_date=2026-01-06 08:00:45`. Vínculo P→B `PR_FS` lag 0. El inicio por red de B cae en ese minuto.
+## H-7 — cerrado
 
-- `critical_rule="longest"`: P es crítica en la referencia y no en el rápido. Conductoras de B: referencia `('P',)`, rápido `()`. Inicio temprano de B: referencia `2026-01-06 08:00:00`, rápido `2026-01-06 08:00:45`. El resto (fechas, holguras, aproximaciones, fin de proyecto y el crítico de B) coincidió.
-- `critical_rule="float"`: el crítico coincidió. Siguen distintos el inicio temprano, solo en segundos, y las conductoras, `('P',)` contra `()`.
-- B hito de inicio (`TT_Mile`, duración 0) con el mismo real y el mismo vínculo, longest: otra vez P deja de ser crítica y las conductoras pasan de `('P',)` a `()`.
+Hito de inicio no iniciado, fin de proyecto `2026-01-05 15:30:45`. El test y la comparación directa dejan el fin tarde en `15:30:00` en los dos motores: el snap de `add_work` tira los segundos. Con predecesora, las conductoras siguen `('A',)` y el hito no es crítico por longest. El hito de fin, en el mismo calendario, conserva `15:30:45`.
 
-La referencia, en `_forward` y `_driving_ids` de `src/atlaspmo/engine/cpm.py`, usa el real solo si la actividad está iniciada o completa. El rápido publica ese real con `_keep` cuando el minuto coincide (`src/atlaspmo/engine/fast.py`; ya estaba en `73666eb`) y, desde `de37f8a`, `_driving` retorna `()` antes de leer `drive` si el real tiene segundos y el minuto iguala el ancla. En una no iniciada el ancla es `es`. En `73666eb` la lista era solo las aristas con `drive==1`, y ese flag se prende por igualdad de minutos. No reejecuté ese commit.
+## H-8 — menor
 
-No es un borrado ciego: con el real en otro minuto (`2026-01-05 09:15:45`) los dos motores coinciden. Una iniciada con segundos en el minuto del predecesor sigue en `()` en los dos lados, que es el arreglo de H-1. Una iniciada sin segundos conserva la conductora.
+El fin tarde todavía pierde los segundos del fin de proyecto en tres bordes que el ciclo 2 no listó. El minuto, la holgura total, la holgura libre, el crítico y las conductoras coinciden. R-360 pide igualdad al minuto. No bloquea.
 
-## H-5 — importante
+1. Duración 0 y `CS_MSO` o `CS_MSOB` cuyo snap atrás cae antes del fin de proyecto, pero el snap adelante no. `_constraints_leave_project_finish` usa el snap atrás cuando `duration==0`; la referencia compara el snap adelante. A completa con fin real `2026-01-05 18:00:45`. B hito de fin con `CS_MSOB` al `2026-01-05 18:30:45`. Fin tarde de B: referencia `18:00:45`, rápido `18:00:00`. Holgura total y libre 8 h, crítico falso, conductoras `()`. Lo mismo con una tarea o un `TT_Rsrc` de 0 h. Con `CS_MSO` a las `17:00` la restricción sí mueve el hito al `2026-01-06 08:00` y no hay diferencia.
+2. Actividad ya iniciada con `CS_MANDSTART` o `CS_MANDFIN`. El pase atrás no aplica esa restricción, pero el rápido la toma como si moviera el fin y no repone los segundos. B `TK_Active`, real de inicio `2026-01-05 08:00`, `CS_MANDFIN` al `2026-01-08 16:00`, sin sucesoras. Fin de proyecto `2026-01-05 16:00:45`. Fin tarde de B: referencia `16:00:45`, rápido `16:00:00`. Holgura 0, no crítica por longest, conductoras `()`.
+3. Sucesora que no ata el fin (`PR_SS` o `PR_SF`) y el fin tarde sigue siendo el de proyecto. `_finish_anchor` sale en cuanto hay alguna sucesora. A completa con fin `2026-01-08 16:00:45`. B hito de inicio en curso. S completa con fin `2026-01-08 16:00:00`. Vínculo B→S `PR_SF` lag 0. Fin tarde de B: referencia `16:00:45`, rápido `16:00:00`. Holgura 32 h, crítico falso, conductoras `()`.
 
-Ese borde no está cubierto. `test_actual_seconds_do_not_widen_the_longest_path_or_driving` solo arma `TK_Complete` y `TK_Active`. El diferencial solo pone `act_start` en esos dos estados. Los 500 ejemplos quedan verdes con H-4 abierto. Es un caso borde sin cubrir (sección 8.5 de `docs/MEGAPROMPT_v3.md`): el test afirma las conductoras y no alcanza la rama que las borra.
-
-## H-6 — menor
-
-Fin de proyecto `2026-01-05 16:00:45` (A completa) y B de 8 h sin sucesoras. La referencia conserva los segundos en el fin tarde. El rápido los trunca a `16:00:00` si hay un código de restricción que no mueve ese fin:
-
-- `CS_MEOB` al `2026-01-08 16:00`
-- `CS_MSOA` al `2026-01-05 08:00`, que no atrasa el inicio
-- `CS_MSO` sin fecha
-- `CS_ALAP` más `CS_MSOA` al `2026-01-05 08:00`: también el fin temprano, `16:00:45` contra `16:00:00`
-- `CS_ALAP` más `CS_MSO` sin fecha: igual en fin temprano y fin tarde
-
-`_finish_anchor` rechaza cualquier código distinto de vacío o `CS_ALAP`, aunque la referencia no use esa restricción en el pase atrás (sin fecha, cota posterior al fin de proyecto, o solo de avance). El ALAP copia después ese fin tarde ya truncado. El minuto, la holgura, el crítico y las conductoras coinciden. R-360 pide igualdad al minuto. No bloquea.
-
-Donde la restricción sí mueve, no vi desvío. `CS_MEO` a las `16:00` y a las `16:00:45` dejan el fin tarde en `16:00:00` en los dos motores: la cota sin segundos gana el mínimo. `CS_MSO` a las `16:00` y `CS_MEO` al `2026-01-08 16:00` corren a B, y el fin de proyecto ya no trae segundos.
-
-## H-7 — menor
-
-Hito de inicio no iniciado, sin sucesoras ni restricción, fin de proyecto dentro de la jornada (`2026-01-05 15:30:45`). La referencia ajusta el fin tarde con `add_work` y lo deja en `15:30:00`. El rápido lo vuelve a escribir con `:45`, porque el minuto coincide y `_finish_anchor` no mira el tipo. Con `CS_ALAP`, el fin temprano también: referencia `15:30:00`, rápido `15:30:45`.
-
-No pasa con el hito de fin (`TT_FinMile`), ni con el de inicio si el fin de proyecto es el cierre `16:00:45` (los dos caen al `2026-01-06 08:00`), ni con un hito de inicio ya en curso. Minuto, holgura, crítico y conductoras coinciden. No bloquea.
+Si además hay `CS_ALAP` sin sucesoras, el fin temprano copia ese fin tarde ya truncado. En las redes al azar se vio (actividad 2 de la semilla 7, red 60): `15:00:30` contra `15:00:00` en fin temprano y fin tarde, holgura 0, no crítica, conductoras `()`. De las 458 redes, 11 diferencias fueron solo estos segundos.
 
 ## Lo demás que coincidió
 
-Rollup WBS y LOE con un hijo completo a las `16:00:45`. Fecha de corte con segundos. Retained y progress override fuera de secuencia. ALAP con sucesora. 200 redes chicas, semilla 1, reales solo si el estado los usa: 194 idénticas al datetime y 6 solo con segundos de más o de menos en un fin, la misma familia que H-6 y H-7. En esas 200 no hubo diferencias de minuto, holgura, aproximaciones, crítico ni conductoras. El generador a veces sortea lag vacío y el motor no tiende ese vínculo. H-4, H-6 y H-7 no dependen de eso.
-
-No hay otros hallazgos abiertos.
+Rollup WBS y LOE con un hijo completo a las `16:00:45` y otro no iniciado con real `08:00:45`: el hijo conserva la conductora, el resumen no es crítico y las fechas coinciden, segundos incluidos. Fecha de corte con segundos. Microsegundos en un real no iniciado. Dos predecesoras. `actual_dates` con las dos fechas reales, que la referencia trata como terminada. No hay otros hallazgos abiertos.
