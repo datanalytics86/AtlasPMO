@@ -144,3 +144,9 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-362 | E7 | camino rápido, ALAP antes de la holgura libre, restricciones, avance, hitos, LOE, WBS, horizonte y turno solapado | tests/test_e7_match.py | schedule_cpm_reference |
 | R-363 | E7 | los tests de mano del motor siguen pasando con el motor rápido por defecto | tests/test_cpm.py | casos a mano de CPM |
 | R-364 | E7 | cpm_30k y dcma_30k medidos a 30 000; se activan solo si cumplen | tests/perf/test_seccion11.py | gen_scale.py en este equipo |
+| R-370 | E8 | clasificación rápida idéntica a la referencia en redes chicas | tests/property/test_e8_differential.py | classify_links con engine=reference, hypothesis, perfil qa |
+| R-371 | E8 | la confirmación enmascara el CSR y no reconstruye el cronograma | tests/test_e8_mask.py | contador o mock: schedule_cpm una sola vez |
+| R-372 | E8 | la bisección y la validación conjunta de ADR-016 no cambian | tests/test_e2_joint.py | reprogramación del CPM de referencia |
+| R-373 | E8 | protecciones y filtro por origen sin cambio de resultado | tests/test_e2_guards.py | casos positivo y negativo |
+| R-374 | E8 | pase enmascarado, y el cono si existe, iguales al pase completo al minuto | tests/test_e8_mask.py | schedule_cpm_fast sobre el cronograma ya recortado |
+| R-375 | E8 | redundancia_30k medida a 30 000; se activa solo si baja de 180 s | tests/perf/test_seccion11.py | gen_scale.py en este equipo |

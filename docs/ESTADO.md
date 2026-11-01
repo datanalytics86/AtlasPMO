@@ -9,9 +9,22 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 | Etapa | Estado |
 |---|---|
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
-| E8 | pendiente |
+| E8 | en curso, ciclo 1. Contrato en `docs/qa/E8/QC1_contrato.md`. Brecha B-02. |
 | E9 | pendiente |
 | E10 | pendiente |
+
+### E8 — plan (ciclo 1)
+
+La clasificación no cambia. Cambian solo las reprogramaciones de la confirmación.
+
+- El filtro por origen (`_candidate_ids`, `_origin_candidates`) no se toca, salvo el diferencial.
+- `_confirm` y `_join` siguen la bisección y la validación conjunta de ADR-016.
+- `_events_stay_covered` sigue rechazando un inicio o un fin que se queda sin vínculo.
+- Cada prueba de `_unchanged` enmascara aristas del CSR ya compilado (ADR-021). No reconstruye `Schedule` ni recompila calendarios.
+- La comparación sigue siendo la de `_same`: fechas y holgura total y libre, al minuto. Puede leer los arrays, sin empaquetar un `CpmResult` por prueba.
+- `engine="reference"` conserva el camino actual y es el oráculo.
+- Si un pase completo de 30 000 no cabe en 180 s, el cono afectado reemplaza al pase completo solo después de un test que lo iguale al pase completo.
+- `seccion11.toml` y `baseline.json` no se tocan en este ciclo. La meta `redundancia_30k` se activa al cerrar, y solo si la medición a 30 000 queda bajo 180 s.
 
 Línea base de referencia en este equipo: lectura 0,655 s; CPM 9,892 s; DCMA 10,127 s; redundancia y Monte Carlo más de 30 min.
 

@@ -204,6 +204,18 @@ Decisión de E7, sin pregunta (sección 0.2 del megaprompt v3).
 
 La comparación con P6 sigue en `[VALIDAR]`. Este ADR no la da por hecha.
 
+## ADR-021 — Confirmación de redundancia sobre el CSR compilado
+
+Decisión de E8, sin pregunta (sección 10.3 del megaprompt v3 y ADR-016).
+
+- El filtro de candidatos por origen no se reescribe.
+- La bisección y la validación conjunta siguen en `_confirm` y `_join`. Un subconjunto que pasa solo no se une a otro hasta que el conjunto final, quitado entero, deja el CPM quieto.
+- Quitar vínculos en la confirmación rápida es enmascarar aristas del CSR ya compilado. No se arma otro `Schedule` ni se recompilan los calendarios. `engine="reference"` sigue recortando la tupla de vínculos y llamando al motor de referencia: ese camino es el oráculo.
+- La máscara guarda el `task_pred_id` de cada arista. `pred_ids` sigue siendo el id de la actividad predecesora, porque dos vínculos del mismo par no se distinguen solo con ese id.
+- La comparación de la confirmación sigue siendo la de `_same`: fechas y holguras al minuto. Leer los arrays basta. Empaquetar un `CpmResult` en cada prueba no es parte del contrato.
+- Un cono de sucesoras o predecesoras solo sustituye al pase completo si un test lo iguala, al minuto, con el pase completo. Si el proyecto se mueve, el vínculo no es redundante.
+- La meta `redundancia_30k` no entra en `docs/qa/seccion11.toml` hasta medirla bajo 180 s a 30 000 actividades en este equipo.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió
