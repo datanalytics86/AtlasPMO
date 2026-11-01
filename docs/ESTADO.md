@@ -9,7 +9,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 | Etapa | Estado |
 |---|---|
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
-| E8 | en curso, ciclo 1. Contrato en `docs/qa/E8/QC1_contrato.md`. Brecha B-02. |
+| E8 | en curso, ciclo 1. qa-spec rechazó el primer contrato (`docs/qa/E8/qa-spec.md`). El contrato vigente es el reemplazo en `docs/qa/E8/QC1_contrato.md`. Brecha B-02. |
 | E9 | pendiente |
 | E10 | pendiente |
 
