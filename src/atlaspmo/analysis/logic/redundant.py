@@ -87,9 +87,7 @@ def classify_links(
             if forced_ids:
                 forced = [link for link in candidates if (link.task_pred_id or "") in forced_ids]
                 pool = [link for link in candidates if (link.task_pred_id or "") not in forced_ids]
-        confirmed, rejected = _confirm_held(
-            schedule, base, pool, chosen, compiled, base_minutes
-        )
+        confirmed, rejected = _confirm_held(schedule, base, pool, chosen, compiled, base_minutes)
         rejected.extend(forced)
     else:
         confirmed, rejected = [], candidates
@@ -410,9 +408,7 @@ def _confirm(
     if len(candidates) == 1:
         return [], list(candidates)
     mid = len(candidates) // 2
-    left_ok, left_bad = _confirm(
-        schedule, base, candidates[:mid], options, compiled, base_minutes
-    )
+    left_ok, left_bad = _confirm(schedule, base, candidates[:mid], options, compiled, base_minutes)
     right_ok, right_bad = _confirm(
         schedule, base, candidates[mid:], options, compiled, base_minutes
     )

@@ -393,6 +393,7 @@ def _arrays(
             found = len(rel_index)
             rel_index[ident] = found
         return found
+
     task_ids: list[str] = []
     labels: list[str] = []
     activities: list[Activity] = []
