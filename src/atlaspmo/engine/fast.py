@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 
 import numpy as np
@@ -26,7 +26,7 @@ from atlaspmo.engine.cpm import (
 )
 from atlaspmo.engine.options import EngineOptions
 from atlaspmo.io.validate import validate_schedule
-from atlaspmo.model.schedule import Activity, Schedule
+from atlaspmo.model.schedule import Activity, Relationship, Schedule
 from atlaspmo.numeric.intervals import UnsupportedCalendar, build_tables, from_minute, to_minute
 from atlaspmo.numeric.kernels import GROW, LIMIT, execute
 
@@ -54,6 +54,8 @@ LAST: dict[str, object] = {
     "pass_s": 0.0,
     "pack_s": 0.0,
     "cached": False,
+    "mask_passes": 0,
+    "calendar_builds": 0,
 }
 
 
@@ -140,6 +142,10 @@ class Compiled:
         tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]
         | None
     ) = None
+    # Relationship codes parallel to the predecessor and successor edges.
+    pred_rel: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
+    succ_rel: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
+    rel_index: dict[str, int] = field(default_factory=dict)
 
 
 def schedule_cpm_fast(schedule: Schedule, options: EngineOptions | None = None) -> CpmResult:
@@ -371,11 +377,22 @@ def _arrays(
     pred_lag: list[int] = []
     pred_lag_cal: list[int] = []
     pred_ids: list[str] = []
+    pred_rel: list[int] = []
     succ_ptr = [0]
     succ_to: list[int] = []
     succ_type: list[int] = []
     succ_lag: list[int] = []
     succ_lag_cal: list[int] = []
+    succ_rel: list[int] = []
+    rel_index: dict[str, int] = {}
+
+    def rel_code(link: Relationship) -> int:
+        ident = link.task_pred_id or ""
+        found = rel_index.get(ident)
+        if found is None:
+            found = len(rel_index)
+            rel_index[ident] = found
+        return found
     task_ids: list[str] = []
     labels: list[str] = []
     activities: list[Activity] = []
@@ -421,6 +438,7 @@ def _arrays(
                 _lag_index(options, nodes[link.pred_task_id or ""], node, project, elapsed, intern)
             )
             pred_ids.append(link.pred_task_id or "")
+            pred_rel.append(rel_code(link))
         pred_ptr.append(len(pred_from))
         for link in node.succs:
             succ_to.append(place[link.task_id or ""])
@@ -430,6 +448,7 @@ def _arrays(
             succ_lag_cal.append(
                 _lag_index(options, node, nodes[link.task_id or ""], project, elapsed, intern)
             )
+            succ_rel.append(rel_code(link))
         succ_ptr.append(len(succ_to))
     scan = [place[task_id] for task_id in nodes]
     max_lag = 0
@@ -489,6 +508,9 @@ def _arrays(
         succ_type=np.asarray(succ_type, dtype=np.uint8),
         succ_lag=np.asarray(succ_lag, dtype=np.int64),
         succ_lag_cal=np.asarray(succ_lag_cal, dtype=np.int64),
+        pred_rel=np.asarray(pred_rel, dtype=np.int64),
+        succ_rel=np.asarray(succ_rel, dtype=np.int64),
+        rel_index=rel_index,
         es=np.empty(n, dtype=np.int64),
         ef=np.empty(n, dtype=np.int64),
         ls=np.empty(n, dtype=np.int64),
@@ -587,6 +609,8 @@ def _ensure(compiled: Compiled) -> int:
     for _ in range(6):
         start = _shift_day(compiled.min_day, -days)
         end = _shift_day(compiled.max_day, days)
+        builds = LAST["calendar_builds"]
+        LAST["calendar_builds"] = (builds if isinstance(builds, int) else 0) + 1
         compiled.tables = build_tables(compiled.clocks, start, end)
         code = _invoke(compiled)
         if code in (0, LIMIT):
@@ -943,3 +967,306 @@ def _attach_rollup(
             compiled.rule_name,
             on_longest,
         )
+
+
+def cached_compiled(schedule: Schedule, options: EngineOptions | None = None) -> Compiled | None:
+    """Return the arrays cached for this schedule, if the last compile stored them."""
+    chosen, _notes = _normalize(options or EngineOptions())
+    return _CACHE.get(_key(schedule, chosen))
+
+
+# Forward constraints that can hold an early date after the driving link is gone.
+_PINNING = np.array([1, 2, 4, 5, 7, 8, 9], dtype=np.uint8)
+
+
+def links_that_must_move(compiled: Compiled) -> frozenset[str]:
+    """Relationship ids whose removal must move a successor early date.
+
+    A link qualifies only when it is the sole driving predecessor, the successor
+    early date is that logic date, and the date sits strictly after the snapped
+    data date. An actual, a rollup, or a constraint that can pin the date stays
+    out: those links still go through the masked pass. This never confirms a link.
+    """
+    if compiled.tables is None or compiled.empty is not None:
+        return frozenset()
+    if compiled.pred_rel.shape != compiled.drive.shape:
+        return frozenset()
+    if compiled.pred_rel.shape != compiled.pred_from.shape:
+        return frozenset()
+    count = int(compiled.es.shape[0])
+    if count == 0 or len(compiled.activities) != count:
+        return frozenset()
+    width = int(compiled.pred_ptr.shape[0] - 1)
+    if width != count:
+        return frozenset()
+    owners = np.repeat(np.arange(width, dtype=np.int64), np.diff(compiled.pred_ptr))
+    if owners.shape[0] != compiled.drive.shape[0]:
+        return frozenset()
+    driving = compiled.drive == 1
+    drive_counts = np.bincount(owners[driving], minlength=width)
+    driver_edge = np.full(width, -1, dtype=np.int64)
+    driver_edge[owners[driving]] = np.flatnonzero(driving)
+    pinned = np.isin(compiled.cstr_a, _PINNING) | np.isin(compiled.cstr_b, _PINNING)
+    rollup = np.fromiter(
+        (item.task_type in {"TT_LOE", "TT_WBS"} for item in compiled.activities),
+        dtype=np.bool_,
+        count=count,
+    )
+    eligible = np.flatnonzero(
+        (drive_counts == 1)
+        & (compiled.done == 0)
+        & (compiled.finished == 0)
+        & (compiled.act_start < 0)
+        & ~pinned
+        & ~rollup
+    )
+    if eligible.size == 0:
+        return frozenset()
+    id_of = {code: ident for ident, code in compiled.rel_index.items()}
+    origins: dict[int, int | None] = {}
+    must: list[str] = []
+    for index in eligible:
+        clock = int(compiled.cal[index])
+        if clock not in origins:
+            origins[clock] = _forward_origin(compiled, clock)
+        origin = origins[clock]
+        if origin is None or int(compiled.es[index]) <= origin:
+            continue
+        edge = int(driver_edge[index])
+        if edge < 0:
+            continue
+        ident = id_of.get(int(compiled.pred_rel[edge]), "")
+        if ident:
+            must.append(ident)
+    return frozenset(must)
+
+
+def _forward_origin(compiled: Compiled, clock: int) -> int | None:
+    """Data date snapped forward on one compiled clock. Same rule as the kernel."""
+    tables = compiled.tables
+    if tables is None:
+        return None
+    starts, ends, _cum, _cum_end, off, _base_cum, window_lo, window_hi = tables
+    minute = int(compiled.data_date)
+    if minute < int(window_lo) or minute > int(window_hi):
+        return None
+    lo = int(off[clock])
+    hi = int(off[clock + 1])
+    if hi <= lo:
+        return None
+    relative = int(np.searchsorted(starts[lo:hi], minute, side="right")) - 1
+    if relative >= 0 and minute < int(ends[lo + relative]):
+        return minute
+    nxt = lo + int(np.searchsorted(starts[lo:hi], minute, side="left"))
+    if nxt < hi:
+        return int(starts[nxt])
+    return None
+
+
+def successor_argmin_ids(compiled: Compiled) -> tuple[frozenset[str], ...] | None:
+    """Per activity, the successor links that tie for the smallest free-float slack.
+
+    None means the slack could not be read, so the caller must not skip the kernel.
+    """
+    if compiled.tables is None or compiled.succ_rel.shape != compiled.succ_to.shape:
+        return None
+    id_of = {code: ident for ident, code in compiled.rel_index.items()}
+    groups: list[frozenset[str]] = []
+    count = int(compiled.es.shape[0])
+    for index in range(count):
+        start = int(compiled.succ_ptr[index])
+        stop = int(compiled.succ_ptr[index + 1])
+        if stop == start:
+            continue
+        clock = int(compiled.cal[index])
+        best: int | None = None
+        winners: list[str] = []
+        for edge in range(start, stop):
+            kind = int(compiled.succ_type[edge])
+            succ = int(compiled.succ_to[edge])
+            if kind == 1:
+                left, right = int(compiled.es[index]), int(compiled.es[succ])
+            elif kind == 2:
+                left, right = int(compiled.ef[index]), int(compiled.ef[succ])
+            elif kind == 3:
+                left, right = int(compiled.es[index]), int(compiled.ef[succ])
+            else:
+                left, right = int(compiled.ef[index]), int(compiled.es[succ])
+            opened = _cumulative_at(compiled, clock, left)
+            closed = _cumulative_at(compiled, clock, right)
+            if opened is None or closed is None:
+                return None
+            slack = (closed - opened) - int(compiled.succ_lag[edge])
+            ident = id_of.get(int(compiled.succ_rel[edge]), "")
+            if not ident:
+                return None
+            if best is None or slack < best:
+                best = slack
+                winners = [ident]
+            elif slack == best:
+                winners.append(ident)
+        if winners:
+            groups.append(frozenset(winners))
+    return tuple(groups)
+
+
+def _cumulative_at(compiled: Compiled, clock: int, minute: int) -> int | None:
+    """Working minutes at this instant. Same placement as the kernel's cumulative."""
+    tables = compiled.tables
+    if tables is None:
+        return None
+    starts, ends, cum, cum_end, off, base_cum, window_lo, window_hi = tables
+    if minute < int(window_lo) or minute > int(window_hi):
+        return None
+    lo = int(off[clock])
+    hi = int(off[clock + 1])
+    if hi <= lo:
+        return int(base_cum[clock])
+    relative = int(np.searchsorted(starts[lo:hi], minute, side="right")) - 1
+    if relative < 0:
+        return int(base_cum[clock])
+    index = lo + relative
+    if minute < int(ends[index]):
+        return int(cum[index]) + (minute - int(starts[index]))
+    return int(cum_end[index])
+
+
+def replay_masked(compiled: Compiled, drop_ids: frozenset[str]) -> np.ndarray | None:
+    """Minute rows es, ef, ls, lf, total float, free float with those links removed.
+
+    The compiled edge lists, the published minute arrays and the calendar tables stay
+    as they are. None means the pass could not run, so the caller keeps the reference.
+    """
+    if compiled.tables is None or compiled.empty is not None:
+        return None
+    if compiled.pred_rel.shape != compiled.pred_from.shape:
+        return None
+    if compiled.succ_rel.shape != compiled.succ_to.shape:
+        return None
+    missing = [item for item in drop_ids if item not in compiled.rel_index]
+    if missing:
+        return None
+    passes = LAST["mask_passes"]
+    LAST["mask_passes"] = (passes if isinstance(passes, int) else 0) + 1
+    codes = [compiled.rel_index[item] for item in drop_ids]
+    pred_ptr, pred_from, pred_type, pred_lag, pred_lag_cal = _mask_csr(
+        compiled.pred_ptr,
+        compiled.pred_rel,
+        codes,
+        compiled.pred_from,
+        compiled.pred_type,
+        compiled.pred_lag,
+        compiled.pred_lag_cal,
+    )
+    succ_ptr, succ_to, succ_type, succ_lag, succ_lag_cal = _mask_csr(
+        compiled.succ_ptr,
+        compiled.succ_rel,
+        codes,
+        compiled.succ_to,
+        compiled.succ_type,
+        compiled.succ_lag,
+        compiled.succ_lag_cal,
+    )
+    count = int(compiled.es.shape[0])
+    es = np.empty(count, dtype=np.int64)
+    ef = np.empty(count, dtype=np.int64)
+    ls = np.empty(count, dtype=np.int64)
+    lf = np.empty(count, dtype=np.int64)
+    ef_pre = np.empty(count, dtype=np.int64)
+    remain = np.full(count, -1, dtype=np.int64)
+    total_f = np.empty(count, dtype=np.int64)
+    free_f = np.empty(count, dtype=np.int64)
+    critical = np.zeros(count, dtype=np.uint8)
+    drive = np.zeros(int(pred_from.shape[0]), dtype=np.uint8)
+    done = np.zeros(count, dtype=np.uint8)
+    on_long = np.zeros(count, dtype=np.uint8)
+    viol_ms_f = np.zeros(count, dtype=np.uint8)
+    viol_mf_f = np.zeros(count, dtype=np.uint8)
+    viol_ms_b = np.zeros(count, dtype=np.uint8)
+    viol_mf_b = np.zeros(count, dtype=np.uint8)
+    logic_es = np.empty(count, dtype=np.int64)
+    logic_ef = np.empty(count, dtype=np.int64)
+    logic_ls = np.empty(count, dtype=np.int64)
+    logic_lf = np.empty(count, dtype=np.int64)
+    alap_blocked = np.zeros(count, dtype=np.uint8)
+    starts, ends, cum, cum_end, off, base_cum, window_lo, window_hi = compiled.tables
+    code = execute(
+        compiled.cal,
+        compiled.duration,
+        compiled.started,
+        compiled.finished,
+        compiled.act_start,
+        compiled.act_end,
+        compiled.task_type,
+        compiled.cstr_a,
+        compiled.cstr_a_at,
+        compiled.cstr_b,
+        compiled.cstr_b_at,
+        pred_ptr,
+        pred_from,
+        pred_type,
+        pred_lag,
+        pred_lag_cal,
+        succ_ptr,
+        succ_to,
+        succ_type,
+        succ_lag,
+        succ_lag_cal,
+        starts,
+        ends,
+        cum,
+        cum_end,
+        off,
+        base_cum,
+        window_lo,
+        window_hi,
+        compiled.data_date,
+        compiled.progress,
+        compiled.float_kind,
+        compiled.critical_minutes,
+        compiled.rule,
+        es,
+        ef,
+        ls,
+        lf,
+        ef_pre,
+        remain,
+        total_f,
+        free_f,
+        critical,
+        drive,
+        done,
+        on_long,
+        viol_ms_f,
+        viol_mf_f,
+        viol_ms_b,
+        viol_mf_b,
+        logic_es,
+        logic_ef,
+        logic_ls,
+        logic_lf,
+        alap_blocked,
+    )
+    if code != 0:
+        return None
+    return np.stack((es, ef, ls, lf, total_f, free_f))
+
+
+def _mask_csr(
+    ptr: np.ndarray,
+    rel: np.ndarray,
+    codes: list[int],
+    *columns: np.ndarray,
+) -> tuple[np.ndarray, ...]:
+    """Drop edges whose relationship code is in ``codes``. The inputs are not written."""
+    if rel.size == 0 or not codes:
+        return (ptr, *columns)
+    keep = ~np.isin(rel, np.asarray(codes, dtype=np.int64))
+    if bool(keep.all()):
+        return (ptr, *columns)
+    width = int(ptr.shape[0] - 1)
+    owner = np.repeat(np.arange(width, dtype=np.int64), np.diff(ptr))
+    counts = np.bincount(owner[keep], minlength=width)
+    new_ptr = np.zeros(width + 1, dtype=np.int64)
+    np.cumsum(counts, out=new_ptr[1:])
+    return (new_ptr, *(column[keep] for column in columns))
