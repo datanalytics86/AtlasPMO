@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from atlaspmo.calendars.worktime import CalendarLimitError, WorkCalendar
-from atlaspmo.engine.cpm import build_clocks
+from atlaspmo.engine.cpm import build_clocks, schedule_cpm
 from atlaspmo.model.schedule import Activity, Assignment, Schedule
 
 _CODES = (
@@ -26,9 +26,9 @@ _PHYS = "CP_Phys mayor que 1 se lee como porcentaje de 0 a 100."
 _UNITS = "CP_Units queda no evaluable: no hay un campo de cantidad real cargado."
 _CLOCK = "Sin calendario laboral: el PV usa tiempo de reloj."
 _CURVE = "La tabla scurve tiene un solo punto, en la fecha de corte."
-_PHASED = (
-    "fact_timephased guarda la duración remanente en el balde corte. No es una curva por periodo."
-)
+_SPREAD = "La distribución es lineal en tiempo laboral."
+_NO_ASSIGN = "No hay asignación."
+_UNPLACED = "Hay duración remanente sin fecha temprana: no se reparte."
 
 
 @dataclass(frozen=True)
@@ -46,12 +46,17 @@ class EvmOutcome:
     wbs: tuple[dict[str, object], ...]
     resources: tuple[dict[str, object], ...]
     scurve: tuple[dict[str, object], ...]
+    days: tuple[dict[str, object], ...]
+    weeks: tuple[dict[str, object], ...]
+    months: tuple[dict[str, object], ...]
+    curve: tuple[dict[str, object], ...]
+    histogram: tuple[dict[str, object], ...]
     approximations: tuple[str, ...]
 
 
 def earned_value(schedule: Schedule) -> EvmOutcome:
     """PV, EV and AC at the single data date, plus linear earned schedule."""
-    notes = [_CODES, _LINEAR, _LIMIT, _ES, _CURVE, _PHASED, *schedule.parse_notes]
+    notes = [_CODES, _LINEAR, _LIMIT, _ES, _CURVE, _SPREAD, *schedule.parse_notes]
     clocks, clock_notes = build_clocks(schedule)
     notes.extend(clock_notes)
     data_date, date_note = _data_date(schedule)
@@ -70,6 +75,7 @@ def earned_value(schedule: Schedule) -> EvmOutcome:
     es_hours, at_hours, spi_t, ieac_t = _earned_schedule(
         schedule, rows, clocks, data_date, ev, bac, notes
     )
+    phased = _time_phased(schedule, clocks, notes)
     return EvmOutcome(
         pv=pv,
         ev=ev,
@@ -83,7 +89,13 @@ def earned_value(schedule: Schedule) -> EvmOutcome:
         activities=tuple(rows),
         wbs=tuple(_wbs(rows)),
         resources=tuple(_resources(schedule)),
+        # test_evm.py still requires this single data-date point.
         scurve=({"point": "corte", "pv": pv, "ev": ev, "ac": ac},),
+        days=phased.days,
+        weeks=phased.weeks,
+        months=phased.months,
+        curve=phased.curve,
+        histogram=phased.histogram,
         approximations=tuple(dict.fromkeys(notes)),
     )
 
@@ -112,7 +124,6 @@ def _activity_row(
         "ev": ev,
         "ac": ac,
         "pct": pct,
-        "spread_hours": activity.remain_drtn_hr_cnt,
     }
 
 
@@ -313,6 +324,167 @@ def _resources(schedule: Schedule) -> list[dict[str, object]]:
             continue
         totals[item.rsrc_id] = totals.get(item.rsrc_id, 0.0) + item.target_qty
     return [{"rsrc_id": key, "target_qty": value} for key, value in sorted(totals.items())]
+
+
+@dataclass(frozen=True)
+class _Phased:
+    days: tuple[dict[str, object], ...]
+    weeks: tuple[dict[str, object], ...]
+    months: tuple[dict[str, object], ...]
+    curve: tuple[dict[str, object], ...]
+    histogram: tuple[dict[str, object], ...]
+
+
+def _time_phased(
+    schedule: Schedule,
+    clocks: dict[str, WorkCalendar],
+    notes: list[str],
+) -> _Phased:
+    if not schedule.assignments:
+        notes.append(_NO_ASSIGN)
+    anchors = _anchors(schedule)
+    placed: list[tuple[str, str, list[tuple[date, int]]]] = []
+    missed = False
+    for activity in schedule.activities:
+        hours = activity.remain_drtn_hr_cnt
+        if hours is None or hours <= 0 or activity.task_id is None:
+            continue
+        clock = clocks.get(activity.clndr_id or "")
+        start = anchors.get(activity.task_id)
+        if clock is None or start is None:
+            missed = True
+            continue
+        try:
+            pieces = _slice_days(clock, start, hours)
+        except CalendarLimitError:
+            missed = True
+            continue
+        placed.append((activity.task_id, activity.task_code or activity.task_id, pieces))
+    if missed:
+        notes.append(_UNPLACED)
+    return _Phased(
+        days=_day_rows(placed),
+        weeks=_period_rows(placed, "week"),
+        months=_period_rows(placed, "month"),
+        curve=_curve(placed),
+        histogram=_histogram(schedule, placed),
+    )
+
+
+def _anchors(schedule: Schedule) -> dict[str, datetime]:
+    placed = schedule_cpm(schedule)
+    return {
+        task_id: row.early_start
+        for task_id, row in placed.by_id.items()
+        if row.early_start is not None
+    }
+
+
+def _slice_days(clock: WorkCalendar, start: datetime, hours: float) -> list[tuple[date, int]]:
+    """Working minutes of ``hours`` forward from ``start``, split by calendar day."""
+    left = int(round(hours * 60))
+    cursor = clock.add_work(start, 0)
+    pieces: list[tuple[date, int]] = []
+    steps = 0
+    while left > 0:
+        steps += 1
+        if steps > 100_000:
+            raise CalendarLimitError("reparto")
+        day = cursor.date()
+        midnight = datetime(day.year, day.month, day.day) + timedelta(days=1)
+        available = clock.work_between(cursor, midnight)
+        if available <= 0:
+            nxt = clock.add_work(midnight, 0)
+            if nxt <= cursor:
+                raise CalendarLimitError("reparto")
+            cursor = nxt
+            continue
+        take = min(left, available)
+        if pieces and pieces[-1][0] == day:
+            pieces[-1] = (day, pieces[-1][1] + take)
+        else:
+            pieces.append((day, take))
+        left -= take
+        cursor = clock.add_work(cursor, take)
+    return pieces
+
+
+def _day_rows(
+    placed: list[tuple[str, str, list[tuple[date, int]]]],
+) -> tuple[dict[str, object], ...]:
+    rows = [
+        {"task_code": code, "bucket": day.isoformat(), "hours": minutes / 60}
+        for _task_id, code, pieces in placed
+        for day, minutes in pieces
+    ]
+    rows.sort(key=lambda row: (str(row["task_code"]), str(row["bucket"])))
+    return tuple(rows)
+
+
+def _period_rows(
+    placed: list[tuple[str, str, list[tuple[date, int]]]],
+    grain: str,
+) -> tuple[dict[str, object], ...]:
+    totals: dict[tuple[str, str], int] = {}
+    for _task_id, code, pieces in placed:
+        for day, minutes in pieces:
+            bucket = _iso_week(day) if grain == "week" else f"{day.year:04d}-{day.month:02d}"
+            key = (code, bucket)
+            totals[key] = totals.get(key, 0) + minutes
+    return tuple(
+        {"task_code": code, "bucket": bucket, "hours": minutes / 60}
+        for (code, bucket), minutes in sorted(totals.items())
+    )
+
+
+def _curve(
+    placed: list[tuple[str, str, list[tuple[date, int]]]],
+) -> tuple[dict[str, object], ...]:
+    by_day: dict[date, int] = {}
+    for _task_id, _code, pieces in placed:
+        for day, minutes in pieces:
+            by_day[day] = by_day.get(day, 0) + minutes
+    running = 0
+    rows: list[dict[str, object]] = []
+    for day in sorted(by_day):
+        running += by_day[day]
+        rows.append({"bucket": day.isoformat(), "cumulative": running / 60})
+    return tuple(rows)
+
+
+def _histogram(
+    schedule: Schedule,
+    placed: list[tuple[str, str, list[tuple[date, int]]]],
+) -> tuple[dict[str, object], ...]:
+    if not schedule.assignments:
+        return ()
+    by_task = {task_id: pieces for task_id, _code, pieces in placed}
+    totals: dict[tuple[str, str], float] = {}
+    for item in schedule.assignments:
+        if item.rsrc_id is None or item.target_qty is None or item.task_id is None:
+            continue
+        pieces = by_task.get(item.task_id, [])
+        whole = sum(minutes for _day, minutes in pieces)
+        if whole <= 0:
+            continue
+        given = 0.0
+        for index, (day, minutes) in enumerate(pieces):
+            if index == len(pieces) - 1:
+                qty = item.target_qty - given
+            else:
+                qty = item.target_qty * minutes / whole
+                given += qty
+            key = (item.rsrc_id, day.isoformat())
+            totals[key] = totals.get(key, 0.0) + qty
+    return tuple(
+        {"rsrc_id": rsrc_id, "bucket": bucket, "qty": qty}
+        for (rsrc_id, bucket), qty in sorted(totals.items())
+    )
+
+
+def _iso_week(day: date) -> str:
+    iso = day.isocalendar()
+    return f"{iso.year}-W{iso.week:02d}"
 
 
 def _clamp(value: float) -> float:

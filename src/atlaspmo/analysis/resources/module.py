@@ -61,10 +61,21 @@ class EvmModule:
                 "wbs": pd.DataFrame(list(outcome.wbs)),
                 "resources": pd.DataFrame(list(outcome.resources)),
                 "scurve": pd.DataFrame(list(outcome.scurve)),
+                "days": _frame(outcome.days, ("task_code", "bucket", "hours")),
+                "weeks": _frame(outcome.weeks, ("task_code", "bucket", "hours")),
+                "months": _frame(outcome.months, ("task_code", "bucket", "hours")),
+                "curve": _frame(outcome.curve, ("bucket", "cumulative")),
+                "histogram": _frame(outcome.histogram, ("rsrc_id", "bucket", "qty")),
             },
             approximations=list(outcome.approximations),
             metadata=metadata,
         )
+
+
+def _frame(rows: tuple[dict[str, object], ...], columns: tuple[str, ...]) -> pd.DataFrame:
+    if not rows:
+        return pd.DataFrame(columns=list(columns))
+    return pd.DataFrame(list(rows), columns=list(columns))
 
 
 def _metric(value: float | None) -> Metric:
