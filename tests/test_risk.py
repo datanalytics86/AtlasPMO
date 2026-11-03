@@ -11,7 +11,7 @@ from atlaspmo.analysis.risk.sample import iman_conover, sample_duration
 from atlaspmo.engine.cpm import schedule_cpm
 from test_cpm import THU_16, TUE_16, WED_16, _link, _load, _task
 
-_NUMBA = "Monte Carlo en Python puro. numba no se cargó en esta fase."
+_NUMBA = "Monte Carlo corre en numba sobre los arrays del motor rápido."
 
 
 def test_zero_width_returns_mode_without_drawing():

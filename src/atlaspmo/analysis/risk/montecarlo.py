@@ -1,4 +1,4 @@
-"""Pure-Python Monte Carlo on the same CPM. numba is not loaded."""
+"""Monte Carlo on the compiled CPM arrays, with a reference fallback."""
 
 from __future__ import annotations
 
@@ -8,13 +8,15 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 
 from atlaspmo.analysis.risk.config import RiskConfig
+from atlaspmo.analysis.risk.fastloop import reset_trace, run_iterations, tornado_rows
 from atlaspmo.analysis.risk.sample import iman_conover, sample_duration
-from atlaspmo.calendars.worktime import CalendarLimitError, WorkCalendar
+from atlaspmo.calendars.worktime import WorkCalendar
 from atlaspmo.engine.cpm import CpmResult, build_clocks, schedule_cpm
 from atlaspmo.engine.options import EngineOptions
 from atlaspmo.model.schedule import Schedule
 
-_NUMBA = "Monte Carlo en Python puro. numba no se cargó en esta fase."
+TRACE: dict[str, object] = {}
+
 _RANGES = "Los rangos de duración son configuración del usuario, no columnas del XER."
 _PERCENTILE = "P50, P80 y P90 usan el índice ceil(p * n) - 1 sobre las fechas ordenadas."
 _EVENTS = "Los eventos de riesgo suman horas al remanente. No son un campo del XER."
@@ -65,8 +67,9 @@ class RiskOutcome:
 
 
 def run_risk(schedule: Schedule, config: RiskConfig) -> RiskOutcome:
-    """Sample durations, reschedule, and compare with the deterministic CPM."""
-    notes = [_NUMBA, _RANGES, _PERCENTILE, *schedule.parse_notes]
+    """Sample durations on the compiled CPM and compare with the deterministic pass."""
+    reset_trace(TRACE)
+    notes = [_RANGES, _PERCENTILE, *schedule.parse_notes]
     if config.iterations < 1:
         notes.append("Las iteraciones deben ser al menos 1.")
         return _empty(notes)
@@ -81,42 +84,25 @@ def run_risk(schedule: Schedule, config: RiskConfig) -> RiskOutcome:
     draws = _apply_correlation(draws, ranged, config, rng, notes)
     if config.events:
         notes.append(_EVENTS)
-    finishes: list[datetime] = []
-    durations: dict[str, list[float]] = {}
-    critical_hits: dict[str, int] = {}
-    finish_by_code: dict[str, list[datetime]] = {}
-    seen = 0
     anchor, anchor_note = _anchor(schedule, base, clocks)
     if anchor_note:
         notes.append(anchor_note)
-    project_hours: list[float] = []
-    for index in range(config.iterations):
-        chosen = {code: values[index] for code, values in draws.items()}
-        _apply_events(chosen, config, rng, notes)
-        result = schedule_cpm(_with_hours(schedule, chosen), options)
-        seen += 1
-        for task_id, item in result.by_id.items():
-            code = _code(schedule, task_id)
-            if code is None:
-                continue
-            finish_by_code.setdefault(code, []).append(item.early_finish)
-            if item.critical:
-                critical_hits[code] = critical_hits.get(code, 0) + 1
-        if result.project_finish is None or anchor is None or base.project_finish is None:
-            continue
-        try:
-            delta = anchor.work_between(base.project_finish, result.project_finish) / 60
-        except CalendarLimitError:
-            notes.append("El calendario no alcanza para medir el término.")
-            continue
-        finishes.append(result.project_finish)
-        project_hours.append(delta)
-        for code, hours in chosen.items():
-            durations.setdefault(code, []).append(hours)
+    finishes, durations, critical_hits, seen, finish_by_code, project_hours = run_iterations(
+        schedule,
+        config,
+        options,
+        base,
+        draws,
+        rng,
+        notes,
+        clocks,
+        TRACE,
+        anchor,
+    )
     activities, ssi_status, sensitivity_status = _activity_rows(
         schedule, base, durations, critical_hits, seen, project_hours
     )
-    tornado = _tornado(schedule, config, options, clocks, base, notes)
+    tornado = tornado_rows(schedule, config, base, clocks, notes, TRACE)
     milestones = _milestones(schedule, finishes, finish_by_code)
     convergence = _convergence(schedule, base, finish_by_code)
     return RiskOutcome(
@@ -343,45 +329,6 @@ def _paired(
     if size < 2:
         return None
     return samples[:size], project_hours[:size]
-
-
-def _tornado(
-    schedule: Schedule,
-    config: RiskConfig,
-    options: EngineOptions,
-    clocks: dict[str, WorkCalendar],
-    base: CpmResult,
-    notes: list[str],
-) -> list[TornadoRow]:
-    if base.project_finish is None:
-        notes.append("Sin término determinístico: el tornado no se calcula.")
-        return []
-    notes.append(
-        "El tornado reprograma el cronograma completo por cada actividad. "
-        "No recorta al cono de sucesoras."
-    )
-    rows: list[TornadoRow] = []
-    for activity in schedule.activities:
-        if activity.task_id not in base.by_id or activity.task_code is None:
-            continue
-        if activity.remain_drtn_hr_cnt is None:
-            continue
-        clock = clocks.get(activity.clndr_id or "")
-        if clock is None:
-            notes.append(f"{activity.task_code}: sin calendario, el tornado no se calcula.")
-            continue
-        delayed = activity.remain_drtn_hr_cnt + config.tornado_hours
-        result = schedule_cpm(_with_hours(schedule, {activity.task_code: delayed}), options)
-        if result.project_finish is None:
-            notes.append(f"{activity.task_code}: el atraso no tiene término.")
-            continue
-        try:
-            minutes = clock.work_between(base.project_finish, result.project_finish)
-        except CalendarLimitError:
-            notes.append(f"{activity.task_code}: el calendario no alcanza para el tornado.")
-            continue
-        rows.append(TornadoRow(activity.task_code, minutes / 60))
-    return rows
 
 
 def _milestones(

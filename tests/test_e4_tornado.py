@@ -1,4 +1,4 @@
-"""The tornado still reschedules the whole network once per activity."""
+"""The tornado recalculates only the delayed activity and its successor cone."""
 
 from __future__ import annotations
 
@@ -18,5 +18,6 @@ def test_every_activity_is_rescheduled(tmp_path: Path) -> None:
     outcome = run_risk(schedule, RiskConfig(seed=1, iterations=1, tornado_hours=8))
     assert {item.task_code for item in outcome.tornado} == {"A", "B", "C"}
     text = " ".join(outcome.approximations)
-    assert "cronograma completo" in text
-    assert "No recorta al cono" in text
+    assert "cronograma completo" not in text
+    assert "No recorta al cono" not in text
+    assert "El tornado solo recalcula la actividad atrasada y su cono" in text
