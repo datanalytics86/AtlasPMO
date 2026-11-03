@@ -1,0 +1,8 @@
+file: bei.xer
+proj_id: "1"
+baseline_proj_id: "2"
+calculado_por: vencidas LATE y OPEN; completadas al corte LATE y EARLY
+verificado_por: tests/oracle/bei.py
+metodo: conteo sobre tuplas, sin el producto
+expect:
+  bei: {value: 1.0, status: cumple}

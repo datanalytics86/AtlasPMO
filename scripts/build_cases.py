@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from atlaspmo.io.synthetic import write_xer
@@ -49,6 +50,8 @@ def main() -> None:
     _write("baseline", _baseline())
     _write("cpli", _cpli())
     _write("cycle", _cycle())
+    _write("cpli_ss", _cpli_ss())
+    _write("bei", _bei())
     print(OUT)
 
 
@@ -233,6 +236,85 @@ def _cycle() -> list[dict[str, object]]:
     tasks = [_task("1", "A"), _task("2", "B")]
     rels = [_rel("1", "1", "2"), _rel("2", "2", "1")]
     return _base([["1", "CUR", "C1", ""]], tasks, rels)
+
+
+def _cpli_ss() -> list[dict[str, object]]:
+    serial = (date(2026, 1, 7) - date(1899, 12, 30)).days
+    days = "".join(f"(0||{number}()((0||0(s|08:00|f|16:00)())))" for number in range(2, 7))
+    clndr = (
+        f"(0||CalendarData()((0||DaysOfWeek()({days}))"
+        f"(0||Exceptions()((0||0(d|{serial})())))"
+        "(0||VIEW(ShowTotal|N)())))"
+    )
+    tasks = [
+        _task(
+            "1",
+            "A",
+            remain="24",
+            early_start="2026-01-05 08:00",
+            early_end="2026-01-08 16:00",
+        ),
+        _task(
+            "2",
+            "B",
+            remain="8",
+            early_start="2026-01-05 08:00",
+            early_end="2026-01-05 16:00",
+        ),
+    ]
+    fields = [*TASK_FIELDS, "float_path", "float_path_order"]
+    extras = [["1", "1"], ["", ""]]
+    rows = [list(row) + extra for row, extra in zip(tasks, extras, strict=True)]
+    return [
+        {
+            "name": "PROJECT",
+            "fields": [
+                "proj_id",
+                "proj_short_name",
+                "clndr_id",
+                "last_recalc_date",
+                "plan_end_date",
+            ],
+            "rows": [["1", "CUR", "C1", "2026-01-05 08:00", "2026-01-09 16:00"]],
+        },
+        {
+            "name": "CALENDAR",
+            "fields": ["clndr_id", "clndr_name", "day_hr_cnt", "clndr_data"],
+            "rows": [["C1", "Base", "8", clndr]],
+        },
+        {"name": "TASK", "fields": fields, "rows": rows},
+        {"name": "TASKPRED", "fields": PRED_FIELDS, "rows": [_rel("1", "1", "2", "PR_SS", "0")]},
+    ]
+
+
+def _bei() -> list[dict[str, object]]:
+    tasks = [
+        _task(
+            "10",
+            "LATE",
+            status="TK_Complete",
+            remain="0",
+            act_end="2026-01-12 08:00",
+            proj="1",
+        ),
+        _task("11", "OPEN", proj="1"),
+        _task(
+            "12",
+            "EARLY",
+            status="TK_Complete",
+            remain="0",
+            act_end="2026-01-05 16:00",
+            proj="1",
+        ),
+        _task("20", "LATE", proj="2", target_end="2026-01-10 08:00"),
+        _task("21", "OPEN", proj="2", target_end="2026-01-20 08:00"),
+        _task("22", "EARLY", proj="2", target_end="2026-03-01 08:00"),
+    ]
+    projects = [
+        ["1", "CUR", "C1", "2026-02-01 00:00"],
+        ["2", "BASE", "C1", ""],
+    ]
+    return _base(projects, tasks, [])
 
 
 if __name__ == "__main__":

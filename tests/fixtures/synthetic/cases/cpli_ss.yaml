@@ -1,0 +1,6 @@
+file: cpli_ss.xer
+calculado_por: lunes a viernes 08:00-16:00, feriado 2026-01-07, lunes 08:00 a jueves 16:00 y de ahi al viernes 16:00
+verificado_por: tests/oracle/span_holiday.py
+metodo: recorrido de turnos, el miercoles sin trabajo, sin el indice del motor
+expect:
+  cpli: {value: 1.3333333333333333, status: cumple}
