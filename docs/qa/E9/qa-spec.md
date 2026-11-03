@@ -48,3 +48,42 @@ En el worktree, sin pytest y sin red de 30 000:
 ## Qué no pude verificar
 
 No reejecuté pytest, el gate ni `gen_scale` a 30 000. El 91,0 y el 85,1 son los del gate de E8 ya versionado, no una medición de esta auditoría. No importé numba: R-385 depende de ese import en la corrida futura, y aquí no hay lote nuevo. No comprobé fechas contra el motor de referencia porque el código de E9 no existe y el contrato prohíbe usar un cronograma real. No abrí `data/real/` ni `ATLASPMO_GOLDEN_DIR`.
+
+## Segunda pasada
+
+ACEPTADO
+
+Segunda lectura del contrato en `da79484` (rama `v3`), no del texto de `79fd58d`. El rechazo de arriba se conserva. Los tests `tests/test_e9_risk.py` y `tests/property/test_e9_differential.py` siguen sin existir y el contrato los deja no verdes: no es rechazo. No se calculó la fecha de un cronograma. No se leyó `data/real/` ni `ATLASPMO_GOLDEN_DIR`.
+
+Los tres huecos quedaron cerrados en el contrato. `tests/test_e4_tornado.py` en el árbol todavía trae «cronograma completo» y «No recorta al cono»: es el código viejo, anterior a la implementación. El contrato ya no los usa como oráculo.
+
+1. Cerrado. R-382 manda reemplazar esos dos asserts: no aparecen, y sí una frase de que el tornado solo recalcula la actividad atrasada y su cono. R-386 dice que no son oráculo numérico y que conservarlos no queda en verde. El conjunto {A, B, C} no se toca. La lista de archivos autoriza ese reemplazo, no solo el comentario.
+2. Cerrado. R-381 exige que cada `finishes[i]` iguale al `project_finish` de `schedule_cpm_reference` con las duraciones de esa iteración: máximo de los fin temprano de antes de ALAP (`ef_pre`, ADR-020). El early finish empaquetado puede diferir si ALAP lo movió, y usarlo como término del proyecto no queda en verde. Hitos y convergencias igualan al `early_finish` empaquetado del reference. La fila R-381 de `TRAZABILIDAD.md` dice lo mismo.
+3. Cerrado. `TRACE["cones"]` mapea cada código atrasado al conjunto visitado. En la cadena A–B–C–D–E, `cones["E"]` es `{E}`, `cones["A"]` es `{A,B,C,D,E}` y `cones["C"]` es `{C,D,E}`. `tornado_visited` es solo la suma de esos tamaños. Una suma de 15 sin los conjuntos no queda en verde. El caso LOE o WBS no se salta: el delta iguala al reference y el resumen no está en `cones`, porque el pase no lo programa y no mueve el término. ADR-022 dice lo mismo. En `fast.py`, el rollup de `TT_LOE` y `TT_WBS` va después del pase (`has_rollup` y `_attach_rollup`); `kernels.py` no los nombra.
+
+R-380: **sí.** Igual que en la primera pasada. Columna de cada rango igual a `_consume_duration_rng` vía `sample_duration`. Iman-Conover no se reescribe: reordena y deja la nota de la diagonal si hay Cholesky; si no, deja la nota de Cholesky y no reordena. Un `random()` de evento por iteración y por evento, después de las duraciones. Probabilidad 1 suma; probabilidad 0 no suma y avanza el generador. Oráculo: `sample_duration` e `iman_conover` ya existentes.
+
+R-381: **sí.** El criterio de la primera pasada sigue, y ahora el término publicado es el `project_finish` de la referencia. `TRACE["passes"]` igual a `iterations`, `TRACE["full_cpm"]` en 0, sin `_with_hours`, sin `schedule_cpm` en el bucle ni una vez por actividad del tornado, `parallel=True`, `prange`, `run_passes` sobre una copia, y al salir el cronograma original conserva sus fechas. Oráculo de fechas: `schedule_cpm_reference`, no el lote nuevo. Saltar pasadas por varianza cero, armar un `Schedule` por iteración o copiar el cuerpo de `run_passes` no queda en verde.
+
+R-382: **sí.** Con `tornado_hours <= 0`, tornado vacío, `cones` vacío, `tornado_visited` en 0, y no aparecen las dos frases viejas. Con horas positivas, los conjuntos de la cadena son los de arriba y el delta de los casos de mano (8/8 y 8/0/8) y de la cadena iguala al reference con esa sola duración aumentada. Oráculo: `schedule_cpm_reference` y `TRACE["cones"]`. Comparar el delta solo contra el pase rápido no queda en verde.
+
+R-383: **sí.** Sin cambio de números. `tests/property/test_invariant_e.py` sigue en verde, perfil qa, 500 ejemplos. Ancho cero y evento de probabilidad 0: los términos son el `project_finish` de `schedule_cpm`, la criticidad de la cadena de ese caso sigue en 1, y los dos estados quedan `no_evaluable`. Oráculo: CPM determinístico.
+
+R-384: **sí.** No se bajan los 300 s ni se edita `tests/perf/test_seccion11.py`. Sigue en 30 000 por 1 000, `tornado_hours=0`, sin rangos, sin calentar, y `TRACE["passes"]` de esa corrida es 1 000. `montecarlo_30k` no está en `activas`. Entra en `seccion11.toml` solo si baja de 300 s y la etapa está aprobada. Copiar los 49,1 s no queda en verde.
+
+R-385: **sí.** Sin cambio. Si numba importó y `passes > 0`, no queda «numba no se cargó» y la nota dice que el lote corrió en numba sobre los arrays del motor rápido. La frase vieja del test de mano se reemplaza por la nueva. El camino de referencia por calendario no soportado lo dice y no afirma que numba corrió el lote. Oráculo: el import y `TRACE["passes"]`.
+
+R-386: **sí.** Los números siguen intocados: evento cierto, tornado 8/8 y 8/0/8, join, SSI, Spearman, crucialidad (ahora nombrada), P50 P80 P90, y las tablas de `tests/test_e4_outputs.py`. El conjunto {A, B, C} no se toca. Los dos asserts de nota se reemplazan como dice R-382; cambiar un esperado numérico no queda en verde. `fast.py` no se edita: `cached_compiled` ya existe y el contrato usa ese acceso, sin agregar otro. `numeric/kernels.py` sigue sin edición.
+
+## Comandos de la segunda pasada
+
+- `git rev-parse --short HEAD` y `git log -1 --oneline`: `da79484`, «segunda redaccion del contrato de E9». `841318a` es antepasado y trae este rechazo.
+- `git status --porcelain` antes de este agregado: vacío.
+- `tests/test_e4_tornado.py` sigue con el conjunto {A, B, C} y con las dos frases viejas. El contrato, no el test, es el que ordena reemplazarlas.
+- `docs/qa/seccion11.toml`: `activas` sin `montecarlo_30k`. `test_s11_montecarlo_30k`: 1 000 iteraciones a 30 000, `tornado_hours=0`, límite 300, sin calentar.
+- `cached_compiled` está en `src/atlaspmo/engine/fast.py` y devuelve lo que ya guardó la caché. `kernels.py` no menciona LOE ni WBS.
+- `tests/test_e9_risk.py` y `tests/property/test_e9_differential.py`: siguen ausentes.
+
+## Qué no pude verificar en la segunda pasada
+
+No reejecuté pytest, el gate ni la red de 30 000. No importé numba. No comparé fechas contra la referencia: el lote nuevo no está escrito. No abrí `data/real/` ni `ATLASPMO_GOLDEN_DIR`.

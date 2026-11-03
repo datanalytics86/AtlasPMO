@@ -10,7 +10,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 |---|---|
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
 | E8 | APROBADO en la segunda pasada. Gate `15494f4`: 272 tests, cobertura 91,0, G1–G12 pass, G13 info. `redundancia_30k` 14,839 s. H-3 y H-4 quedan menores. H-1 y H-2, de la primera pasada, quedaron cerrados al sacar la ruta de perfil del historial local. |
-| E9 | en curso. Ciclo 1: qa-spec rechazó la primera redacción. La segunda está en el contrato, a la espera de la segunda pasada. |
+| E9 | en curso. Contrato aceptado por qa-spec en la segunda pasada. Falta el código. |
 | E10 | pendiente |
 
 ### E8 — plan (ciclo 1)
