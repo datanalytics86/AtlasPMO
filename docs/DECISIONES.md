@@ -228,6 +228,18 @@ Decisión de E9, sin pregunta (sección 10.3 del megaprompt v3). El oráculo de 
 - Si el calendario no cabe en el motor rápido, todo el Monte Carlo usa el bucle de referencia y lo dice en una nota. Ese camino no sirve para dar por cumplido el lote.
 - La meta `montecarlo_30k` no entra en `seccion11.toml` hasta medirla bajo 300 s a 30 000 actividades y 1 000 iteraciones, y solo con la etapa aprobada. No se salta el bucle cuando la varianza es cero: el test de la sección 11 no trae rangos. Medida en este equipo: 63,569 s, con la compilación numba dentro del reloj y sin rangos. El veredicto APROBADO de E9 la activa (ADR-019).
 
+## ADR-023 — Cierre de E10 sin meta nueva de tiempo
+
+Decisión de E10, sin pregunta. El veredicto es APROBADO en `docs/qa/E10/VEREDICTO.md`. El gate es `009ac88`: 301 tests, cobertura 91,3, G1–G12 pass, G13 info.
+
+- Los float paths los calcula el motor con el algoritmo del contrato (R-390). No son los de P6. La comparación con un export queda en `VALIDACIONES_PENDIENTES.md` y no bloquea.
+- La continuidad se juzga solo en la ruta 1, desde `last_recalc_date`. Sin esa fecha el estado es `no_evaluable` y la continuidad no es verdadera.
+- `TASK.driving_path_flag` se lee cuando la columna está. Solo `Y` o `y` marcan la actividad. Un vínculo de `TASKPRED` no se marca driving en modo A.
+- Si `baseline_proj_id` está puesto, el baseline sale de ese proyecto en el mismo archivo. Si no, y hay un segundo cronograma en `ctx.other`, ese archivo entra en `evaluate`. La pantalla no pisa la celda BEI.
+- La duración remanente se reparte lineal en tiempo laboral y queda rotulada como aproximación. `resource_limit` sigue `no_evaluable`: `RSRCRATE` no trae un campo de tope citado.
+- E10 no agrega una meta a `seccion11.toml`. El 63,569 s de E9 no se reemplaza. El gate reejecutó las cinco metas ya activas y no desglosa segundos por meta.
+- La cobertura de resto sube a 90,5 líneas y 80,6 ramas (ADR-019). Engine no baja.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

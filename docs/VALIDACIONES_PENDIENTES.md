@@ -37,7 +37,7 @@ Monte Carlo a 30 000 se midió con `scripts/gen_scale.py`, sin rangos. No agrega
 
 ## E10
 
-Estos puntos no bloquean el cierre.
+E10 quedó APROBADO. Estos puntos siguen abiertos y no bloquearon el cierre.
 
 1. Comparar los float paths de este motor con un export de P6 del mismo sintético (SHORT 8 h, LONG 16 h, JOIN 8 h, FS de SHORT y de LONG hacia JOIN). El algoritmo de R-390 no es el de P6. La salida del motor no se presenta como float path de P6.
 2. `RSRCRATE` no trae un campo de tope citado. `resource_limit` sigue `no_evaluable`.

@@ -1,6 +1,113 @@
 # Estado
 
-## v3 — en curso
+## v3 — reporte final
+
+E7 a E10 quedaron APROBADO. E0 a E6 de la v2 siguen RECHAZADA-BLOQUEADA y no se reabren. Rama `v3`. No se mergea a `main`. El gate de E10 es `009ac88`.
+
+### Por etapa
+
+| Etapa | Veredicto | Ciclos de producto | Gate | Último commit del gate |
+|---|---|---|---|---|
+| E7 | APROBADO | 3 | 239 tests, cobertura 91,2, G1–G12 pass, G13 info | `577c6ba` |
+| E8 | APROBADO | 2 | 272 tests, cobertura 91,0, G1–G12 pass, G13 info | `15494f4` |
+| E9 | APROBADO | 2 | 283 tests, cobertura 91,1, G1–G12 pass, G13 info | `0750b2d` |
+| E10 | APROBADO | 2 | 301 tests, cobertura 91,3, G1–G12 pass, G13 info | `009ac88` |
+
+E10 reescribió el contrato una vez antes del código. Esa pasada no es un ciclo de producto. El ciclo 2 cerró H-1: el segundo XER entra en `evaluate`. H-2 y H-3 quedan menores.
+
+### Metas de la sección 11
+
+La lectura, el CPM y el DCMA se activaron en el equipo de E7 (Intel64 Family 6 Model 170, 31,4 GB, Windows-11-10.0.26200-SP0). La redundancia y Monte Carlo se midieron en el de E8 y E9: Intel Core i5-1145G7 @ 2,60 GHz, 39,7 GB, el mismo SO, CPython 3.12.16. El gate de E10 reejecutó las cinco juntas en 89,99 s y no reemplaza estos valores.
+
+| Meta | Límite | Valor final | Activa |
+|---|---|---|---|
+| lectura_30k | 15 s | 0,655 s (`docs/qa/E7/inicio.md`) | sí |
+| cpm_30k | 0,5 s | 0,237 s (`docs/qa/E7/perf.md`) | sí |
+| dcma_30k | 10 s | 1,494 s (`docs/qa/E7/perf.md`) | sí |
+| redundancia_30k | 180 s | 14,839 s (`docs/qa/E8/perf.md`) | sí |
+| montecarlo_30k | 300 s | 63,569 s (`docs/qa/E9/perf.md`) | sí |
+| Conformidad contra P6 | ≥ 99,5 % y 100 % explicado | no corrido | no |
+| XER limpio reimportado en P6 | delta cero | no corrido | no |
+
+### Prueba diferencial
+
+G5 del gate de E10 pasa: invariantes a–e con perfil qa. Los archivos son `tests/property/test_e7_differential.py`, `tests/property/test_e8_differential.py`, `tests/property/test_e9_differential.py` y `tests/property/test_invariant_e.py`.
+
+La diferencia que E9 encontró y corrigió: si una duración muestreada no cabía en la ventana compilada, el lote caía. `436bc55` recompila una vez, antes del lote. E10 no encontró una diferencia de fechas en el FS entre dos proyectos: los dos motores ya daban martes 08:00. No se editó el motor.
+
+### Brechas
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| B-01 | cerrada en E10 | `tests/test_e10_ui.py`. H-1 cerrado en `576ac59` |
+| B-02 | cerrada en E8 | `redundancia_30k` 14,839 s |
+| B-03 | cerrada en la suite | desde la v2, `3ecec3c` |
+| B-04 | cerrada en la suite | sin lista contrastada con un cronograma real |
+| B-05 | cerrada en la suite | `tests/test_e1_cycles.py` |
+| B-06 | cerrada en la suite | `tests/test_e1_calendar.py` |
+| B-07 | cerrada en E9 | `montecarlo_30k` 63,569 s |
+| B-08 | abierta, `[VALIDAR]` | P6 no confirmó la fecha obligatoria |
+| B-09 | abierta, `[VALIDAR]` | longest path sin comparación con P6 |
+| B-10 | cerrada en E10 | `tests/oracle/span_holiday.py`, razón 4/3 |
+| B-11 | cerrada en E10 | `tests/oracle/bei.py`, 2/2 |
+| B-12 | cerrada en la suite, no es P6 | `tests/test_e10_paths.py`. La comparación con un export sigue abierta |
+| B-13 | cerrada en el reparto | `tests/test_e10_spread.py`. `resource_limit` sigue `no_evaluable` |
+| B-14 | el FS entre dos proyectos quedó trabado | `tests/test_e10_edges.py`. El resto de bordes ya tenía test |
+| B-15 | cerrada en G5 | perfil qa |
+| B-16 | cerrada en E7 | `cpm_30k` y `dcma_30k` activas |
+| B-17 | abierta | `uv run pytest` no arranca (ADR-004). `python -m pytest` pasa |
+| B-18 | cerrada en G1 | ruff |
+| B-19 | cerrada en el árbol | trazabilidad y agentes de `MEGAPROMPT_v3.md` |
+| B-20 | cerrada en la suite | bytes cp1252 |
+| B-21 | abierta, `[VALIDAR]` | hito de las 16:00, para P6 |
+| B-22 | abierta | la historia publicada no se reescribe |
+| B-23 | abierta | lo decide Nicolás. Esta rama no la reescribe |
+
+### Cobertura
+
+Frente a `docs/qa/baseline.json` después del trinquete de E10, y frente a la meta de la sección 8.1 (líneas / ramas). El gate midió estos valores. Engine no se bajó.
+
+| Paquete | Registro | Medido en E10 | Meta 8.1 |
+|---|---|---|---|
+| model | 100 / 100 | 100 / 100 | 90 / 85 |
+| calendars | 91,5 / 81,6 | 91,5 / 81,6 | 90 / 85 |
+| engine | 95,0 / 89,8 | 93,4 / 85,4 | 90 / 85 |
+| logic | 89,2 / 80,1 | 89,2 / 80,1 | 90 / 85 |
+| resto | 90,5 / 80,6 | 90,5 / 80,6 | 80 / no es piso de G4 |
+
+Calendars en ramas y logic en líneas y ramas siguen bajo la meta. G4 lo informa y no bloquea. G13 de E10 es info: no hubo `sabotaje.md`.
+
+### Hallazgos QA
+
+No hay crítico ni importante abierto en la v3. Menores que siguen: H-8 de E7; H-3 y H-4 de E8; H-2 y H-3 de E10. Los importantes de la v2 están en el reporte de abajo y esta corrida no los reabre.
+
+### Para Nicolás
+
+El orden de `docs/VALIDACIONES_PENDIENTES.md`:
+
+1. Denegar en la config de Grok la ruta absoluta de la carpeta golden. Esta sesión no la escribe.
+2. Mantener los golden cifrados y desmontados, y no definir `ATLASPMO_GOLDEN_DIR` en la terminal de Grok.
+3. Importar los sintéticos en P6, reprogramar, reexportar, sanear y dejarlos en `tests/fixtures/p6_verified/`.
+4. Confirmar `CS_MANDSTART` y `CS_MANDFIN`.
+5. Confirmar el hito de inicio que cae a las 16:00.
+6. Comparar los float paths de R-390 con un export de P6 del mismo sintético. El algoritmo del motor no es el de P6.
+7. Correr la conformidad con el golden y pegar solo la salida anonimizada.
+8. Reimportar un XER limpio, reprogramar y comprobar delta cero.
+9. Abrir `powerbi/AtlasPMO.pbip` en Power BI Desktop y refrescar.
+10. Para `.mpp`: Java en el PATH y `uv sync --extra mpp`.
+11. Decidir si se reescribe la historia de B-23. Esta rama no lo hace.
+
+`RSRCRATE` no trae un campo de tope. `resource_limit` sigue `no_evaluable`. El reparto de la duración remanente es lineal en tiempo laboral y está rotulado.
+
+### Para la v4
+
+- R-387 pedía el BEI que se muestra. La primera pasada solo pisó esa celda y el informe quedó con el índice sin baseline. El contrato tiene que decir que la corrida, el índice y el informe usan el mismo par.
+- El algoritmo de float paths no es el de P6. El nombre del módulo en la sección 6 se lee como si lo fuera.
+- `fact_timephased` y el manual siguen hablando del balde `corte` (H-3). No mueve los números del contrato.
+- G8 corta la ruta de perfil en el primer espacio. Una ruta con espacio en el nombre queda a medias en el texto redactado.
+- `uv run pytest` sigue sin arrancar en este equipo (ADR-004). El gate ya lo trata así.
+
+## v3 — bitácora
 
 Base `8a268ca0c4f626df84ae6992c7bee5bab7597577` (`8a268ca`), rama `v3` desde `origin/claude/beautiful-goodall-m0q2zj`. Árbol limpio en ese commit al arrancar. La especificación que manda es `docs/MEGAPROMPT_v3.md`.
 
@@ -11,7 +118,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
 | E8 | APROBADO en la segunda pasada. Gate `15494f4`: 272 tests, cobertura 91,0, G1–G12 pass, G13 info. `redundancia_30k` 14,839 s. H-3 y H-4 quedan menores. H-1 y H-2, de la primera pasada, quedaron cerrados al sacar la ruta de perfil del historial local. |
 | E9 | APROBADO. Gate `0750b2d`: 283 tests, cobertura 91,1, G1–G12 pass, G13 info. `montecarlo_30k` 63,569 s, activada. H-1 y H-2 de la primera pasada quedaron cerrados. |
-| E10 | en curso. Contrato aceptado en `b24b315`. Producto de B-01, B-10, B-11, B-12, B-13 y B-14 en `aec397f`. Sin gate y sin veredicto. |
+| E10 | APROBADO en la segunda pasada de producto. Gate `009ac88`: 301 tests, cobertura 91,3, G1–G12 pass, G13 info. H-1 cerrado. H-2 y H-3 menores. Sin meta nueva de tiempo. |
 
 ### E8 — plan (ciclo 1)
 
@@ -47,7 +154,7 @@ APROBADO en la segunda pasada de producto. Gate `0750b2d`: 283 tests, cobertura 
 
 ### E10 — plan (ciclo 1)
 
-Brechas B-01, B-12, B-13, B-14, B-10 y B-11, en ese orden. El contrato es `docs/qa/E10/QC1_contrato.md`, aceptado por qa-spec en `b24b315`. El producto está en el árbol, en `aec397f`. No hay meta nueva de tiempo. No hay gate ni veredicto.
+Brechas B-01, B-12, B-13, B-14, B-10 y B-11, en ese orden. El contrato es `docs/qa/E10/QC1_contrato.md`, aceptado por qa-spec en `b24b315`. El producto está en el árbol. El veredicto es APROBADO en `docs/qa/E10/VEREDICTO.md`. No hay meta nueva de tiempo.
 
 - La UI se prueba con AppTest sobre sintéticos. El baseline se asocia con un segundo XER. El visor filtra, traza N niveles y muestra la cadena driving que el modo B ya calcula.
 - Los float paths los calcula el motor con el algoritmo del contrato. No se presentan como los de P6. La continuidad sale de la fecha de corte. En modo A un vínculo no se marca driving: no hay campo citado de holgura libre del vínculo. Sí se lee `driving_path_flag`, que PyP6Xer ya nombra.
