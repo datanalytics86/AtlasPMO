@@ -24,3 +24,21 @@ La suite no llega a ese borde. El rango más ancho de los tests de mano es 40 h.
 Ningún test corre Iman-Conover cuando la matriz sí admite Cholesky a través de `run_risk`. `test_invalid_correlation_is_skipped` solo cubre el rechazo. `test_column_matches_sample_duration_and_a_zero_event_advances_rng` no trae correlación. Las líneas del reorden y de la nota de la diagonal quedan fuera del subconjunto medido con cobertura.
 
 No bloquea. Con semilla 3, seis iteraciones y correlación 1 entre A y B, las columnas de `TRACE` igualaron a `iman_conover` usando el generador ya avanzado por las duraciones, y la nota de `1e-8` apareció. La fórmula no se reescribió. El fallo de Cholesky sigue afirmado.
+
+## QC-6
+
+HEAD `0750b2d`. El gate de `docs/qa/E9/gate.json` sale 0: 283 tests, cobertura 91,1, G1–G12 pass, G13 info. No lo reejecuté. No reejecuté la red de 30 000. El relato de arriba es el de `cf35f17`, antes del fix, y queda.
+
+### H-1 — cerrado
+
+`436bc55` recompila una vez cuando alguna hora, ya con el evento, redondea a más minutos que `compiled.duration`. `_compiled_for_peaks` arma un cronograma con el máximo de cada columna, llama a `schedule_cpm` para crecer la ventana y el lote usa esa compilación. No hay un `Schedule` por iteración. `_minutes` escribe los minutos absolutos de la muestra; si todos igualan la duración pico, la columna no se pisa y el lote corre con esa duración ya compilada.
+
+Lo medí sobre el mismo calendario de 7 días, 08:00 a 16:00, actividad de 8 h y fecha de corte 2026-01-05 08:00. Evento cierto de 176 h, tres iteraciones: el término es 2026-01-27 16:00, igual que `schedule_cpm` de referencia con 184 h. `passes` 3, `full_cpm` 0, una sola llamada a `_with_hours`, y la nota dice que el lote corrió en numba. No está la de fallback. El rango de ancho cero en 184 h lo afirma `test_a_long_duration_uses_a_window_that_fits`, que pasó en esta pasada. Una probabilidad 0,5 con el mismo impacto dejó iteraciones en 8 h y en 184 h; las ocho igualaron al reference, `passes` 8 y `full_cpm` 0. Un rango fijo de 4 h no recompila (`_with_hours` cero veces) y también iguala.
+
+Si la recompilación no devuelve un compilado o el segundo lote lanza `CalendarLimitError`, `_reference_instead` quita la nota de numba y agrega la de fallback. Lo leí en `_reference_instead`. Al forzar la excepción en `run_batch` la nota cambió como dice el código. Ese forzamiento, con probabilidad distinta de 0 y de 1, volvió a sortear el evento porque `_columns` ya había avanzado el generador: no lo promuevo a hallazgo. No apareció en el evento de 176 h, ni en la mezcla, ni en un lag de −40 h, ni en dos rangos hasta 80 h. Esos se quedan en el lote.
+
+### H-2 — cerrado
+
+`test_perfect_correlation_reorders_like_iman_conover` es el caso que faltaba: semilla 3, seis iteraciones, correlación 1 entre A y B. Exige que las columnas de `TRACE` igualen a `iman_conover` con el generador ya avanzado por las dos duraciones, y que una nota traiga `1e-8`. Pasó en esta pasada. `test_invalid_correlation_is_skipped` sigue cubriendo el rechazo de Cholesky. La fórmula de `iman_conover` no se reescribió.
+
+No queda un crítico ni un importante abierto.

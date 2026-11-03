@@ -80,3 +80,23 @@ Sondas, sin la red de 30 000. Calendario de 7 días, 08:00 a 16:00, una activida
 ## Qué no pude verificar
 
 No corrí G1 a G13 ni la suite de 281. No medí de nuevo los 63,569 s. No abrí un cronograma real. La cuenta de 90,8 no es el `coverage_percent` del gate: es el delta sobre el 91,0 de E8. No sé cuántos de los 22 de `fastloop.py` tapa el resto de la suite; solo sé que no pueden ser más.
+
+## QC-6
+
+Segunda revisión, HEAD `0750b2d`, rama `v3`. El informe de arriba es el de QC-4 sobre `cf35f17` y queda. Esta pasada mira el fix `436bc55` y el gate ya versionado. No edité producto, tests, gate, umbrales ni `seccion11.toml`. No reejecuté el gate ni `test_s11_montecarlo_30k`. No leí `data/real/` ni `ATLASPMO_GOLDEN_DIR`. El veredicto está en `docs/qa/E9/VEREDICTO.md`.
+
+### Comandos
+
+- `git rev-parse HEAD` y `git log --oneline -20`: HEAD `0750b2d`, rama `v3`. Encima de `436bc55` (fix de H-1), `9494ead` (QC-4), `cf35f17` y `82f9fa4`. `git status --porcelain` al empezar, vacío.
+- `git diff --stat 9494ead..HEAD`: `fastloop.py`, `tests/test_e9_risk.py`, `docs/ESTADO.md`, `docs/qa/E9/riesgo.md`, `gate.json` y `gate.md`. No entran `kernels.py`, `fast.py`, `seccion11.toml`, `baseline.json` ni `scripts/qa_gate.py`.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_e9_risk.py::test_a_long_duration_uses_a_window_that_fits tests/test_e9_risk.py::test_perfect_correlation_reorders_like_iman_conover -q`: 2 passed en 24,47 s. El warning es el de numba ya anotado en `perf.md`: no puede guardar `batch_passes` por un global dinámico.
+
+Lectura, sin la red de 30 000. Mismo calendario de los tests de mano (7 días, 08:00 a 16:00, corte 2026-01-05 08:00):
+
+- Evento cierto de 176 h, 3 iteraciones: término 2026-01-27 16:00, igual al reference con 184 h. `passes` 3, `full_cpm` 0. `_with_hours` se llamó una vez. La nota de numba está; la de fallback, no.
+- Probabilidad 0,5 e impacto 176 h, semilla 5, 8 iteraciones: horas 8, 8, 8, 8, 8, 8, 184, 184. Cada término iguala al reference. `passes` 8, `full_cpm` 0, nota de numba.
+- Rango fijo de 4 h: `_with_hours` cero veces, `passes` 4, `full_cpm` 0, igual al reference.
+- Lag FS de −40 h con rango 1–40 h, y dos rangos uniformes hasta 80 h: igualan al reference, `full_cpm` 0.
+- `run_batch` forzado a `CalendarLimitError`: sale la nota de fallback, no la de numba; `passes` 0, `full_cpm` 8. Con probabilidad 0,5 los términos siguieron el segundo sorteo. No es una entrada sin parche; no abrí hallazgo.
+
+`docs/qa/E9/gate.json`: exit 0, 283 tests, `coverage_percent` 91,1, G1–G12 pass, G13 info. En el detalle de G4 el TOTAL mezclado dice 88 %; la cifra de la etapa es 91,1. G6 lista `activas` con lectura, cpm, dcma y redundancia, 4 passed. `docs/qa/seccion11.toml` no tiene `montecarlo_30k`. `docs/qa/E9/perf.md`: pytest 63,569 s (límite 300 s; el test exige 1 000 términos) y la fila hermana 61,581 s, `passes` 1 000, `full_cpm` 0. `tests/perf/test_seccion11.py` arma ese caso con `RiskConfig(seed=1, iterations=1000, tornado_hours=0)`, sin rangos ni eventos: `_needs_room` no se cumple.
