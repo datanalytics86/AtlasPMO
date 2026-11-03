@@ -13,3 +13,7 @@ Equipo de esta corrida, distinto del de E7: 11th Gen Intel Core i5-1145G7 @ 2.60
 La fila de 30 000 es `pytest -m seccion11 tests/perf/test_seccion11.py -k redundancia -s`: `S11 redundancia_30k n=30000 14.839s limite=180s`, 1 passed. El límite se cumplió. La meta no se activa en `seccion11.toml` hasta el cierre aprobado (ADR-019). Los 52,5 s de la revisión eran 300 actividades y no se copian.
 
 Antes del atajo, el mismo `classify_links` en 800 actividades hacía 926 pases enmascarados y tardaba 14,72 s. A 30 000 eso no cabía en 180 s.
+
+## cpm_30k en este equipo
+
+La meta ya estaba activa desde E7. El pase numba de la segunda llamada cabe en el presupuesto. El tiempo se iba en armar una actividad por vez. Con el empaque en bloque, `pytest -m seccion11 tests/perf/test_seccion11.py -k cpm_30k -s` dio 0,396 s, 0,415 s y 0,378 s, bajo el límite de 0,5 s. No se tocó `seccion11.toml` ni el assert.
