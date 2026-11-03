@@ -48,3 +48,21 @@ Los tests nuevos que tocan disco usan `tmp_path` o `tests/fixtures/synthetic/cas
 - Lectura de `docs/MEGAPROMPT_v3.md` (secciones 8.5 y 14), `scripts/qa_gate.py` (`check_g8` y `ANON_ERMHDR`), `scripts/hooks/pre_commit_g8.py`, `.streamlit/config.toml` y `.gitignore`
 
 No se corrió la aplicación Streamlit ni la suite. La lectura de código y de docs se hizo sin abrir `data/real/`.
+
+## Arreglo H-1
+
+**Resultado: PASA.** No hay hallazgo. No aplica severidad.
+
+Alcance: `git diff f45a51f..HEAD`. HEAD `576ac593e1364218f63c1b5ec8b1cef995948a19`, rama `v3`. El base es ancestro. Un commit, `576ac59`: «fix(quality): el segundo XER entra en la corrida (H-1)». 4 archivos, +132 / −17: `src/atlaspmo/analysis/quality/module.py`, `src/atlaspmo/ui/app.py`, `tests/test_e10_ui.py` y `docs/qa/E10/calidad-h1.md`. No se leyó `data/real/` ni `ATLASPMO_GOLDEN_DIR`. No se reescribió el informe de arriba.
+
+El módulo toma el baseline de `ctx.schedule.select` si hay `baseline_proj_id`, y si no, de `ctx.other` cuando es un `Schedule`. La pantalla deja de calcular un BEI aparte. Los tests nuevos arman los dos XER con `_bei_bytes` bajo `tmp_path` y leen el Excel en memoria (`BytesIO`). No abren red ni un path de perfil.
+
+| Límite | Evidencia | Resultado |
+|---|---|---|
+| Cronogramas | El diff no agrega `.xer`, `.mpp` ni `.xml`. Las líneas nuevas no contienen `.xer`. | cumple |
+| Perfil, red y secretos | 132 líneas agregadas y 17 borradas: patrón de perfil, URL, correo, secreto y red en 0. El mensaje del commit también en 0. El log de pytest pegado en `calidad-h1.md` usa rutas relativas del repositorio. | cumple |
+| Controles | `git diff --name-only` de `scripts/qa_gate.py`, `docs/qa/seccion11.toml` y `docs/qa/baseline.json` está vacío. Tampoco cambian `.gitignore`, `.streamlit/config.toml`, `pyproject.toml` ni `uv.lock`. | cumple |
+
+G8: `.\.venv\Scripts\python.exe scripts\hooks\pre_commit_g8.py` sale 0 y en silencio.
+
+Comandos: `git rev-parse HEAD`; `git merge-base --is-ancestor f45a51f HEAD` (salida 0); `git log --oneline` y `git diff --shortstat` / `--name-status` de `f45a51f..HEAD`; el hook G8; script temporal (borrado) sobre `git diff -U0` con los patrones de arriba; `git diff --name-only` de las rutas protegidas. No se corrió la suite ni Streamlit.

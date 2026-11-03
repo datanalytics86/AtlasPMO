@@ -55,3 +55,15 @@ Sonda, sobre el mismo par de XER que arma el test de R-387, sin AppTest y sin re
 ## Qué no pude verificar
 
 No corrí `scripts/qa_gate.py`. No medí la cobertura contra `docs/qa/baseline.json` ni el trinquete de 0,5 sobre el 91,1 de E9. No corrí la red de 30 000 ni una meta de la sección 11. No comparé los float paths con un export de P6: sigue en `VALIDACIONES_PENDIENTES.md` y el texto no los presenta como P6. No abrí `data/real/` ni un directorio golden.
+
+## Segunda pasada — H-1
+
+HEAD `576ac59`, rama `v3`. `git merge-base --is-ancestor f45a51f HEAD` sale 0. `git diff --stat f45a51f..HEAD` toca `src/atlaspmo/analysis/quality/module.py`, `src/atlaspmo/ui/app.py`, `tests/test_e10_ui.py` y `docs/qa/E10/calidad-h1.md`. No entran `check.py`, el motor ni `docs/qa/E10/qa-privacidad.md`. No se editó producto en esta pasada. No se escribió `VEREDICTO.md`. El gate no corrió: la etapa no queda cerrada.
+
+Leí el diff y el cuerpo de `QualityModule.run` y de la pantalla. Con `baseline_proj_id` el baseline sale de `ctx.schedule.select`. Sin id, si `ctx.other` es un `Schedule`, entra a `evaluate`. La pantalla ya no importa `evaluate` ni pisa `bei`.
+
+```
+.\.venv\Scripts\python.exe -m pytest tests/test_e10_ui.py::test_baseline_requirements_progress_and_full_report tests/test_e10_ui.py::test_quality_module_reads_other_as_baseline tests/test_e10_ui.py::test_baseline_proj_id_ignores_other -q --tb=short
+```
+
+3 passed en 2,83 s. H-1 queda cerrado en `docs/qa/E10/hallazgos.md`. H-2 y H-3 siguen menores. No apareció otro crítico ni otro importante.

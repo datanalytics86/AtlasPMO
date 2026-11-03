@@ -18,6 +18,14 @@ Después de la corrida, el visor reemplaza únicamente la clave `bei` del datafr
 
 El rótulo «El segundo XER es el baseline.» afirma una asociación que la corrida de calidad no hace. Es desvío de la spec (sección 6 y R-387) y un test que no prueba lo que el requisito dice. Bloquea el cierre. No lo marco crítico: `evaluate` con el par sigue en 1.0. El número que no coincide es el de la corrida y el del informe, porque el baseline no les entra.
 
+### H-1 — cerrado
+
+HEAD `576ac59`, «fix(quality): el segundo XER entra en la corrida (H-1)». El diff es `f45a51f..HEAD`. El gate sigue sin correr. Esto no cierra la etapa.
+
+`QualityModule.run` usa `ctx.schedule.select(baseline_proj_id)` si ese id viene puesto. Si no, y `ctx.other` es un `Schedule`, ese cronograma es el baseline de `evaluate`. Si no hay ninguno, el baseline queda en `None`. La pantalla ya no llama a `evaluate` ni reemplaza la clave `bei`: la tabla sale de `result.metrics`. El contexto sigue pasando `other=baseline` y `QualityConfig` sigue llevando solo el perfil. `check.py` no está en el diff.
+
+Lo medí en los tres tests, 3 passed en 2,83 s. Sin id, el módulo y la corrida de la pantalla igualan a `evaluate(actual, perfil, baseline)` en `bei`, `missed_tasks`, `gao_10` y `quality_index`, valor y estado. El BEI del dataframe es el de ese resultado, no un cálculo aparte. «Falta el proyecto baseline.» no está en los hallazgos ni en `informe.xlsx`. Con `baseline_proj_id` `"2"`, el resultado iguala a `evaluate` contra `select("2")` del mismo archivo y no al segundo XER. H-2 y H-3 no se tocaron.
+
 ## H-2 — menor
 
 La pestaña por módulo no muestra el módulo. Tras ejecutar se agrega una pestaña por corrida y el cuerpo es el nombre. Las métricas siguen juntas en «Resultados». El test comprueba la etiqueta. No cambia un número. No bloquea.
