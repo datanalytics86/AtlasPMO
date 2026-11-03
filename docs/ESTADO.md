@@ -11,7 +11,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
 | E8 | APROBADO en la segunda pasada. Gate `15494f4`: 272 tests, cobertura 91,0, G1–G12 pass, G13 info. `redundancia_30k` 14,839 s. H-3 y H-4 quedan menores. H-1 y H-2, de la primera pasada, quedaron cerrados al sacar la ruta de perfil del historial local. |
 | E9 | APROBADO. Gate `0750b2d`: 283 tests, cobertura 91,1, G1–G12 pass, G13 info. `montecarlo_30k` 63,569 s, activada. H-1 y H-2 de la primera pasada quedaron cerrados. |
-| E10 | pendiente |
+| E10 | en curso. Contrato escrito. No hay código hasta que qa-spec lo acepte. |
 
 ### E8 — plan (ciclo 1)
 
@@ -44,6 +44,16 @@ Brecha B-07. El contrato es `docs/qa/E9/QC1_contrato.md` (ADR-022). No hay códi
 APROBADO en la segunda pasada de producto. Gate `0750b2d`: 283 tests, cobertura 91,1, G1–G12 pass, G13 info. H-1 (la ventana no crecía si la muestra superaba la duración base) y H-2 quedaron cerrados. `montecarlo_30k` midió 63,569 s y entra en `seccion11.toml` (ADR-019). Las ramas de resto suben de 79,2 a 80,0. Engine no baja: el registro sigue en 95,0/89,8 y el gate midió 93,1/85,1.
 - En este equipo el pase rápido de 30 000 midió cerca de 0,2 s dentro de un `cpm_30k` de 0,378 a 0,415 s. Mil pasadas caben en 300 s si no se reconstruye el modelo ni se empaqueta un `CpmResult` por iteración.
 - El implementador no edita `seccion11.toml`, `baseline.json`, el gate, oráculos, esperados ni `fast.py`. Ya existe `cached_compiled`. Las ramas de engine quedaron en 85,1 contra un piso de 85,0.
+
+### E10 — plan (ciclo 1)
+
+Brechas B-01, B-12, B-13, B-14, B-10 y B-11, en ese orden. El contrato es `docs/qa/E10/QC1_contrato.md`. No hay código de producto hasta que qa-spec lo acepte. No hay meta nueva de tiempo.
+
+- La UI se prueba con AppTest sobre sintéticos. El baseline se asocia con un segundo XER. El visor filtra, traza N niveles y muestra la cadena driving que el modo B ya calcula.
+- Los float paths los calcula el motor con el algoritmo del contrato. No se presentan como los de P6. La continuidad sale de la fecha de corte. En modo A un vínculo no se marca driving: no hay campo citado de holgura libre del vínculo. Sí se lee `driving_path_flag`, que PyP6Xer ya nombra.
+- La duración remanente se reparte por día, semana y mes en tiempo laboral. El tope de `RSRCRATE` sigue `no_evaluable`.
+- De la sección 7, el borde que no tiene fechas a mano es el vínculo entre dos proyectos. El resto ya tiene test y no se reescribe.
+- CPLI gana un caso con solape SS y feriado. BEI conserva el 2/2. La segunda firma la escribe `qa-oraculo`, sin importar `src/atlaspmo`.
 
 ## v2 — reporte final
 
