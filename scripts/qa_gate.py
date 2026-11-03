@@ -150,6 +150,7 @@ def _environment_gap(proc: subprocess.CompletedProcess[str]) -> bool:
         or proc.returncode == 127
         or "No module named uv" in blob
         or "WinError 2" in blob
+        or "No suitable Python runtime found" in blob
     )
 
 

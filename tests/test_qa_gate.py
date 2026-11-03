@@ -238,6 +238,18 @@ def test_g3_passes_when_pytest_passes_and_uv_is_unavailable(tmp_path: Path, monk
     assert "ADR-004" in result.detail
 
 
+def test_g3_passes_when_the_py_launcher_has_no_3_12(tmp_path: Path, monkeypatch):
+    def fake(command: list[str], root: Path) -> subprocess.CompletedProcess[str]:
+        if command[:3] == [sys.executable, "-m", "pytest"]:
+            return _completed(command, 0, "1 passed")
+        return _completed(command, 103, "No suitable Python runtime found")
+
+    monkeypatch.setattr("scripts.qa_gate._run", fake)
+    result = check_g3(tmp_path)
+    assert result.status == "pass"
+    assert "ADR-004" in result.detail
+
+
 def test_g4_fails_when_pytest_fails(tmp_path: Path, monkeypatch):
     def fake(command: list[str], root: Path) -> subprocess.CompletedProcess[str]:
         return _completed(command, 1, "1 failed")
