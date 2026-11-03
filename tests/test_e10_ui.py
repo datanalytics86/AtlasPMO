@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from pathlib import Path
 
 import duckdb
@@ -13,6 +15,7 @@ from streamlit.testing.v1 import AppTest
 from atlaspmo.analysis.contract import AnalysisContext
 from atlaspmo.analysis.paths.mode_b import PathsBConfig, PathsModeB
 from atlaspmo.analysis.quality.check import evaluate
+from atlaspmo.analysis.quality.module import QualityConfig, QualityModule
 from atlaspmo.analysis.quality.profiles import load_profile
 from atlaspmo.io.load import schedule_from_xer
 from atlaspmo.io.synthetic import write_xer
@@ -50,6 +53,26 @@ def _bei_value(app: AppTest) -> float:
             found = rows.iloc[0]
     assert found is not None
     return float(found)
+
+
+_QUALITY_KEYS = ("bei", "missed_tasks", "gao_10", "quality_index")
+_MISSING_BASELINE = "Falta el proyecto baseline."
+
+
+def _same_quality(got: dict, expected: dict) -> None:
+    for key in _QUALITY_KEYS:
+        assert got[key].status == expected[key].status
+        assert got[key].value == expected[key].value
+
+
+def _xlsx_text(payload: bytes) -> str:
+    """Shared strings and worksheets. The caller checks the baseline sentence."""
+    with zipfile.ZipFile(io.BytesIO(payload)) as book:
+        parts: list[str] = []
+        for name in book.namelist():
+            if name == "xl/sharedStrings.xml" or name.startswith("xl/worksheets/"):
+                parts.append(book.read(name).decode("utf-8"))
+        return "\n".join(parts)
 
 
 def _within(schedule: Schedule, needle: str, levels: int) -> set[str]:
@@ -207,9 +230,14 @@ def test_baseline_requirements_progress_and_full_report(tmp_path: Path) -> None:
     app.button[0].click().run()
     assert app.exception == []
     profile, _note = load_profile(str(app.selectbox[0].value))
-    expected = evaluate(actual, profile, baseline)[0]["bei"].value
-    assert expected is not None
-    assert _bei_value(app) == pytest.approx(expected)
+    expected = evaluate(actual, profile, baseline)[0]
+    assert expected["bei"].value is not None
+    assert _bei_value(app) == pytest.approx(expected["bei"].value)
+    quality = next(item for item in app.session_state["results"] if item.module_id == "quality")
+    _same_quality(quality.metrics, expected)
+    assert quality.metrics["bei"].value is not None
+    assert _bei_value(app) == pytest.approx(quality.metrics["bei"].value)
+    assert _MISSING_BASELINE not in quality.findings.to_csv(index=False)
     # AppTest stores st.progress(1.0) as 100.
     assert any(bar.value == 100 for bar in app.progress)
     labels = {item.label for item in app.tabs}
@@ -251,6 +279,7 @@ def test_baseline_requirements_progress_and_full_report(tmp_path: Path) -> None:
     assert "Informe Excel" in names
     assert "Informe PDF" in names
     assert captured["informe.xlsx"].startswith(b"PK")
+    assert _MISSING_BASELINE not in _xlsx_text(captured["informe.xlsx"])
     assert captured["informe.pdf"].startswith(b"%PDF")
 
 
@@ -363,3 +392,31 @@ def test_batch_orders_by_evaluate_and_library_skips_xer(tmp_path: Path) -> None:
     on_cells = _library_cells(on)
     assert any(cell == xer_text for cell in on_cells)
     assert any("ERMHDR" in str(cell) for cell in on_cells)
+
+
+def test_quality_module_reads_other_as_baseline(tmp_path: Path) -> None:
+    actual_bytes, baseline_bytes = _bei_bytes(tmp_path)
+    actual = schedule_from_xer(read_xer_bytes(actual_bytes))
+    baseline = schedule_from_xer(read_xer_bytes(baseline_bytes))
+    profile, _note = load_profile("dcma_estricto")
+    expected = evaluate(actual, profile, baseline)[0]
+    result = QualityModule().run(
+        AnalysisContext(schedule=actual, other=baseline),
+        QualityConfig(profile="dcma_estricto"),
+    )
+    _same_quality(result.metrics, expected)
+
+
+def test_baseline_proj_id_ignores_other(tmp_path: Path) -> None:
+    actual_bytes, baseline_bytes = _bei_bytes(tmp_path)
+    actual = schedule_from_xer(read_xer_bytes(actual_bytes))
+    other = schedule_from_xer(read_xer_bytes(baseline_bytes))
+    profile, _note = load_profile("dcma_estricto")
+    result = QualityModule().run(
+        AnalysisContext(schedule=actual, other=other),
+        QualityConfig(profile="dcma_estricto", baseline_proj_id="2"),
+    )
+    chosen = evaluate(actual, profile, actual.select("2"))[0]
+    ignored = evaluate(actual, profile, other)[0]
+    assert chosen["bei"].status != ignored["bei"].status
+    _same_quality(result.metrics, chosen)

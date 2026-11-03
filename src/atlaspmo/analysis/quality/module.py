@@ -14,6 +14,7 @@ from atlaspmo.analysis.contract import (
 )
 from atlaspmo.analysis.quality.check import evaluate
 from atlaspmo.analysis.quality.profiles import load_profile
+from atlaspmo.model.schedule import Schedule
 
 
 class QualityConfig(BaseModel):
@@ -47,7 +48,13 @@ class QualityModule:
                 metadata=RunMetadata(app_version=__version__, input_sha256=ctx.input_sha256),
             )
         current = ctx.schedule.select(chosen.proj_id)
-        baseline = ctx.schedule.select(chosen.baseline_proj_id) if chosen.baseline_proj_id else None
+        # An explicit id still comes from this file. The second XER is ctx.other.
+        if chosen.baseline_proj_id:
+            baseline = ctx.schedule.select(chosen.baseline_proj_id)
+        elif isinstance(ctx.other, Schedule):
+            baseline = ctx.other
+        else:
+            baseline = None
         metrics, findings, notes = evaluate(current, profile, baseline)
         approximations.extend(notes)
         return ModuleResult(

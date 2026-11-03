@@ -8,10 +8,8 @@ import pandas as pd
 import streamlit as st
 from pydantic import BaseModel
 
-from atlaspmo.analysis.contract import AnalysisContext, Metric, Requirement
-from atlaspmo.analysis.quality.check import evaluate
+from atlaspmo.analysis.contract import AnalysisContext, Requirement
 from atlaspmo.analysis.quality.module import QualityConfig
-from atlaspmo.analysis.quality.profiles import load_profile
 from atlaspmo.batch import BatchRow, ranking_bytes, run_folder
 from atlaspmo.bootstrap import bootstrap
 from atlaspmo.io.load import schedule_from_xer
@@ -128,11 +126,6 @@ profile_files = sorted((ROOT / "profiles").glob("*.yaml"))
 profile_names = [path.stem for path in profile_files] or ["dcma_estricto"]
 profile_name = st.selectbox("Perfil de calidad", profile_names)
 
-baseline_bei: Metric | None = None
-if schedule is not None and baseline is not None:
-    chosen_profile, _profile_note = load_profile(str(profile_name))
-    baseline_bei = evaluate(schedule, chosen_profile, baseline)[0]["bei"]
-
 if st.button("Ejecutar") and schedule is not None and picked:
     chosen = [labels[name] for name in picked]
     configs: dict[str, BaseModel] = {}
@@ -164,13 +157,9 @@ if results:
                 st.caption(f"Perfil registrado: {result.metadata.profile}")
             for note in result.approximations:
                 st.caption(note)
-            shown_metrics = result.metrics
-            if result.module_id == "quality" and baseline_bei is not None:
-                shown_metrics = dict(result.metrics)
-                shown_metrics["bei"] = baseline_bei
             rows = [
                 {"métrica": key, "valor": metric.value, "estado": metric.status}
-                for key, metric in shown_metrics.items()
+                for key, metric in result.metrics.items()
             ]
             if rows:
                 st.dataframe(rows, hide_index=True)
