@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import NamedTuple
 
 from atlaspmo.calendars.data import parse_clndr_data
 from atlaspmo.calendars.worktime import WorkCalendar, elapsed_calendar
@@ -23,8 +24,14 @@ _KNOWN_LINKS = {"PR_FS", "PR_SS", "PR_FF", "PR_SF"}
 _ROLLUP = {"TT_LOE", "TT_WBS"}
 
 
-@dataclass(frozen=True)
-class ScheduledActivity:
+class ScheduledActivity(NamedTuple):
+    """One scheduled activity.
+
+    A tuple subclass, not a frozen dataclass: building thirty thousand of
+    the latter misses the cpm_30k budget on this machine. Field access and
+    equality stay the same. ``_replace`` stands in for ``dataclasses.replace``.
+    """
+
     task_id: str
     early_start: datetime
     early_finish: datetime

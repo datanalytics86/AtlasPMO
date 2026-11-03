@@ -46,6 +46,8 @@ _CSTR = {
     "CS_MANDFIN": 8,
     "CS_ALAP": 9,
 }
+# Minute 0 is 0001-01-01 00:00, the same origin as from_minute.
+_MINUTE_EPOCH = np.datetime64("0001-01-01T00:00")
 _CACHE: dict[tuple[object, ...], Compiled] = {}
 _KEYS: list[tuple[object, ...]] = []
 LAST: dict[str, object] = {
@@ -688,49 +690,150 @@ def _invoke(compiled: Compiled) -> int:
     return code
 
 
-def _result(compiled: Compiled) -> CpmResult:
-    notes = list(compiled.notes)
-    by_id: dict[str, ScheduledActivity] = {}
-    finishes: list[datetime] = []
-    driving_by_index: list[tuple[str, ...]] = []
-    for index, task_id in enumerate(compiled.task_ids):
-        early_s, early_f, late_s, late_f = _dates(compiled, index)
-        finishes.append(_pre_finish(compiled, index))
-        driving = _driving(compiled, index)
-        driving_by_index.append(driving)
-        by_id[task_id] = ScheduledActivity(
-            task_id=task_id,
-            early_start=early_s,
-            early_finish=early_f,
-            late_start=late_s,
-            late_finish=late_f,
-            total_float_hours=int(compiled.total_f[index]) / 60,
-            free_float_hours=int(compiled.free_f[index]) / 60,
-            critical=bool(compiled.critical[index]),
-            driving_pred_ids=driving,
-        )
-        if compiled.viol_ms_f[index] == 1:
-            notes.append(_forward_note(compiled.labels[index], compiled, index, start=True))
-        if compiled.viol_mf_f[index] == 1:
-            notes.append(_forward_note(compiled.labels[index], compiled, index, start=False))
-    for index in range(len(compiled.task_ids) - 1, -1, -1):
-        if compiled.viol_ms_b[index] == 1:
-            notes.append(_backward_note(compiled.labels[index], compiled, index, start=True))
-        if compiled.viol_mf_b[index] == 1:
-            notes.append(_backward_note(compiled.labels[index], compiled, index, start=False))
+def _minute_rows(compiled: Compiled) -> list[list[datetime]]:
+    """Early, late and pre-ALAP finishes as datetimes, one list per array."""
+    block = np.vstack((compiled.es, compiled.ef, compiled.ls, compiled.lf, compiled.ef_pre)).astype(
+        np.int64, copy=False
+    )
+    rows: list[list[datetime]] = (_MINUTE_EPOCH + block.astype("timedelta64[m]")).tolist()
+    return rows
+
+
+def _driving_ids(compiled: Compiled) -> list[tuple[str, ...]]:
+    """Driving predecessor ids in edge order. One tuple per activity."""
+    count = len(compiled.task_ids)
+    edges = np.flatnonzero(np.asarray(compiled.drive) == 1)
+    left = np.searchsorted(edges, compiled.pred_ptr[:-1], side="left").tolist()
+    right = np.searchsorted(edges, compiled.pred_ptr[1:], side="left").tolist()
+    edge_list: list[int] = edges.tolist()
+    pred_ids = compiled.pred_ids
+    driving: list[tuple[str, ...]] = [()] * count
+    for index, start in enumerate(left):
+        stop = right[index]
+        width = stop - start
+        if width == 1:
+            driving[index] = (pred_ids[edge_list[start]],)
+        elif width > 1:
+            driving[index] = tuple(pred_ids[edge_list[cursor]] for cursor in range(start, stop))
+    return driving
+
+
+def _apply_actuals(
+    compiled: Compiled,
+    rows: list[list[datetime]],
+    driving: list[tuple[str, ...]],
+) -> None:
+    """Put actual instants back. The bulk rows have already dropped seconds."""
+    special = np.flatnonzero((compiled.done == 1) | (compiled.started == 1))
+    if special.size == 0:
+        return
+    early_s, early_f, late_s, late_f, pre = rows
+    for index in special.tolist():
+        if compiled.done[index] == 1:
+            early_s[index], early_f[index], late_s[index], late_f[index] = _dates(compiled, index)
+            pre[index] = _pre_finish(compiled, index)
+            driving[index] = _driving(compiled, index)
+            continue
+        raw = compiled.raw_start[index]
+        if raw is None:
+            continue
+        raw_minute = to_minute(raw)
+        if raw_minute == int(compiled.es[index]):
+            early_s[index] = raw
+        keeps_seconds = bool(raw.second or raw.microsecond)
+        if keeps_seconds and raw_minute == int(compiled.logic_es[index]):
+            driving[index] = ()
+
+
+def _apply_open_ends(
+    compiled: Compiled,
+    rows: list[list[datetime]],
+    project_finish: datetime | None,
+) -> None:
+    """Same late-finish seconds and open ALAP dates as the reference pack."""
+    open_ends = np.flatnonzero(compiled.succ_ptr[1:] == compiled.succ_ptr[:-1])
+    if open_ends.size == 0:
+        return
+    early_s, early_f, late_s, late_f, _pre = rows
+    for index in open_ends.tolist():
+        finish = late_f[index]
+        start = early_s[index]
+        end = early_f[index]
+        if _finish_anchor(compiled, index, project_finish) and project_finish is not None:
+            finish = project_finish
+        if _open_alap(compiled, index):
+            start = late_s[index]
+            end = finish
+        early_s[index] = start
+        early_f[index] = end
+        late_f[index] = finish
+
+
+def _append_notes(compiled: Compiled, notes: list[str]) -> None:
+    labels = compiled.labels
+    if np.any(compiled.viol_ms_f) or np.any(compiled.viol_mf_f):
+        for index, label in enumerate(labels):
+            if compiled.viol_ms_f[index] == 1:
+                notes.append(_forward_note(label, compiled, index, start=True))
+            if compiled.viol_mf_f[index] == 1:
+                notes.append(_forward_note(label, compiled, index, start=False))
+    if np.any(compiled.viol_ms_b) or np.any(compiled.viol_mf_b):
+        last = len(labels) - 1
+        for index in range(last, -1, -1):
+            if compiled.viol_ms_b[index] == 1:
+                notes.append(_backward_note(labels[index], compiled, index, start=True))
+            if compiled.viol_mf_b[index] == 1:
+                notes.append(_backward_note(labels[index], compiled, index, start=False))
+    if not np.any(compiled.alap_blocked):
+        return
     for index in compiled.scan:
         if compiled.alap_blocked[index] == 1:
             code = compiled.activities[index].task_code
             notes.append(f"{code}: ALAP con sucesoras no se reprograma en esta fase.")
-    project_finish = max(finishes) if finishes else None
-    _restore_finish_seconds(compiled, by_id, project_finish)
-    on_longest = _longest(compiled, finishes, driving_by_index, project_finish)
+
+
+def _hours(values: np.ndarray) -> list[float]:
+    return [int(value) / 60 for value in values.tolist()]
+
+
+def _result(compiled: Compiled) -> CpmResult:
+    notes = list(compiled.notes)
+    task_ids = compiled.task_ids
+    count = len(task_ids)
+    if count == 0:
+        return CpmResult({}, None, tuple(dict.fromkeys(notes)), compiled.skipped)
+    rows = _minute_rows(compiled)
+    driving = _driving_ids(compiled)
+    _apply_actuals(compiled, rows, driving)
+    project_finish = max(rows[4]) if rows[4] else None
+    _apply_open_ends(compiled, rows, project_finish)
+    early_s, early_f, late_s, late_f, _pre = rows
+    total_h = _hours(compiled.total_f)
+    free_h = _hours(compiled.free_f)
+    critical = [bool(value) for value in compiled.critical.tolist()]
+    built = [
+        ScheduledActivity(
+            task_ids[index],
+            early_s[index],
+            early_f[index],
+            late_s[index],
+            late_f[index],
+            total_h[index],
+            free_h[index],
+            critical[index],
+            driving[index],
+        )
+        for index in range(count)
+    ]
+    by_id = dict(zip(task_ids, built, strict=True))
+    _append_notes(compiled, notes)
+    on_longest: set[str] = set()
     if compiled.rule == 1:
-        for task_id, item in list(by_id.items()):
-            by_id[task_id] = replace(
-                item,
-                critical=task_id in on_longest,
-            )
+        on_longest = _longest(compiled, rows[4], driving, project_finish)
+        for task_id, item in by_id.items():
+            flag = task_id in on_longest
+            if item.critical is not flag:
+                by_id[task_id] = item._replace(critical=flag)
     if compiled.has_rollup:
         _attach_rollup(compiled, by_id, notes, on_longest)
     return CpmResult(by_id, project_finish, tuple(dict.fromkeys(notes)), compiled.skipped)
@@ -811,36 +914,6 @@ def _constraints_leave_project_finish(
             continue
         return False
     return True
-
-
-def _restore_finish_seconds(
-    compiled: Compiled,
-    by_id: dict[str, ScheduledActivity],
-    project_finish: datetime | None,
-) -> None:
-    for index, task_id in enumerate(compiled.task_ids):
-        item = by_id[task_id]
-        late_f = item.late_finish
-        early_s = item.early_start
-        early_f = item.early_finish
-        if _finish_anchor(compiled, index, project_finish) and project_finish is not None:
-            late_f = project_finish
-        if _open_alap(compiled, index):
-            early_s = item.late_start
-            early_f = late_f
-        unchanged = (
-            late_f is item.late_finish
-            and early_s is item.early_start
-            and early_f is item.early_finish
-        )
-        if unchanged:
-            continue
-        by_id[task_id] = replace(
-            item,
-            early_start=early_s,
-            early_finish=early_f,
-            late_finish=late_f,
-        )
 
 
 def _longest(
