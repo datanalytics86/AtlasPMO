@@ -43,6 +43,7 @@ def test_mode_a_does_not_trace_a_driving_chain(tmp_path: Path) -> None:
         "band",
         "critical",
         "path",
+        "driving_activity",
     ]
 
 

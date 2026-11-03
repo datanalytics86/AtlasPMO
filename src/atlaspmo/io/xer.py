@@ -182,3 +182,16 @@ def _parse_tables(lines: list[str]) -> tuple[XerTable, ...]:
 def _cells(line: str) -> list[str]:
     parts = line.split("\t")
     return parts[1:]
+
+
+def read_driving_path_flag(table: XerTable, values: dict[str, str]) -> str | None:
+    """Read TASK.driving_path_flag only when that column is present.
+
+    An empty cell is None. A missing column is None and is not invented.
+    """
+    if not table.has_field("driving_path_flag"):
+        return None
+    raw = values.get("driving_path_flag", "")
+    if raw == "":
+        return None
+    return raw

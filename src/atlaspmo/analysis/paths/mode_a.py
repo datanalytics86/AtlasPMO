@@ -149,6 +149,7 @@ def _classify(
                 "band": band,
                 "critical": is_critical,
                 "path": _stored_path(activity, path_column),
+                "driving_activity": activity.driving_path_flag in {"Y", "y"},
             }
         )
     if skipped:

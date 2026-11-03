@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from atlaspmo.io.xer import XerFile, XerTable
+from atlaspmo.io.xer import XerFile, XerTable, read_driving_path_flag
 from atlaspmo.model.schedule import (
     Activity,
     ActivityCode,
@@ -178,6 +178,8 @@ def _wbs(table: XerTable | None, absent: set[str]) -> list[Wbs]:
 def _activities(table: XerTable | None, absent: set[str], notes: list[str]) -> list[Activity]:
     if table is None:
         return []
+    if not table.has_field("driving_path_flag"):
+        absent.add("TASK.driving_path_flag")
     rows: list[Activity] = []
     for row in table.rows:
         values = row.values
@@ -214,6 +216,7 @@ def _activities(table: XerTable | None, absent: set[str], notes: list[str]) -> l
                 cstr_date=_date(table, values, "cstr_date", absent, notes),
                 cstr_date2=_date(table, values, "cstr_date2", absent, notes),
                 expect_end_date=_date(table, values, "expect_end_date", absent, notes),
+                driving_path_flag=read_driving_path_flag(table, values),
             )
         )
     return rows

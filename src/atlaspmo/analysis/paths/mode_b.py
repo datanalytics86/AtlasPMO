@@ -69,6 +69,9 @@ class PathsModeB:
             for item in result.by_id.values()
         ]
         chain = _driving_chain(result, codes, chosen.milestone_code)
+        paths, continuity_value, continuity_status, path_notes = _contract_float_paths(
+            schedule, result
+        )
         critical = sum(1 for item in result.by_id.values() if item.critical)
         status, detail = _cp_test(schedule, options)
         return ModuleResult(
@@ -76,9 +79,14 @@ class PathsModeB:
             metrics={
                 "critical_count": Metric(float(critical), options.critical_hours, "info"),
                 "cp_test": Metric(None, None, status),
+                "continuity": Metric(continuity_value, None, continuity_status),
             },
             findings=empty_findings(),
-            tables={"cpm": pd.DataFrame(rows), "driving_chain": pd.DataFrame(chain)},
+            tables={
+                "cpm": pd.DataFrame(rows),
+                "driving_chain": pd.DataFrame(chain),
+                "float_paths": paths,
+            },
             approximations=list(
                 dict.fromkeys(
                     [
@@ -88,8 +96,11 @@ class PathsModeB:
                             "La cadena driving recorre las predecesoras cuyo límite "
                             "fija el inicio temprano. No es un float path de P6."
                         ),
-                        "Multiple float paths no se calculan.",
-                        "La continuidad desde la fecha de corte hasta el término no se verifica.",
+                        (
+                            "Estas rutas las calcula el motor con el algoritmo del contrato. "
+                            "No son un float path de P6."
+                        ),
+                        *path_notes,
                         (
                             "CP Test atrasa 8 horas la primera actividad crítica "
                             "ordenada por task_code."
@@ -111,6 +122,132 @@ def _driving_codes(pred_ids: tuple[str, ...], codes: dict[str | None, str | None
     return ",".join(name for name in names if name)
 
 
+def _contract_float_paths(
+    schedule: Schedule,
+    result: CpmResult,
+) -> tuple[pd.DataFrame, float | None, str, list[str]]:
+    """Number contract float paths. This is not Primavera P6's algorithm.
+
+    Do not present the table as a P6 float path. Eligible activities are
+    those in ``result.by_id`` whose ``task_type`` is neither ``TT_LOE`` nor
+    ``TT_WBS``. Repeat until every eligible activity has a path:
+
+    1. The seed is the unassigned activity with the smallest
+       ``total_float_hours``. A tie goes to the later ``early_finish``,
+       then to ascending ``task_code``.
+    2. The chain starts at the seed. While the cursor has a driving
+       predecessor that is eligible and still unassigned, keep exactly one:
+       the greatest ``remain_drtn_hr_cnt`` (0 when it is missing). A tie
+       goes to ascending ``task_code``. Prepend that predecessor. The other
+       driving predecessors stay free.
+    3. Path k, starting at 1, numbers ``float_path_order`` from 1 at the
+       start of the chain through the seed at the end.
+
+    Continuity is judged only on path 1. Without ``last_recalc_date`` the
+    status is ``no_evaluable``, the note says the data date is missing, and
+    continuity is not true. It is true only when the path is not empty, the
+    order-1 ``early_start`` is less than or equal to the data date, the last
+    ``early_finish`` equals ``project_finish``, and every consecutive pair
+    has a relationship from the earlier activity to the next. If any of
+    those three is missing, continuity is false and the note contains
+    «quiebre».
+    """
+    activities = {item.task_id: item for item in schedule.activities if item.task_id}
+    eligible = {
+        task_id
+        for task_id, activity in activities.items()
+        if task_id in result.by_id and activity.task_type not in {"TT_LOE", "TT_WBS"}
+    }
+    assigned: set[str] = set()
+    rows: list[dict[str, object]] = []
+    path_number = 0
+    first_chain: list[str] = []
+    while eligible - assigned:
+        seed = min(
+            eligible - assigned,
+            key=lambda task_id: _seed_key(result, activities, task_id),
+        )
+        chain = [seed]
+        assigned.add(seed)
+        cursor = seed
+        while True:
+            options = [
+                pred_id
+                for pred_id in result.by_id[cursor].driving_pred_ids
+                if pred_id in eligible and pred_id not in assigned
+            ]
+            if not options:
+                break
+            chosen = min(options, key=lambda pred_id: _duration_key(activities, pred_id))
+            chain.insert(0, chosen)
+            assigned.add(chosen)
+            cursor = chosen
+        path_number += 1
+        if path_number == 1:
+            first_chain = chain
+        for order, task_id in enumerate(chain, start=1):
+            rows.append(
+                {
+                    "task_code": activities[task_id].task_code,
+                    "float_path": path_number,
+                    "float_path_order": order,
+                }
+            )
+    frame = pd.DataFrame(rows, columns=["task_code", "float_path", "float_path_order"])
+    value, status, notes = _path_continuity(schedule, result, first_chain)
+    return frame, value, status, notes
+
+
+def _seed_key(
+    result: CpmResult,
+    activities: dict[str, Activity],
+    task_id: str,
+) -> tuple[float, float, str]:
+    item = result.by_id[task_id]
+    code = activities[task_id].task_code or ""
+    return (item.total_float_hours, -item.early_finish.timestamp(), code)
+
+
+def _duration_key(activities: dict[str, Activity], task_id: str) -> tuple[float, str]:
+    hours = activities[task_id].remain_drtn_hr_cnt
+    duration = 0.0 if hours is None else hours
+    return (-duration, activities[task_id].task_code or "")
+
+
+def _path_continuity(
+    schedule: Schedule,
+    result: CpmResult,
+    chain: list[str],
+) -> tuple[float | None, str, list[str]]:
+    dates = {
+        item.last_recalc_date for item in schedule.projects if item.last_recalc_date is not None
+    }
+    if len(dates) != 1:
+        if not dates:
+            return None, "no_evaluable", ["Falta la fecha de corte."]
+        return None, "no_evaluable", ["Hay más de una fecha de corte."]
+    cutoff = next(iter(dates))
+    broken = ["La ruta 1 tiene un quiebre desde la fecha de corte hasta el término."]
+    if not chain or result.project_finish is None:
+        return 0.0, "falsa", broken
+    first = result.by_id[chain[0]]
+    last = result.by_id[chain[-1]]
+    start_ok = first.early_start <= cutoff
+    finish_ok = last.early_finish == result.project_finish
+    links_ok = all(
+        _has_link(schedule, chain[index], chain[index + 1]) for index in range(len(chain) - 1)
+    )
+    if start_ok and finish_ok and links_ok:
+        return 1.0, "verdadera", []
+    return 0.0, "falsa", broken
+
+
+def _has_link(schedule: Schedule, pred_id: str, succ_id: str) -> bool:
+    return any(
+        link.pred_task_id == pred_id and link.task_id == succ_id for link in schedule.relationships
+    )
+
+
 def _driving_chain(
     result: CpmResult,
     codes: dict[str | None, str | None],
@@ -120,8 +257,8 @@ def _driving_chain(
 
     A predecessor is driving when the CPM bound it imposes equals the
     successor's early start, including the open-milestone rule in the engine.
-    The walk is not multiple float paths and it does not check continuity
-    from the data date.
+    This walk is the driving chain. Contract float paths are numbered apart
+    and are not a P6 float path.
     """
     starts: list[str] = []
     if milestone_code:

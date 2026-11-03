@@ -74,6 +74,7 @@ class Activity:
     cstr_date: datetime | None = None
     cstr_date2: datetime | None = None
     expect_end_date: datetime | None = None
+    driving_path_flag: str | None = None
 
 
 @dataclass(frozen=True)

@@ -41,7 +41,7 @@ Leídos: `wbs_id`, `proj_id`, `parent_wbs_id`, `wbs_short_name`, `wbs_name`. Sup
 
 Citados por PyP6Xer y leídos aquí: `task_id`, `proj_id`, `wbs_id`, `clndr_id`, `phys_complete_pct`, `complete_pct_type`, `task_type`, `status_code`, `task_code`, `task_name`, `total_float_hr_cnt`, `free_float_hr_cnt`, `remain_drtn_hr_cnt`, `target_drtn_hr_cnt`, `act_start_date`, `act_end_date`, `late_start_date`, `late_end_date`, `early_start_date`, `early_end_date`, `target_start_date`, `target_end_date`, `cstr_type`, `cstr_type2`, `int_path`, `int_path_order`.
 
-También se leen `cstr_date` (PyP6Xer) y `expect_end_date` (PyP6Xer). `cstr_date2` lo nombra el megaprompt; el nombre no está confirmado. `expect_end_date` no mueve el CPM. PyP6Xer también nombra, y esta fase no carga: `duration_type`, `rsrc_id`, `restart_date`, `reend_date`, `driving_path_flag`.
+También se leen `cstr_date` (PyP6Xer), `expect_end_date` (PyP6Xer) y `driving_path_flag` (PyP6Xer). `driving_path_flag` se lee cuando la columna está. `cstr_date2` lo nombra el megaprompt; el nombre no está confirmado. `expect_end_date` no mueve el CPM. PyP6Xer también nombra, y esta fase no carga: `duration_type`, `rsrc_id`, `restart_date`, `reend_date`.
 
 `float_path` y `float_path_order` los nombra el megaprompt en la sección 6 (modo A). PyP6Xer no los lee en `TASK`; lee `int_path` e `int_path_order`. El modo A prefiere `TASK.float_path` si la columna está. Si no, usa `TASK.int_path` y deja la aproximación en el resultado. La ruta `"1"` se toma como la primera ruta guardada. Es un supuesto.
 
