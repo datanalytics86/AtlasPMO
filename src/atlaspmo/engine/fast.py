@@ -752,8 +752,6 @@ def _apply_open_ends(
 ) -> None:
     """Same late-finish seconds and open ALAP dates as the reference pack."""
     open_ends = np.flatnonzero(compiled.succ_ptr[1:] == compiled.succ_ptr[:-1])
-    if open_ends.size == 0:
-        return
     early_s, early_f, late_s, late_f, _pre = rows
     for index in open_ends.tolist():
         finish = late_f[index]
@@ -800,8 +798,6 @@ def _result(compiled: Compiled) -> CpmResult:
     notes = list(compiled.notes)
     task_ids = compiled.task_ids
     count = len(task_ids)
-    if count == 0:
-        return CpmResult({}, None, tuple(dict.fromkeys(notes)), compiled.skipped)
     rows = _minute_rows(compiled)
     driving = _driving_ids(compiled)
     _apply_actuals(compiled, rows, driving)
