@@ -58,3 +58,25 @@ En el worktree, sin pytest, sin red y sin la red de 30 000:
 ## Qué no pude verificar
 
 No reejecuté pytest ni el gate. El 91,1 es el del gate de E9 ya versionado, no una medición de esta auditoría. No corrí `evaluate` para firmar el 4/3 ni el 2/2: la cuenta es la del texto. No abrí `data/real/` ni `ATLASPMO_GOLDEN_DIR`.
+
+## Segunda pasada
+
+ACEPTADO
+
+Segunda lectura del contrato en `fef86e5` (rama `v3`), no del texto de `d38bdaa`. El rechazo de arriba se conserva. Los tests `tests/test_e10_*.py` y los oráculos `tests/oracle/span_holiday.py` y `tests/oracle/bei.py` siguen sin existir: el contrato los deja fuera de verde. No es rechazo. No se leyó `data/real/` ni `ATLASPMO_GOLDEN_DIR`. No se corrió el gate ni la red de 30 000. No se firmó el 4/3 ni el 2/2 con `evaluate`.
+
+El hueco 1 quedó cerrado. `tests/test_phase1.py` no se edita. `test_hand_calculated_metrics` exige `file` y, en cada clave de `expect`, `value` numérico y `status`. El contrato lo dice en las dos filas y en la lista de archivos.
+
+1. Cerrado. `cpli_ss.yaml` trae `file: cpli_ss.xer`, `calculado_por`, `verificado_por: tests/oracle/span_holiday.py`, `metodo` y `expect.cpli` con `value` 1.3333333333333333 y `status: cumple`. Ese flotante es `(24+8)/24`, el mismo 4/3. `scripts/build_cases.py` escribe `cpli_ss.xer` con `plan_end_date` y el feriado en `clndr_data`. Esas dos columnas ya las lee el cargador. `parse_clndr_data` ya acepta `DaysOfWeek` y una excepción `(d|serial)` sin turno, que es un día sin trabajo. `test_round_trip_cases` no se toca. Dejar el YAML sin `file` o sin `status` no queda en verde.
+2. Cerrado. `bei.yaml` trae `file: bei.xer`, `proj_id: "1"`, `baseline_proj_id: "2"`, `calculado_por`, `verificado_por: tests/oracle/bei.py`, `metodo` y `expect.bei` con `value` 1.0 y `status: cumple`. 1.0 es el `2 / 2` que el assert de `tests/test_e3_bei.py` no mueve. El XER lo escribe `scripts/build_cases.py`: proyecto 1 con corte 2026-02-01 00:00 y proyecto 2 como baseline. LATE completa, fin real 2026-01-12 08:00 y fin baseline 2026-01-10 08:00. OPEN sin completar, fin baseline 2026-01-20 08:00. EARLY completa, fin real 2026-01-05 16:00 y fin baseline 2026-03-01 08:00. Son las tres filas del caso ya escrito. El YAML tiene que pasar el test sin editarlo. Dejarlo sin `file`, sin `status` o sin los dos proyectos no queda en verde.
+
+R-395: **sí.** El término guardado de A es el jueves 2026-01-08 16:00, con `float_path` 1. B no está en esa ruta. El largo sigue siendo 24 h y la holgura 8 h. El oráculo recorre los turnos, se salta el miércoles y no importa `src/atlaspmo`. `evaluate` iguala el 4/3; firmar el número con `evaluate` no queda en verde. `tests/oracle/span.py` y el (24+16)/24 no se tocan.
+
+R-396: **sí.** El oráculo recibe las tres filas y la fecha de corte y devuelve 2/2. No importa `src/atlaspmo`. El assert `2 / 2` y `cumple` no se mueven.
+
+No queda otro hueco. No se inventa un campo XER. El tope de `RSRCRATE` sigue sin calcularse.
+
+## Comandos de la segunda pasada
+
+- `git rev-parse --short HEAD` y `git log -1 --oneline`: `fef86e5`, «segunda redaccion del contrato de E10». El rechazo de arriba queda en este archivo.
+- `git status --porcelain` antes de esta sección: vacío.
