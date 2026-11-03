@@ -1,0 +1,74 @@
+{
+  "etapa": "E10",
+  "exit_code": 0,
+  "test_count": 301,
+  "coverage_percent": 91.3,
+  "benchmarks": {},
+  "controls": [
+    {
+      "id": "G1",
+      "status": "pass",
+      "detail": "ruff check y ruff format --check en verde"
+    },
+    {
+      "id": "G2",
+      "status": "pass",
+      "detail": "mypy src sin errores"
+    },
+    {
+      "id": "G3",
+      "status": "pass",
+      "detail": "python -m pytest exit 0\nuv run pytest no arranca aqui (ADR-004); corrio python -m pytest"
+    },
+    {
+      "id": "G4",
+      "status": "pass",
+      "detail": "cobertura_total: 91.3; calendars lineas 91.5% ramas 81.6%; engine lineas 93.4% ramas 85.4%; logic lineas 89.2% ramas 80.1%; model lineas 100.0% ramas 100.0%; resto lineas 90.5% ramas 80.6% | meta pendiente: calendars ramas 81.6 bajo la meta 85; logic lineas 89.2 bajo la meta 90; logic ramas 80.1 bajo la meta 85 |     6    96%   47->46, 77, 113, 164->166, 233-234, 240\nsrc\\atlaspmo\\ui\\format_es.py                     11      0      2      0   100%\n-----------------------------------------------------------------------------------------\nTOTAL                                          6376    556   2594    417    89%\nCoverage JSON written to file coverage-gate.json\n301 passed, 9 deselected in 215.63s (0:03:35)\n"
+    },
+    {
+      "id": "G5",
+      "status": "pass",
+      "detail": "invariantes a-e con perfil qa"
+    },
+    {
+      "id": "G6",
+      "status": "pass",
+      "detail": "....                                                                     [100%]\n============================== warnings summary ===============================\ntests/perf/test_montecarlo.py::test_four_iterations_on_two_activities_finish\n  <perfil> Gen 2\\AtlasPMO\\src\\atlaspmo\\numeric\\batch.py:23: NumbaWarning: \u001b[1mCannot cache compiled function \"batch_passes\" as it uses dynamic globals (such as ctypes pointers and large global arrays)\u001b[0m\n    def batch_passes(  # noqa: PLR0913\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n4 passed, 5 deselected, 1 warning in 33.92s\n\nseccion11 activas ['lectura_30k', 'cpm_30k', 'dcma_30k', 'redundancia_30k', 'montecarlo_30k']: .....                                                                    [100%]\n============================== warnings summary ===============================\ntests/perf/test_seccion11.py::test_s11_montecarlo_30k\n  <perfil> Gen 2\\AtlasPMO\\src\\atlaspmo\\numeric\\batch.py:23: NumbaWarning: \u001b[1mCannot cache compiled function \"batch_passes\" as it uses dynamic globals (such as ctypes pointers and large global arrays)\u001b[0m\n    def batch_passes(  # noqa: PLR0913\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n5 passed, 1 warning in 89.99s (0:01:29)\n"
+    },
+    {
+      "id": "G7",
+      "status": "pass",
+      "detail": "no hay skip ni xfail"
+    },
+    {
+      "id": "G8",
+      "status": "pass",
+      "detail": "sin cronogramas fuera de fixtures, sin rutas de perfil, sin red"
+    },
+    {
+      "id": "G9",
+      "status": "pass",
+      "detail": "tablas y campos literales de src/ estan en XER_SPEC.md"
+    },
+    {
+      "id": "G10",
+      "status": "pass",
+      "detail": "10 requisitos de E10 citan un archivo de test que existe. El verde de la suite lo mide G3."
+    },
+    {
+      "id": "G11",
+      "status": "pass",
+      "detail": "cambios protegidos citan un ADR"
+    },
+    {
+      "id": "G12",
+      "status": "pass",
+      "detail": "tests 301 frente a 283"
+    },
+    {
+      "id": "G13",
+      "status": "info",
+      "detail": "no medido: falta el informe de qa-sabotaje"
+    }
+  ]
+}
