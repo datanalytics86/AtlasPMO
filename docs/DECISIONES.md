@@ -226,7 +226,7 @@ Decisión de E9, sin pregunta (sección 10.3 del megaprompt v3). El oráculo de 
 - El término de cada iteración es el máximo de `ef_pre`. La criticidad sale del array `critical` de ese mismo pase.
 - `tornado_hours <= 0` no recalcula nada. Si es positivo, se recalculan la actividad atrasada y sus sucesoras transitivas en el grafo que el CPM sí programa. LOE y WBS no entran a ese grafo: se colocan después del pase y no mueven el término, así que el conjunto visitado no las incluye. El delta de horas de trabajo del término iguala a un CPM completo de referencia con esa sola duración aumentada.
 - Si el calendario no cabe en el motor rápido, todo el Monte Carlo usa el bucle de referencia y lo dice en una nota. Ese camino no sirve para dar por cumplido el lote.
-- La meta `montecarlo_30k` no entra en `seccion11.toml` hasta medirla bajo 300 s a 30 000 actividades y 1 000 iteraciones, y solo con la etapa aprobada. No se salta el bucle cuando la varianza es cero: el test de la sección 11 no trae rangos.
+- La meta `montecarlo_30k` no entra en `seccion11.toml` hasta medirla bajo 300 s a 30 000 actividades y 1 000 iteraciones, y solo con la etapa aprobada. No se salta el bucle cuando la varianza es cero: el test de la sección 11 no trae rangos. Medida en este equipo: 63,569 s, con la compilación numba dentro del reloj y sin rangos. El veredicto APROBADO de E9 la activa (ADR-019).
 
 ## Nota local, fuera del repositorio
 

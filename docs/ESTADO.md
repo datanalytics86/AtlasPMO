@@ -10,7 +10,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 |---|---|
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
 | E8 | APROBADO en la segunda pasada. Gate `15494f4`: 272 tests, cobertura 91,0, G1–G12 pass, G13 info. `redundancia_30k` 14,839 s. H-3 y H-4 quedan menores. H-1 y H-2, de la primera pasada, quedaron cerrados al sacar la ruta de perfil del historial local. |
-| E9 | en curso. Lote y cono implementados. montecarlo_30k midió 63,569 s. H-1 corregido. Falta el gate y el veredicto. |
+| E9 | APROBADO. Gate `0750b2d`: 283 tests, cobertura 91,1, G1–G12 pass, G13 info. `montecarlo_30k` 63,569 s, activada. H-1 y H-2 de la primera pasada quedaron cerrados. |
 | E10 | pendiente |
 
 ### E8 — plan (ciclo 1)
@@ -38,6 +38,10 @@ Brecha B-07. El contrato es `docs/qa/E9/QC1_contrato.md` (ADR-022). No hay códi
 - El tornado corre solo si `tornado_hours > 0`, sobre la actividad atrasada y su cono de sucesoras. El delta del término se iguala al motor de referencia.
 - La varianza cero sigue igual al CPM determinístico, ahora por el camino rápido.
 - `montecarlo_30k` no se activa hasta un APROBADO y una medida bajo 300 s a 30 000 por 1 000. Aunque las duraciones no varíen, se ejecutan las 1 000 pasadas: el test oficial no trae rangos.
+
+### E9 — cierre
+
+APROBADO en la segunda pasada de producto. Gate `0750b2d`: 283 tests, cobertura 91,1, G1–G12 pass, G13 info. H-1 (la ventana no crecía si la muestra superaba la duración base) y H-2 quedaron cerrados. `montecarlo_30k` midió 63,569 s y entra en `seccion11.toml` (ADR-019). Las ramas de resto suben de 79,2 a 80,0. Engine no baja: el registro sigue en 95,0/89,8 y el gate midió 93,1/85,1.
 - En este equipo el pase rápido de 30 000 midió cerca de 0,2 s dentro de un `cpm_30k` de 0,378 a 0,415 s. Mil pasadas caben en 300 s si no se reconstruye el modelo ni se empaqueta un `CpmResult` por iteración.
 - El implementador no edita `seccion11.toml`, `baseline.json`, el gate, oráculos, esperados ni `fast.py`. Ya existe `cached_compiled`. Las ramas de engine quedaron en 85,1 contra un piso de 85,0.
 
