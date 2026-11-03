@@ -1,4 +1,4 @@
-"""AppTest of one synthetic load. The baseline is not associated here."""
+"""AppTest of one synthetic load."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def test_load_run_and_show_approximations() -> None:
     app.run()
     assert app.exception == []
     joined = " ".join(item.value for item in app.caption)
-    assert "baseline no se asocia" in joined
+    assert "baseline no se asocia" not in joined
     app.file_uploader[0].upload("minimal.xer", FIXTURE.read_bytes()).run()
     assert app.exception == []
     assert any("actividades" in item.value for item in app.markdown)

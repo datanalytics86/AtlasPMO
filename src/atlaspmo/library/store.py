@@ -57,6 +57,14 @@ class Library:
             )
             """
         )
+        self._con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schedule_files (
+                run_id VARCHAR,
+                xer_text VARCHAR
+            )
+            """
+        )
 
     def close(self) -> None:
         self._con.close()
@@ -68,8 +76,9 @@ class Library:
         schedule: Schedule | None = None,
         store_schedule: bool = False,
         input_name: str | None = None,
+        schedule_text: str | None = None,
     ) -> str:
-        """Store metrics and findings. Activities stay out unless store_schedule is true."""
+        """Store metrics and findings. The XER text is stored only when asked."""
         run_id = uuid4().hex
         seed = next(
             (item.metadata.seed for item in results if item.metadata.seed is not None),
@@ -100,6 +109,11 @@ class Library:
                     "INSERT INTO activities VALUES (?, ?, ?)",
                     [run_id, activity.task_code, activity.task_name],
                 )
+        if store_schedule and schedule_text:
+            self._con.execute(
+                "INSERT INTO schedule_files VALUES (?, ?)",
+                [run_id, schedule_text],
+            )
         return run_id
 
     def trend(self, metric_name: str) -> list[tuple[str, float]]:
