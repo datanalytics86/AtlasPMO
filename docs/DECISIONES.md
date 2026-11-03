@@ -216,6 +216,18 @@ Decisión de E8, sin pregunta (sección 10.3 del megaprompt v3 y ADR-016).
 - Un cono de sucesoras o predecesoras solo sustituye al pase completo si un test lo iguala, al minuto, con el pase completo. Si el proyecto se mueve, el vínculo no es redundante.
 - La meta `redundancia_30k` no entra en `docs/qa/seccion11.toml` hasta medirla bajo 180 s a 30 000 actividades en este equipo. Medida: 14,839 s, `mask_passes` 1. La segunda pasada de E8 la activa.
 
+## ADR-022 — Monte Carlo sobre los arrays compilados
+
+Decisión de E9, sin pregunta (sección 10.3 del megaprompt v3). El oráculo de fechas sigue siendo el motor de referencia.
+
+- La muestra es una matriz numpy `iteraciones × actividades`. La semilla es `RiskConfig.seed`. El consumo de `random.Random` sigue el orden de hoy: duraciones por rango, luego Iman-Conover, luego un `random()` de evento por iteración y por evento. Iman-Conover no se reescribe.
+- Cada iteración pisa minutos de duración con `int(round(horas * 60))`, la misma regla que `_duration`. Los hitos siguen en 0. No se arma otro `Schedule`.
+- El lote llama a `run_passes` ya compilado, con `prange` sobre las iteraciones y buffers propios por hilo. No se modifica `numeric/kernels.py`. El array `duration` de la caché se copia; al salir queda como entró.
+- El término de cada iteración es el máximo de `ef_pre`. La criticidad sale del array `critical` de ese mismo pase.
+- `tornado_hours <= 0` no recalcula nada. Si es positivo, se recalculan la actividad atrasada y sus sucesoras transitivas, más toda actividad cuya duración dependa de esa (LOE o WBS), y no el resto. El delta de horas de trabajo del término iguala a un CPM completo de referencia con esa sola duración aumentada.
+- Si el calendario no cabe en el motor rápido, todo el Monte Carlo usa el bucle de referencia y lo dice en una nota. Ese camino no sirve para dar por cumplido el lote.
+- La meta `montecarlo_30k` no entra en `seccion11.toml` hasta medirla bajo 300 s a 30 000 actividades y 1 000 iteraciones, y solo con la etapa aprobada. No se salta el bucle cuando la varianza es cero: el test de la sección 11 no trae rangos.
+
 ## Nota local, fuera del repositorio
 
 `~/.streamlit/config.toml` tenía un BOM y Streamlit no lo parseaba. Se reescribió

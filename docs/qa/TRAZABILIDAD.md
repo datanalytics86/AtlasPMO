@@ -151,3 +151,10 @@ Requisito R-xxx, etapa dueña, criterio, test planificado y fuente del oráculo.
 | R-374 | E8 | pase enmascarado, y el cono si existe, iguales a la referencia al minuto, también en gen_scale de 200 | tests/test_e8_mask.py | motor de referencia sobre el cronograma recortado |
 | R-375 | E8 | redundancia_30k medida a 30 000; se activa solo si baja de 180 s | tests/perf/test_seccion11.py | gen_scale.py en este equipo |
 | R-376 | E8 | un extremo que se queda sin vínculo no se confirma | tests/test_e8_mask.py | ADR-016, caso a mano |
+| R-380 | E9 | matriz numpy de duraciones con la semilla y el orden de random.Random de hoy; Iman-Conover y eventos sobre esa matriz | tests/test_e9_risk.py | sample_duration e iman_conover ya existentes, misma semilla |
+| R-381 | E9 | cada iteración es un pase numba con prange sobre los arrays de E7, sin armar Schedule ni CPM completo | tests/test_e9_risk.py | contador TRACE; schedule_cpm_reference en la red chica |
+| R-382 | E9 | tornado solo si tornado_hours > 0 y solo en el cono; el delta iguala al CPM completo | tests/test_e9_risk.py tests/property/test_e9_differential.py tests/test_e4_tornado.py tests/test_risk.py | schedule_cpm_reference con esa duración aumentada |
+| R-383 | E9 | varianza cero igual al CPM determinístico por el camino rápido | tests/property/test_invariant_e.py tests/test_risk.py | schedule_cpm |
+| R-384 | E9 | montecarlo_30k medido a 30 000 por 1 000; se activa solo si baja de 300 s y la etapa está aprobada | tests/perf/test_seccion11.py | gen_scale.py en este equipo; el implementador no activa la meta |
+| R-385 | E9 | la nota deja de decir que numba no se cargó cuando el lote corrió en numba | tests/test_e9_risk.py tests/test_risk.py | import de numba y TRACE passes |
+| R-386 | E9 | término, criticidad y tornado de los casos de mano no se mueven | tests/test_risk.py tests/test_e4_outputs.py tests/test_e4_tornado.py | asserts numéricos ya escritos |

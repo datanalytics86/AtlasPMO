@@ -10,7 +10,7 @@ Arranque de la sección 15 medido en `docs/qa/E7/inicio.md`. Equipo: Intel64 Fam
 |---|---|
 | E7 | APROBADO en el ciclo 3. Gate `577c6ba`: 239 tests, cobertura 91,2, G1–G12 pass, G13 info. H-8 queda menor: en tres bordes el fin tarde pierde segundos del fin de proyecto; el minuto, la holgura, el crítico y las conductoras coinciden. `cpm_30k` 0,237 s y `dcma_30k` 1,494 s activas. |
 | E8 | APROBADO en la segunda pasada. Gate `15494f4`: 272 tests, cobertura 91,0, G1–G12 pass, G13 info. `redundancia_30k` 14,839 s. H-3 y H-4 quedan menores. H-1 y H-2, de la primera pasada, quedaron cerrados al sacar la ruta de perfil del historial local. |
-| E9 | pendiente |
+| E9 | en curso. Ciclo 1: contrato escrito, a la espera de qa-spec. |
 | E10 | pendiente |
 
 ### E8 — plan (ciclo 1)
@@ -27,6 +27,19 @@ La clasificación no cambia. Cambian solo las reprogramaciones de la confirmaci�
 - `redundancia_30k` se activó al cerrar: 14,839 s a 30 000, bajo 180 s.
 
 Línea base de referencia en este equipo: lectura 0,655 s; CPM 9,892 s; DCMA 10,127 s; redundancia y Monte Carlo más de 30 min.
+
+### E9 — plan (ciclo 1)
+
+Brecha B-07. El contrato es `docs/qa/E9/QC1_contrato.md` (ADR-022). No hay código de producto hasta que qa-spec lo acepte.
+
+- Una compilación a los arrays de E7. El bucle no arma un `Schedule` ni llama al CPM completo por iteración.
+- La matriz de duraciones es numpy. La semilla y el orden de `random.Random` no cambian, para que los tests de mano sigan siendo el oráculo.
+- Los pases van en numba con `prange` y llaman a `run_passes`. Ese núcleo no se toca. El fin de proyecto sigue siendo el máximo de los fin temprano de antes de ALAP (ADR-020).
+- El tornado corre solo si `tornado_hours > 0`, sobre la actividad atrasada y su cono de sucesoras. El delta del término se iguala al motor de referencia.
+- La varianza cero sigue igual al CPM determinístico, ahora por el camino rápido.
+- `montecarlo_30k` no se activa hasta un APROBADO y una medida bajo 300 s a 30 000 por 1 000. Aunque las duraciones no varíen, se ejecutan las 1 000 pasadas: el test oficial no trae rangos.
+- En este equipo el pase rápido de 30 000 midió cerca de 0,2 s dentro de un `cpm_30k` de 0,378 a 0,415 s. Mil pasadas caben en 300 s si no se reconstruye el modelo ni se empaqueta un `CpmResult` por iteración.
+- El implementador no edita `seccion11.toml`, `baseline.json`, el gate, oráculos ni esperados. Las ramas de engine quedaron en 85,1 contra un piso de 85,0: `fast.py` no gana ramas nuevas.
 
 ## v2 — reporte final
 
