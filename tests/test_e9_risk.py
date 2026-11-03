@@ -6,9 +6,9 @@ import random
 from dataclasses import replace
 from pathlib import Path
 
-from atlaspmo.analysis.risk.config import DurationRange, RiskConfig, RiskEvent
+from atlaspmo.analysis.risk.config import CorrelationPair, DurationRange, RiskConfig, RiskEvent
 from atlaspmo.analysis.risk.montecarlo import TRACE, run_risk
-from atlaspmo.analysis.risk.sample import sample_duration
+from atlaspmo.analysis.risk.sample import iman_conover, sample_duration
 from atlaspmo.engine import fast as fast_engine
 from atlaspmo.engine.cpm import build_clocks, schedule_cpm
 from atlaspmo.engine.options import EngineOptions
@@ -201,6 +201,66 @@ def test_batch_edges_keep_a_pass_for_each_iteration(tmp_path: Path, monkeypatch)
     assert TRACE["passes"] == 0
     assert TRACE["full_cpm"] == 1
     assert "no corrió en numba" in " ".join(fallback.approximations)
+
+
+def test_a_long_duration_uses_a_window_that_fits(tmp_path: Path) -> None:
+    schedule = _load(tmp_path, [_task("1", "A", "8")], [])
+    reference = EngineOptions(engine="reference")
+    certain = run_risk(
+        schedule,
+        RiskConfig(
+            seed=1,
+            iterations=3,
+            tornado_hours=0,
+            events=[RiskEvent(name="largo", probability=1, impact_hours=176, task_codes=["A"])],
+        ),
+    )
+    expected = schedule_cpm(_hours(schedule, {"A": 184}), reference).project_finish
+    assert certain.finishes == (expected,) * 3
+    assert TRACE["passes"] == 3
+    assert TRACE["full_cpm"] == 0
+    fixed = run_risk(
+        schedule,
+        RiskConfig(
+            seed=1,
+            iterations=2,
+            tornado_hours=0,
+            ranges=[DurationRange(task_code="A", low=184, mode=184, high=184)],
+        ),
+    )
+    assert fixed.finishes == (expected,) * 2
+    assert TRACE["passes"] == 2
+
+
+def test_perfect_correlation_reorders_like_iman_conover(tmp_path: Path) -> None:
+    schedule = _load(
+        tmp_path,
+        [_task("1", "A", "8"), _task("2", "B", "8")],
+        [_link("1", "1", "2")],
+    )
+    outcome = run_risk(
+        schedule,
+        RiskConfig(
+            seed=3,
+            iterations=6,
+            tornado_hours=0,
+            ranges=[
+                DurationRange(task_code="A", low=8, mode=16, high=40, distribution="uniform"),
+                DurationRange(task_code="B", low=8, mode=16, high=40, distribution="uniform"),
+            ],
+            correlations=[CorrelationPair(left="A", right="B", coefficient=1)],
+        ),
+    )
+    rng = random.Random(3)
+    drawn = [
+        [sample_duration(rng, 8, 16, 40, "uniform") for _ in range(6)],
+        [sample_duration(rng, 8, 16, 40, "uniform") for _ in range(6)],
+    ]
+    mixed = iman_conover(drawn, [[1.0, 1.0], [1.0, 1.0]], rng)
+    assert mixed is not None
+    assert TRACE["columns"]["A"] == mixed[0]
+    assert TRACE["columns"]["B"] == mixed[1]
+    assert any("1e-8" in note for note in outcome.approximations)
 
 
 def test_unsupported_calendar_uses_the_reference_loop(tmp_path: Path, monkeypatch) -> None:

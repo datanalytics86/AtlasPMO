@@ -87,7 +87,7 @@ def run_iterations(
         )
     notes.append(_NUMBA)
     return _fast_iterations(
-        schedule, config, options, base, compiled, draws, rng, notes, trace, anchor
+        schedule, config, options, base, compiled, draws, rng, notes, clocks, trace, anchor
     )
 
 
@@ -207,14 +207,26 @@ def _fast_iterations(
     draws: dict[str, list[float]],
     rng: random.Random,
     notes: list[str],
+    clocks: _Clocks,
     trace: _Trace,
     anchor: WorkCalendar | None,
 ) -> _Iterations:
-    del options
     columns = _columns(compiled, draws, config, rng, notes, trace)
+    if _needs_room(compiled, columns):
+        peaked = _compiled_for_peaks(schedule, options, columns)
+        if peaked is None:
+            return _reference_instead(
+                schedule, config, options, base, draws, rng, notes, clocks, trace, anchor
+            )
+        compiled = peaked
     varied_index, row_minutes = _minutes(compiled, columns, config.iterations)
     watch, watched_codes = _watch(schedule, compiled)
-    finishes_m, total, flags, watched = run_batch(compiled, varied_index, row_minutes, watch)
+    try:
+        finishes_m, total, flags, watched = run_batch(compiled, varied_index, row_minutes, watch)
+    except CalendarLimitError:
+        return _reference_instead(
+            schedule, config, options, base, draws, rng, notes, clocks, trace, anchor
+        )
     trace["passes"] = int(config.iterations)
     finish_dates = _as_datetimes(finishes_m)
     finish_by_code = _watched_dates(watched, watched_codes)
@@ -228,6 +240,27 @@ def _fast_iterations(
         kept = []
         project_hours = []
     return kept, durations, critical_hits, config.iterations, finish_by_code, project_hours
+
+
+def _reference_instead(
+    schedule: Schedule,
+    config: RiskConfig,
+    options: EngineOptions,
+    base: CpmResult,
+    draws: dict[str, list[float]],
+    rng: random.Random,
+    notes: list[str],
+    clocks: _Clocks,
+    trace: _Trace,
+    anchor: WorkCalendar | None,
+) -> _Iterations:
+    while _NUMBA in notes:
+        notes.remove(_NUMBA)
+    if _FALLBACK not in notes:
+        notes.append(_FALLBACK)
+    return _reference_iterations(
+        schedule, config, options, base, draws, rng, notes, clocks, trace, anchor
+    )
 
 
 def _reference_iterations(
@@ -283,6 +316,43 @@ def _reference_iterations(
         trace["rng_next"] = rng.random()
     del clocks, seen
     return finishes, durations, critical_hits, config.iterations, finish_by_code, project_hours
+
+
+def _needs_room(compiled: Compiled, columns: dict[str, list[float]]) -> bool:
+    index_of: dict[str, int] = {}
+    milestones: set[str] = set()
+    for index, activity in enumerate(compiled.activities):
+        code = activity.task_code
+        if not code or code in index_of:
+            continue
+        index_of[code] = index
+        if activity.task_type in _MILESTONE:
+            milestones.add(code)
+    for code, values in columns.items():
+        if code not in index_of or code in milestones or not values:
+            continue
+        base = int(compiled.duration[index_of[code]])
+        if any(int(round(value * 60)) > base for value in values):
+            return True
+    return False
+
+
+def _compiled_for_peaks(
+    schedule: Schedule,
+    options: EngineOptions,
+    columns: dict[str, list[float]],
+) -> Compiled | None:
+    from atlaspmo.analysis.risk.montecarlo import _with_hours  # noqa: PLC0415
+
+    peaks = {code: max(values) for code, values in columns.items() if values}
+    if not peaks:
+        return None
+    peaked = _with_hours(schedule, peaks)
+    try:
+        schedule_cpm(peaked, options)
+    except CalendarLimitError:
+        return None
+    return use_fast(peaked, options)
 
 
 def _columns(
