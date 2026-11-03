@@ -35,6 +35,14 @@ La redundancia a 30 000 se midió con `scripts/gen_scale.py`, no con un cronogra
 
 Monte Carlo a 30 000 se midió con `scripts/gen_scale.py`, sin rangos. No agrega un paso manual. Siguen los puntos de P6 de arriba.
 
+## E10
+
+Estos puntos no bloquean el cierre.
+
+1. Comparar los float paths de este motor con un export de P6 del mismo sintético (SHORT 8 h, LONG 16 h, JOIN 8 h, FS de SHORT y de LONG hacia JOIN). El algoritmo de R-390 no es el de P6. La salida del motor no se presenta como float path de P6.
+2. `RSRCRATE` no trae un campo de tope citado. `resource_limit` sigue `no_evaluable`.
+3. No hay evidencia del nombre de la tabla de curva de recurso. El reparto de la duración remanente es lineal en tiempo laboral y queda rotulado como aproximación.
+
 ## Historia
 
 B-23 sigue en los commits de `fase-1` a `fase-5`. Limpiarlo reescribe historia publicada. Lo decide Nicolás. La rama `v2` no lo reescribe.
