@@ -1,5 +1,5 @@
 {
-  "nota": "Linea base de cobertura de la v3 (ADR-019). E7, al aprobar, subio las ramas de resto de 78,8 a 78,9. Ningun otro paquete supero su linea en el gate de 577c6ba y no se baja nada. G4 falla si un paquete cae mas de 0,5 puntos bajo este valor; las metas de la seccion 8.1 siguen como objetivo. Solo se sube, nunca se baja.",
+  "nota": "Linea base de cobertura de la v3 (ADR-019). E7 subio las ramas de resto de 78,8 a 78,9. E8, al aprobar, sube logic de 88,6/75,3 a 89,2/80,1 y las ramas de resto de 78,9 a 79,2. No se baja engine ni el resto. G4 falla si un paquete cae mas de 0,5 puntos bajo este valor; las metas de la seccion 8.1 siguen como objetivo. Solo se sube, nunca se baja.",
   "commit_base": "cc81a31",
   "buckets": {
     "calendars": {
@@ -11,8 +11,8 @@
       "ramas": 89.8
     },
     "logic": {
-      "lineas": 88.6,
-      "ramas": 75.3
+      "lineas": 89.2,
+      "ramas": 80.1
     },
     "model": {
       "lineas": 100.0,
@@ -20,7 +20,7 @@
     },
     "resto": {
       "lineas": 90.2,
-      "ramas": 78.9
+      "ramas": 79.2
     }
   }
 }

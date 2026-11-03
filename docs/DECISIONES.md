@@ -214,7 +214,7 @@ Decisión de E8, sin pregunta (sección 10.3 del megaprompt v3 y ADR-016).
 - La máscara guarda el `task_pred_id` de cada arista. `pred_ids` sigue siendo el id de la actividad predecesora, porque dos vínculos del mismo par no se distinguen solo con ese id.
 - La comparación de la confirmación sigue siendo la de `_same`: fechas y holguras al minuto. Leer los arrays basta. Empaquetar un `CpmResult` en cada prueba no es parte del contrato.
 - Un cono de sucesoras o predecesoras solo sustituye al pase completo si un test lo iguala, al minuto, con el pase completo. Si el proyecto se mueve, el vínculo no es redundante.
-- La meta `redundancia_30k` no entra en `docs/qa/seccion11.toml` hasta medirla bajo 180 s a 30 000 actividades en este equipo.
+- La meta `redundancia_30k` no entra en `docs/qa/seccion11.toml` hasta medirla bajo 180 s a 30 000 actividades en este equipo. Medida: 14,839 s, `mask_passes` 1. La segunda pasada de E8 la activa.
 
 ## Nota local, fuera del repositorio
 

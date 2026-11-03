@@ -27,6 +27,10 @@ Mantener los golden en una unidad o contenedor cifrado desmontado mientras Grok 
 6. Abrir `powerbi/AtlasPMO.pbip` en Power BI Desktop y refrescar.
 7. Para `.mpp`: Java en el PATH y `uv sync --extra mpp`.
 
+## E8
+
+La redundancia a 30 000 se midió con `scripts/gen_scale.py`, no con un cronograma real. No agrega un paso manual. Siguen los puntos de P6 de arriba.
+
 ## Historia
 
 B-23 sigue en los commits de `fase-1` a `fase-5`. Limpiarlo reescribe historia publicada. Lo decide Nicolás. La rama `v2` no lo reescribe.
